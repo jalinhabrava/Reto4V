@@ -4,9 +4,9 @@ Esta guía sirve para la primera versión de Reto4V en una máquina Windows que 
 Ubuntu dentro de WSL2. El motor de contenedores es **Docker Engine dentro de
 WSL**; Docker Desktop no es un requisito ni una dependencia del despliegue.
 
-Reto4V y PostgreSQL se ejecutan en contenedores Linux. PostgreSQL no
-publica ningún puerto en Windows: solo es accesible desde la red privada de
-Compose. El único puerto de aula es el de `web` (por defecto TCP 8080).
+Reto4V y PostgreSQL se ejecutan en contenedores Linux. PostgreSQL no publica
+ningún puerto en Windows: solo es accesible desde la red privada de Compose.
+El único puerto de aula es el de `web` (por defecto TCP 8080).
 
 ## 1. Arquitectura y decisiones de red
 
@@ -17,9 +17,12 @@ ordenador del alumno
 Windows Firewall / (portproxy si NAT)
         │
         ▼
-WSL2 ─ Docker Engine ── web:8000 ──┐
-                                   │ red Compose interna
-                              db:5432 (volumen persistente)
+WSL2 ─ Docker Engine ── web:8000 ───────┐
+             ▲                          │ red edge (publicada)
+             │ Caddy:8080 (opcional) ───┘
+             │
+             └──── red backend (internal) ── db:5432
+                                      (volumen persistente)
 ```
 
 Hay dos variantes:
@@ -209,9 +212,12 @@ bash scripts/install.sh --no-build --skip-admin --seed-bash \
 normal no elimina los volúmenes. No uses `docker compose down -v` en la
 instalación real: elimina los datos de PostgreSQL y los archivos locales.
 
-La red Compose `backend` está marcada como `internal`; Reto4V no necesita
-CDN, fuentes, analytics ni APIs para funcionar. Conserva las imágenes ya
-construidas si vas a trabajar sin Internet.
+La base de datos solo está en la red Compose `backend`, marcada como `internal`;
+`web` también se conecta a la red `edge` para que el puerto publicado y Caddy
+puedan servir la aplicación. Reto4V no necesita CDN, fuentes, analytics ni APIs
+para funcionar. La conectividad de salida del contenedor web no es una frontera
+de seguridad: si el centro la necesita, bloquéala con la política del host o del
+firewall. Conserva las imágenes ya construidas si vas a trabajar sin Internet.
 
 ## 7. Publicar el puerto en la LAN
 

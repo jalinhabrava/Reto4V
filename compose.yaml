@@ -65,6 +65,7 @@ services:
       - media_data:/app/media
     networks:
       - backend
+      - edge
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
@@ -98,7 +99,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     networks:
-      - backend
+      - edge
     environment:
       CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-:8080}
     read_only: true
@@ -128,6 +129,10 @@ volumes:
     name: ${COMPOSE_PROJECT_NAME:-reto4v}_caddy_config
 
 networks:
+  # Database traffic is isolated from the published edge.  The web service
+  # joins both networks so the proxy never receives database access.
   backend:
     name: ${COMPOSE_PROJECT_NAME:-reto4v}_backend
     internal: true
+  edge:
+    name: ${COMPOSE_PROJECT_NAME:-reto4v}_edge
