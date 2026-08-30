@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Reto4V backup every night
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=reto4v-backup.service
+
+[Install]
+WantedBy=timers.target

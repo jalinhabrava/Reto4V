@@ -1,0 +1,133 @@
+name: ${COMPOSE_PROJECT_NAME:-reto4v}
+
+services:
+  db:
+    image: ${POSTGRES_IMAGE:?Set POSTGRES_IMAGE in .env}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      TZ: ${TZ:-Europe/Madrid}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\" -h 127.0.0.1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+  web:
+    image: ${RETO4V_IMAGE:-reto4v:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    init: true
+    environment:
+      DJANGO_SETTINGS_MODULE: aulaweb.settings
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-0}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Set DJANGO_ALLOWED_HOSTS in .env}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+      DJANGO_SESSION_COOKIE_SECURE: ${DJANGO_SESSION_COOKIE_SECURE:-0}
+      DJANGO_CSRF_COOKIE_SECURE: ${DJANGO_CSRF_COOKIE_SECURE:-0}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      DB_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      DB_CONN_MAX_AGE: ${DB_CONN_MAX_AGE:-60}
+      TZ: ${TZ:-Europe/Madrid}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-1}
+      RUN_COLLECTSTATIC: ${RUN_COLLECTSTATIC:-1}
+      WAIT_FOR_DATABASE: ${WAIT_FOR_DATABASE:-1}
+      DB_WAIT_RETRIES: ${DB_WAIT_RETRIES:-30}
+      HEALTHCHECK_PATH: ${HEALTHCHECK_PATH:-/health/}
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "${APP_BIND_IP:-0.0.0.0}:${APP_PORT:-8080}:8000"
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    networks:
+      - backend
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    stop_grace_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+  # Optional local reverse proxy.  It is intentionally not part of the
+  # default profile: direct mode is useful for the first local test, while
+  # this profile is the entry point for an internal TLS certificate or a
+  # centre-managed reverse proxy.
+  caddy:
+    image: ${CADDY_IMAGE:-caddy:2-alpine}
+    profiles: ["proxy"]
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "${CADDY_BIND_IP:-0.0.0.0}:${CADDY_HTTP_PORT:-8081}:8080"
+    volumes:
+      - ${CADDYFILE:-./Caddyfile}:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - backend
+    environment:
+      CADDY_SITE_ADDRESS: ${CADDY_SITE_ADDRESS:-:8080}
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider --quiet http://127.0.0.1:8082/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    name: ${COMPOSE_PROJECT_NAME:-reto4v}_postgres_data
+  static_data:
+    name: ${COMPOSE_PROJECT_NAME:-reto4v}_static_data
+  media_data:
+    name: ${COMPOSE_PROJECT_NAME:-reto4v}_media_data
+  caddy_data:
+    name: ${COMPOSE_PROJECT_NAME:-reto4v}_caddy_data
+  caddy_config:
+    name: ${COMPOSE_PROJECT_NAME:-reto4v}_caddy_config
+
+networks:
+  backend:
+    name: ${COMPOSE_PROJECT_NAME:-reto4v}_backend
+    internal: true

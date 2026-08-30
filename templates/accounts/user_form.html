@@ -1,0 +1,20 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; frame-src 'none'" />
+    <title>{{ title }} · Reto4V</title>
+    <link rel="stylesheet" href="{% static 'dist/assets/app.css' %}" />
+  </head>
+  <body class="account-body">
+    <main class="account-page account-page-narrow">
+      <header class="review-topbar"><a class="brand" href="{% url 'user_list' %}"><img src="{% static 'brand-mark.svg' %}" alt="" width="36" height="36" /><span>Reto4V<span class="brand-dot">.</span></span></a><nav class="review-nav"><a href="{% url 'user_list' %}">Cancelar</a></nav></header>
+      <section class="account-form-card">
+        <p class="kicker">Administración local</p><h1>{{ title }}</h1>
+        <form method="post" class="account-form">{% csrf_token %}{{ form.as_p }}<button class="button button-dark" type="submit">Guardar</button></form>
+      </section>
+    </main>
+  </body>
+</html>

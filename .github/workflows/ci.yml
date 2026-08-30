@@ -1,0 +1,157 @@
+name: Reto4V CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reto4v-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Backend, frontend y contenedor
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      COMPOSE_PROJECT_NAME: reto4v-ci
+
+    steps:
+      - name: Obtener código
+        uses: actions/checkout@v4
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Probar backend
+        run: |
+          uv sync --all-groups --frozen --link-mode=copy
+          uv run pytest
+          uv run python -m unittest discover -s tests -v
+          uv run ruff check .
+          uv run python manage.py check
+          uv run python manage.py makemigrations --check --dry-run
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Probar frontend
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: Crear configuración efímera de Compose
+        run: |
+          db_password="$(openssl rand -hex 32)"
+          django_secret="$(openssl rand -hex 32)"
+          {
+            echo "COMPOSE_PROJECT_NAME=$COMPOSE_PROJECT_NAME"
+            echo "RETO4V_IMAGE=reto4v:ci"
+            echo "POSTGRES_IMAGE=postgres:16-bookworm"
+            echo "CADDY_IMAGE=caddy:2-alpine"
+            echo "POSTGRES_DB=reto4v"
+            echo "POSTGRES_USER=reto4v"
+            echo "POSTGRES_PASSWORD=$db_password"
+            echo "DJANGO_SECRET_KEY=$django_secret"
+            echo "DJANGO_DEBUG=0"
+            echo "DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1"
+            echo "DJANGO_CSRF_TRUSTED_ORIGINS=http://127.0.0.1:18080"
+            echo "APP_BIND_IP=127.0.0.1"
+            echo "APP_PORT=18080"
+            echo "HEALTHCHECK_PATH=/health/"
+            echo "RUN_MIGRATIONS=1"
+            echo "RUN_COLLECTSTATIC=1"
+            echo "WAIT_FOR_DATABASE=1"
+            echo "DB_WAIT_RETRIES=60"
+          } > .env
+          chmod 600 .env
+
+      - name: Validar configuración Compose
+        run: docker compose --env-file .env config --quiet
+
+      - name: Construir imagen
+        run: docker compose --env-file .env build --pull
+
+      - name: Arrancar stack y esperar salud
+        run: docker compose --env-file .env up -d --wait
+
+      - name: Comprobar HTTP, estáticos y Django
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:18080/health/
+          curl --fail --silent --show-error http://127.0.0.1:18080/static/dist/assets/app.js >/dev/null
+          docker compose --env-file .env exec -T web python manage.py check --database default
+          docker compose --env-file .env exec -T web python manage.py migrate --check
+
+      - name: Crear propietario efímero y sembrar Bash
+        run: |
+          docker compose --env-file .env exec -T web python manage.py shell -c \
+            "from accounts.models import User; u, _ = User.objects.get_or_create(username='ci-owner', defaults={'role': User.Role.TEACHER, 'display_name': 'CI Owner'}); u.role = User.Role.TEACHER; u.set_unusable_password(); u.save()"
+          docker compose --env-file .env exec -T web python manage.py seed_bash --owner ci-owner --cohort 2ASIR
+          docker compose --env-file .env exec -T web python manage.py shell -c \
+            "from learning.models import Activity; assert Activity.objects.filter(slug='01-variables-y-salida').exists()"
+
+      - name: Verificar perfil proxy con TLS interno
+        run: |
+          docker compose --env-file .env down
+          cp .env .env.tls
+          chmod 600 .env.tls
+          set_env() {
+            key="$1"
+            value="$2"
+            if grep -q "^${key}=" .env.tls; then
+              sed -i "s|^${key}=.*|${key}=${value}|" .env.tls
+            else
+              echo "${key}=${value}" >> .env.tls
+            fi
+          }
+          set_env COMPOSE_PROFILES proxy
+          set_env APP_BIND_IP 127.0.0.1
+          set_env APP_PORT 8000
+          set_env CADDY_BIND_IP 127.0.0.1
+          set_env CADDY_HTTP_PORT 18443
+          set_env CADDYFILE ./Caddyfile.internal-tls
+          set_env CADDY_SITE_ADDRESS ci.reto4v.test:8080
+          set_env DJANGO_ALLOWED_HOSTS ci.reto4v.test,localhost,127.0.0.1
+          set_env DJANGO_CSRF_TRUSTED_ORIGINS https://ci.reto4v.test:18443
+          set_env DJANGO_SESSION_COOKIE_SECURE 1
+          set_env DJANGO_CSRF_COOKIE_SECURE 1
+          docker compose --env-file .env.tls --profile proxy up -d --wait
+          curl --fail --silent --show-error --insecure \
+            --resolve ci.reto4v.test:18443:127.0.0.1 \
+            https://ci.reto4v.test:18443/health/
+          curl --fail --silent --show-error --insecure \
+            --resolve ci.reto4v.test:18443:127.0.0.1 \
+            https://ci.reto4v.test:18443/static/dist/assets/app.js >/dev/null
+
+      - name: Mostrar logs si falla
+        if: failure()
+        run: |
+          if [[ -f .env.tls ]]; then
+            docker compose --env-file .env.tls --profile proxy logs --no-color
+          else
+            docker compose --env-file .env logs --no-color
+          fi
+
+      - name: Limpiar stack efímero
+        if: always()
+        run: |
+          if [[ -f .env.tls ]]; then
+            docker compose --env-file .env.tls --profile proxy down -v --remove-orphans
+          else
+            docker compose --env-file .env down -v --remove-orphans
+          fi
+          rm -f .env.tls

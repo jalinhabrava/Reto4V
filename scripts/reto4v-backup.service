@@ -1,0 +1,9 @@
+[Unit]
+Description=Reto4V scheduled backup
+Requires=reto4v-compose.service
+After=reto4v-compose.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=@APP_DIR@
+ExecStart=@APP_DIR@/scripts/backup.sh

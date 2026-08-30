@@ -1,0 +1,16 @@
+# Keep shell, YAML, Python and documentation portable when contributors work
+# from Windows and WSL.  In particular, CRLF in an entrypoint can make a
+# Linux container fail before it has a chance to report a useful error.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf

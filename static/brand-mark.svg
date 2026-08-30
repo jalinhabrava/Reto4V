@@ -1,0 +1,7 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Reto4V</title>
+  <desc id="desc">Marca geométrica de Reto4V</desc>
+  <rect width="48" height="48" rx="14" fill="#F4C15A"/>
+  <path d="M13 16.5C13 14.567 14.567 13 16.5 13H31.5C33.433 13 35 14.567 35 16.5V31.5C35 33.433 33.433 35 31.5 35H16.5C14.567 35 13 33.433 13 31.5V16.5Z" fill="#0D2238"/>
+  <path d="M18.5 20.5L23 24L18.5 27.5M25.5 28H30" stroke="#F4C15A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,49 @@
+[project]
+name = "reto4v"
+version = "0.2.0"
+description = "Gamificación LAN para aprender programación web y scripting Bash en FP"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+  "Django>=5.2,<5.3",
+  "argon2-cffi>=23.1,<26",
+  "beautifulsoup4>=4.12,<5",
+  "esprima>=4.0,<5",
+  "html5lib>=1.1,<2",
+  "gunicorn>=23,<24",
+  "psycopg[binary]>=3.2,<4",
+  "tinycss2>=1.3,<2",
+  "tree-sitter>=0.25,<0.26",
+  "tree-sitter-bash>=0.23,<0.26",
+  "whitenoise>=6.9,<7",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-django>=4.9,<5",
+  "ruff>=0.8,<1",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "aulaweb.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+testpaths = ["accounts", "learning", "grading"]
+norecursedirs = ["node_modules", ".venv", "static", "work", "outputs"]
+addopts = "--strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [
+  ".venv",
+  "node_modules",
+  "outputs",
+  "static",
+  "staticfiles",
+  "work",
+  "*/migrations/*.py",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B"]
+ignore = ["B904"]

@@ -1,0 +1,20 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d2238" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'nonce-{{ csp_nonce }}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-src 'self'" />
+    <meta name="reto4v-preview-nonce" content="{{ csp_nonce }}" />
+    <title>{{ assignment.title }} · Reto4V</title>
+    <link rel="stylesheet" href="{% static 'dist/assets/app.css' %}" />
+  </head>
+  <body>
+    <div id="root"></div>
+    {{ bootstrap|json_script:"aulaweb-bootstrap" }}
+    {{ user_payload|json_script:"user-data" }}
+    {{ workspace|json_script:"workspace-data" }}
+    <script type="module" src="{% static 'dist/assets/app.js' %}"></script>
+  </body>
+</html>

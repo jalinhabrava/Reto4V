@@ -1,0 +1,23 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d2238" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'nonce-{{ csp_nonce }}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-src 'self'"
+    />
+    <meta name="reto4v-preview-nonce" content="{{ csp_nonce }}" />
+    <title>{% block title %}Reto4V · Retos de programación{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'dist/assets/app.css' %}" />
+  </head>
+  <body>
+    <div id="root"></div>
+    {% if aulaweb_bootstrap %}
+      {{ aulaweb_bootstrap|json_script:'aulaweb-bootstrap' }}
+    {% endif %}
+    <script type="module" src="{% static 'dist/assets/app.js' %}"></script>
+  </body>
+</html>
