@@ -1,5 +1,6 @@
 {
 	admin off
+	auto_https disable_redirects
 }
 
 # Caddy creates a local CA and a certificate for CADDY_SITE_ADDRESS.  Trust
@@ -14,5 +15,6 @@
 # Local-only process check used by the container healthcheck.  It is not
 # published by Compose and deliberately stays plain HTTP.
 :8082 {
+	bind 127.0.0.1
 	respond /health "ok" 200
 }

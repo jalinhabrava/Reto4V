@@ -17,12 +17,15 @@ ordenador del alumno
 Windows Firewall / (portproxy si NAT)
         │
         ▼
-WSL2 ─ Docker Engine ── web:8000 ───────┐
-             ▲                          │ red edge (publicada)
-             │ Caddy:8080 (opcional) ───┘
-             │
-             └──── red backend (internal) ── db:5432
-                                      (volumen persistente)
+WSL2 / Docker Engine
+        │ puerto publicado
+        ▼
+ web directo o Caddy:8080 ── red edge ── web:8000
+                                           │
+                                  red backend (internal)
+                                           │
+                                       db:5432
+                                  (volumen persistente)
 ```
 
 Hay dos variantes:
@@ -336,7 +339,7 @@ volumen `caddy_data` y requiere confiar esa CA en los equipos del aula; como
 alternativa, el centro puede montar su propio certificado y proxy.
 
 En `.env`, reserva un puerto interno para `web` y el puerto LAN para Caddy. El
-perfil Caddy escucha internamente en 8080 (no necesita binding privilegiado) y
+perfil Caddy escucha internamente en 8080, sin redirección automática a :80, y
 por defecto se publica en 8081:
 
 ```dotenv
@@ -355,6 +358,14 @@ Arranca solo el perfil proxy:
 ```bash
 docker compose --env-file .env --profile proxy up -d
 ```
+
+La imagen oficial de Caddy conserva una capacidad de archivo que requiere
+`NET_BIND_SERVICE` para poder ejecutar su binario, aunque se use el puerto
+8080. Compose conserva **solo esa capacidad en Caddy**, además de
+`no-new-privileges`; la aplicación web sigue sin capacidades. Véase la
+[incidencia documentada por Caddy](https://github.com/caddyserver/caddy-docker/issues/396).
+La comprobación de salud del proxy escucha únicamente en el loopback interno
+del contenedor, puerto 8082, y no se publica en el host.
 
 No arranques simultáneamente direct mode y Caddy usando el mismo puerto host.
 Con el bloque anterior, `web` solo queda en `127.0.0.1:8000` y Caddy es la
@@ -438,10 +449,11 @@ RESTORE_CONFIRM=YES bash scripts/restore.sh \
 ```
 
 El script detiene `web` y Caddy, restaura el dump sin cambiar los propietarios
-de PostgreSQL, restaura opcionalmente `media` y vuelve a arrancar `web`. Haz
-una restauración de prueba en una instalación aislada antes de confiar en un
-backup para una incidencia real. Objetivos iniciales orientativos: RPO máximo
-24 horas y RTO máximo 4 horas; el centro debe aprobarlos y probarlos.
+de PostgreSQL, restaura opcionalmente `media` y vuelve a arrancar `web` y el
+proxy si el perfil Caddy estaba activo. Haz una restauración de prueba en una
+instalación aislada antes de confiar en un backup para una incidencia real.
+Objetivos iniciales orientativos: RPO máximo 24 horas y RTO máximo 4 horas; el
+centro debe aprobarlos y probarlos.
 
 Para una recuperación sin Internet guarda, además, una copia cifrada de las
 imágenes y del código/configuración aprobados:

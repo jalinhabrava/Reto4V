@@ -21,7 +21,7 @@ class InstallerTests(unittest.TestCase):
         self.root = Path(self.directory.name)
         (self.root / "scripts").mkdir()
         (self.root / "bin").mkdir()
-        for source in ("compose.yaml", ".env.example", "scripts/install.sh"):
+        for source in ("compose.yaml", ".env.example", "scripts/install.sh", "scripts/restore.sh"):
             shutil.copyfile(REPOSITORY / source, self.root / source)
         self.log = self.root / "calls.log"
         docker = self.root / "bin/docker"
@@ -31,6 +31,7 @@ class InstallerTests(unittest.TestCase):
             "case \"$*\" in\n"
             "  *'up --help'*) echo --wait ;;\n"
             "  *'shell -c'*) echo True ;;\n"
+            "  *pg_restore*) cat >/dev/null ;;\n"
             "esac\nexit 0\n",
             encoding="utf8",
         )
@@ -127,6 +128,34 @@ class InstallerTests(unittest.TestCase):
     def test_invalid_port_is_rejected_before_env_is_created(self):
         self.install("--port", "70000", success=False)
         self.assertFalse((self.root / ".env").exists())
+
+    def test_restore_restarts_the_configured_tls_proxy(self):
+        self.install("--host", "reto4v.instituto.lan", "--port", "8443", "--tls", "--skip-admin")
+        dump = self.root / "synthetic.dump"
+        dump.write_text("Mock data consumed only by the inert Docker stand-in.")
+        self.log.write_text("")
+        result = subprocess.run(
+            ["bash", str(self.root / "scripts/restore.sh"), str(dump)],
+            cwd=self.root,
+            env={**self.environment, "RESTORE_CONFIRM": "YES"},
+            text=True, capture_output=True, timeout=20, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        log = self.log.read_text()
+        self.assertIn("stop web caddy", log)
+        self.assertIn("up -d web", log)
+        self.assertIn("--profile proxy up -d caddy", log)
+
+    def test_restore_requires_explicit_confirmation(self):
+        environment = {**self.environment}
+        environment.pop("RESTORE_CONFIRM", None)
+        result = subprocess.run(
+            ["bash", str(self.root / "scripts/restore.sh"), "not-a-real-dump"],
+            cwd=self.root, env=environment,
+            text=True, capture_output=True, timeout=20, check=False,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.log.exists())
 
 
 if __name__ == "__main__":

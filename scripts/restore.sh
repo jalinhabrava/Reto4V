@@ -24,6 +24,17 @@ PROJECT_DIR=$(cd -- "${SCRIPT_DIR}/.." && pwd)
 cd "${PROJECT_DIR}"
 [[ -f .env ]] || { echo "Falta ${PROJECT_DIR}/.env." >&2; exit 2; }
 
+env_value() {
+  local key=$1 value
+  value=$(awk -v wanted="$key" '
+    $0 ~ "^[[:space:]]*" wanted "[[:space:]]*=" {
+      sub(/^[^=]*=/, "", $0); sub(/\r$/, ""); print; exit
+    }
+  ' .env)
+  value=$(printf '%s\n' "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  printf '%s' "$value"
+}
+
 dump_file=$(realpath -- "$1")
 [[ -f "${dump_file}" ]] || { echo "No existe el dump: ${dump_file}" >&2; exit 2; }
 media_file=""
@@ -33,8 +44,14 @@ if [[ $# -eq 2 ]]; then
 fi
 
 compose=(docker compose --project-directory "${PROJECT_DIR}" --env-file "${PROJECT_DIR}/.env")
+compose_profile=()
+if [[ "$(env_value COMPOSE_PROFILES)" == *proxy* ]] || {
+  [[ "$(env_value APP_PORT)" == "8000" ]] && [[ -n "$(env_value CADDY_HTTP_PORT)" ]]
+}; then
+  compose_profile+=(--profile proxy)
+fi
 echo "Deteniendo web y proxy…"
-"${compose[@]}" stop web caddy >/dev/null 2>&1 || true
+"${compose[@]}" "${compose_profile[@]}" stop web caddy >/dev/null 2>&1 || true
 "${compose[@]}" up -d db >/dev/null
 
 echo "Restaurando PostgreSQL desde ${dump_file}…"
@@ -53,4 +70,8 @@ fi
 
 echo "Arrancando web…"
 "${compose[@]}" up -d web >/dev/null
+if ((${#compose_profile[@]})); then
+  echo "Arrancando proxy…"
+  "${compose[@]}" "${compose_profile[@]}" up -d caddy >/dev/null
+fi
 echo "Restauración terminada. Comprueba la aplicación y conserva el backup anterior hasta validar el resultado."

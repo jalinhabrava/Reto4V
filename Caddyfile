@@ -13,5 +13,6 @@
 # published by Compose and deliberately does not depend on the public site
 # hostname or on TLS/SNI.
 :8082 {
+	bind 127.0.0.1
 	respond /health "ok" 200
 }

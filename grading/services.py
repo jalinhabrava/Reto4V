@@ -28,7 +28,7 @@ COMPLETION_SCORE = Decimal("8")
 
 BADGE_DEFINITIONS = (
     ("first-challenge", "Primer reto", "Has completado tu primer reto."),
-    ("five-challenges", "Racha de cinco", "Has completado cinco retos."),
+    ("five-challenges", "Cinco retos", "Has completado cinco retos."),
     ("web-path", "Constructor web", "Has completado un reto de HTML, CSS o JavaScript."),
     ("bash-path", "Terminal en marcha", "Has completado un reto de Bash."),
     ("cross-path", "Doble itinerario", "Has completado retos web y Bash."),

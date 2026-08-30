@@ -1,4 +1,4 @@
-# Backend Django de AulaWeb
+# Backend Django de Reto4V
 
 ## Desarrollo y despliegue
 
