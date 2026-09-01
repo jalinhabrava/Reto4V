@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 const source = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8')
+const styles = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
 
 test('la preview usa sandbox con scripts pero sin same-origin', () => {
   assert.match(source, /sandbox="allow-scripts"/)
@@ -25,12 +26,18 @@ test('el guardado y la entrega usan el contrato JSON local', () => {
   assert.match(source, /revision: revisionRef\.current/)
 })
 
-test('los dos itinerarios usan archivos y copy de producto propios', () => {
+test('los tres itinerarios usan archivos y copy de producto propios', () => {
   assert.match(source, /language: 'bash'/)
   assert.match(source, /BASH_FILE_META/)
-  assert.match(source, /filesPayload\(.*isBash/)
+  assert.match(source, /filesPayload\(files, language\)/)
   assert.match(source, /script\.sh/)
   assert.match(source, /El script no se ejecuta aquí/)
+  assert.match(source, /language: 'python'/)
+  assert.match(source, /PYTHON_FILE_META/)
+  assert.match(source, /main\.py/)
+  assert.match(source, /PythonAnalysisPanel/)
+  assert.match(source, /El código Python no se ejecuta aquí/)
+  assert.match(source, /filesPayload\(files, language\)/)
   assert.match(source, /Reto4V/)
 })
 
@@ -43,4 +50,23 @@ test('la gamificación se pinta desde el contrato del servidor', () => {
   assert.match(source, /activeTrack/)
   assert.match(source, /Todos los retos/)
   assert.match(source, /Bash · ASIR/)
+  assert.match(source, /Python · DAM/)
+  assert.match(source, /0491 · SGE/)
+})
+
+test('Python mantiene el archivo aislado y solo ofrece análisis indicativo', () => {
+  assert.match(source, /normalizeLanguage\(value\)/)
+  assert.match(source, /normalized === 'bash' \|\| normalized === 'python'/)
+  assert.match(source, /function inspectPython\(source = ''\)/)
+  assert.match(source, /No hay intérprete, archivos reales ni salida simulada/)
+  assert.match(source, /Nunca se ejecuta desde la plataforma/)
+  assert.match(source, /effectiveIsPython \? <PythonAnalysisPanel/)
+  assert.match(source, /checks\.operations/)
+  assert.doesNotMatch(source, /checks\.files/)
+})
+
+test('los itinerarios conservan legibilidad móvil y acento visual Python', () => {
+  assert.match(styles, /@media \(max-width: 740px\)[\s\S]*?\.track-options \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}/)
+  assert.doesNotMatch(styles, /\.track-options \{ grid-template-columns: repeat\(3,/)
+  assert.match(styles, /\.tip-mark-python \{ background: #e9e4f7; color: #6757a7; \}/)
 })

@@ -28,6 +28,7 @@ class InstallerTests(unittest.TestCase):
         docker.write_text(
             "#!/usr/bin/env bash\n"
             "printf 'docker %s\\n' \"$*\" >> \"$RETO4V_TEST_LOG\"\n"
+            "if [[ \"${RETO4V_FAIL_SEED:-0}\" == 1 && \"$*\" == *'seed_python'* ]]; then exit 17; fi\n"
             "case \"$*\" in\n"
             "  *'up --help'*) echo --wait ;;\n"
             "  *'shell -c'*) echo True ;;\n"
@@ -120,6 +121,103 @@ class InstallerTests(unittest.TestCase):
         port = config["CADDY_HTTP_PORT"]
         self.assertEqual(config["DJANGO_CSRF_TRUSTED_ORIGINS"], f"http://reto4v.instituto.lan:{port}")
         self.assertIn(f":{port}/health/", config["APP_URL"])
+
+    def test_seed_python_uses_owner_and_independent_cohort(self):
+        self.install(
+            "--no-build", "--skip-admin", "--seed-python",
+            "--owner", "profesor", "--python-cohort", "2DAM",
+        )
+        calls = self.log.read_text().splitlines()
+        python_calls = [call for call in calls if "manage.py seed_python" in call]
+        self.assertEqual(len(python_calls), 1)
+        self.assertIn("--owner profesor --cohort 2DAM", python_calls[0])
+        self.assertNotIn("seed_bash", self.log.read_text())
+
+    def test_seed_bash_and_python_keep_legacy_cohort_and_run_in_order(self):
+        self.install(
+            "--no-build", "--skip-admin", "--seed-bash", "--seed-python",
+            "--owner", "profesor", "--cohort", "2ASIR",
+            "--python-cohort", "2DAM",
+        )
+        calls = self.log.read_text().splitlines()
+        bash_index = next(i for i, call in enumerate(calls) if "manage.py seed_bash" in call)
+        python_index = next(i for i, call in enumerate(calls) if "manage.py seed_python" in call)
+        self.assertLess(bash_index, python_index)
+        self.assertIn("--owner profesor --cohort 2ASIR", calls[bash_index])
+        self.assertIn("--owner profesor --cohort 2DAM", calls[python_index])
+
+    def test_bash_cohort_is_explicit_alias_for_legacy_cohort(self):
+        self.install(
+            "--no-build", "--skip-admin", "--seed-bash",
+            "--owner", "profesor", "--bash-cohort", "2ASIR-B",
+        )
+        calls = self.log.read_text().splitlines()
+        bash_call = next(call for call in calls if "manage.py seed_bash" in call)
+        self.assertIn("--owner profesor --cohort 2ASIR-B", bash_call)
+
+    def test_missing_bash_cohort_does_not_consume_next_option(self):
+        result = self.install(
+            "--seed-bash", "--owner", "profesor", "--cohort", "--skip-admin",
+            success=False,
+        )
+        self.assertIn("Falta el valor de --cohort", result.stderr)
+        self.assertFalse(self.log.exists())
+        self.assertFalse((self.root / ".env").exists())
+
+    def test_missing_python_cohort_does_not_consume_next_option(self):
+        result = self.install(
+            "--seed-python", "--owner", "profesor",
+            "--python-cohort", "--skip-admin", success=False,
+        )
+        self.assertIn("Falta el valor de --python-cohort", result.stderr)
+        self.assertFalse(self.log.exists())
+        self.assertFalse((self.root / ".env").exists())
+
+    def test_unused_empty_python_cohort_does_not_block_bash_seed(self):
+        self.install(
+            "--no-build", "--skip-admin", "--seed-bash", "--owner", "profesor",
+            "--python-cohort", "",
+        )
+        log = self.log.read_text()
+        self.assertIn("manage.py seed_bash --owner profesor --cohort 2ASIR", log)
+        self.assertNotIn("seed_python", log)
+
+    def test_unused_empty_bash_cohort_does_not_block_python_seed(self):
+        self.install(
+            "--no-build", "--skip-admin", "--seed-python", "--owner", "profesor",
+            "--cohort", "",
+        )
+        log = self.log.read_text()
+        self.assertIn("manage.py seed_python --owner profesor --cohort 2DAM", log)
+        self.assertNotIn("seed_bash", log)
+
+    def test_seed_requires_owner_before_starting_services(self):
+        result = self.install("--no-build", "--skip-admin", "--seed-python", success=False)
+        self.assertIn("requieren --owner", result.stderr)
+        self.assertFalse(self.log.exists())
+        self.assertFalse((self.root / ".env").exists())
+
+    def test_seed_python_error_is_returned_to_operator(self):
+        self.environment["RETO4V_FAIL_SEED"] = "1"
+        result = self.install(
+            "--no-build", "--skip-admin", "--seed-python",
+            "--owner", "profesor", success=False,
+        )
+        self.assertIn("No se pudo ejecutar seed_python", result.stderr)
+
+    def test_repeating_python_seed_does_not_stop_or_remove_data(self):
+        self.install(
+            "--no-build", "--skip-admin", "--seed-python",
+            "--owner", "profesor", "--python-cohort", "2DAM",
+        )
+        self.log.write_text("")
+        self.install(
+            "--no-build", "--skip-admin", "--seed-python",
+            "--owner", "profesor", "--python-cohort", "2DAM",
+        )
+        log = self.log.read_text()
+        self.assertIn("manage.py seed_python --owner profesor --cohort 2DAM", log)
+        self.assertNotIn("down", log)
 
     def test_invalid_host_is_rejected_before_env_is_created(self):
         self.install("--host", "https://wrong.example/path", success=False)

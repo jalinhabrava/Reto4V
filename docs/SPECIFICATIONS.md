@@ -3,14 +3,15 @@
 ## Objetivo
 
 Herramienta de gamificación para aprender programación en la LAN del centro.
-Dos recorridos comparten cuentas, grupos, editor, entregas y revisión docente:
-HTML/CSS/JavaScript para SMR y Bash para Seguridad de 2.º ASIR.
+Tres recorridos comparten cuentas, grupos, editor, entregas y revisión docente:
+HTML/CSS/JavaScript para SMR, Bash para Seguridad de 2.º ASIR y Python
+introductorio para Sistemas de gestión empresarial de 2.º DAM.
 
 El repositorio público contiene el software y actividades formativas de
 ejemplo. Cuentas, borradores, entregas, notas y copias se almacenan únicamente
 en la instalación del centro. No se requiere OAuth, IA ni un servicio SaaS.
 
-## Alcance implementado de la versión 0.2
+## Alcance implementado de la versión 0.3
 
 - Cuentas locales con roles administrador, profesor y alumno; creación,
   edición, desactivación y restablecimiento de contraseña. No hay registro
@@ -22,6 +23,9 @@ en la instalación del centro. No se requiere OAuth, IA ni un servicio SaaS.
 - Editor web con HTML, CSS, JavaScript y preview aislada en el navegador.
 - Editor Bash de un solo `script.sh`, explicación, objetivos y pistas.
   Análisis sintáctico y estructural en el servidor, **sin ejecución**.
+- Editor Python de un solo `main.py`, explicación, objetivos y pistas. El
+  corrector analiza un AST en memoria, **sin ejecución**, sin importar módulos,
+  sin abrir archivos y sin acceder al sistema del centro.
 - Borradores con control de revisión, entregas inmutables y pruebas públicas
   de práctica separadas de la evaluación de una entrega.
 - XP según el mejor resultado automático por asignación; niveles e insignias
@@ -36,9 +40,9 @@ de Django; no se presenta como un constructor visual de contenidos.
 
 ## Contenido y currículo
 
-El catálogo inicial incluye **una actividad introductoria web** y **doce
-retos de Bash**. No representa la programación completa de ninguno de los
-dos módulos.
+El catálogo inicial incluye **una actividad introductoria web**, **doce retos
+de Bash** y **doce retos de Python**. No representa la programación completa de
+ninguno de los módulos.
 
 En SMR se mantiene la referencia navarra de `0228 · Aplicaciones web`, con
 trazabilidad curricular por versión. El banco completo debe desarrollarse
@@ -51,6 +55,22 @@ filtros, permisos y planificación de copias. No se asignan RA/CE artificiales.
 Las referencias navarras y el alcance están en [BASH_TRACK.md](BASH_TRACK.md).
 Saber escribir una estructura no demuestra haber restaurado una copia real:
 esa evidencia debe recogerse en la VM de prácticas y con revisión docente.
+
+Python ofrece una introducción progresiva hasta lectura y escritura de
+archivos: sintaxis, variables, control de flujo, colecciones, funciones,
+errores y excepciones, módulos, rutas y operaciones estructurales con archivos.
+Los ejercicios usan contextos de datos empresariales para preparar el trabajo
+posterior con Odoo, pero no incluyen el framework, el ORM ni una conexión a un
+servidor Odoo. El [Decreto Foral 110/2024](https://www.educacion.navarra.es/documents/27590/558252/DF%2B110_2024%2Bmodificacion%2BGS.pdf/a649cf9e-7adf-3c5d-c5ac-eaa602a553a5?version=1.0)
+sitúa `0491 · Sistemas de gestión empresarial` en 160 horas, 5 horas
+semanales y 2.º curso, y describe en su RA5 el desarrollo de componentes para
+un ERP-CRM mediante el lenguaje incorporado, incluidos elementos de
+manipulación y extracción de información. Este itinerario es un alineamiento y
+una preparación parcial: no cubre ni acredita el RA5, sus criterios de
+evaluación ni la instalación, configuración, verificación o desarrollo real en
+Odoo. La referencia de que los objetos de negocio de Odoo se modelan con
+clases Python está en su [tutorial oficial del framework de servidor](https://www.odoo.com/documentation/19.0/developer/tutorials/server_framework_101.html).
+El detalle del catálogo y sus límites está en [PYTHON_TRACK.md](PYTHON_TRACK.md).
 
 ## Requisitos de experiencia
 
@@ -79,7 +99,7 @@ backup comprobado y política de retención del centro.
 ## Criterios de aceptación del piloto en el centro
 
 1. Acceso desde un equipo del aula con cuentas ficticias de cada rol.
-2. Guardado, recarga y entrega de un reto web y otro de Bash.
+2. Guardado, recarga y entrega de un reto web, otro de Bash y otro de Python.
 3. Repetir una entrega no aumenta artificialmente los XP.
 4. Un alumno no accede a evidencias ajenas ni a tests privados.
 5. Un profesor revisa y exporta solo los grupos autorizados.
@@ -95,6 +115,14 @@ servidor y la red concretos del instituto.
 ## Siguientes incrementos, fuera de esta versión
 
 - Ampliar el catálogo web y validar una matriz RA/CE con el profesor.
+- Pilotar un reto Python con datos ficticios de una entidad empresarial y
+  recoger una rúbrica docente separada de la puntuación AST; después ampliar
+  progresivamente hacia lectura/escritura de formatos delimitados y JSON sin
+  convertir el corrector en un ejecutor.
+- Diseñar, en colaboración con el profesorado de 0491, una secuencia posterior
+  de instalación, configuración, importación, integración, extracción e
+  informes de un ERP-CRM. La integración con Odoo se probará en un entorno
+  separado y no se infiere desde los retos Python de esta plataforma.
 - Constructor visual de actividades y rúbricas sobre el modelo versionado.
 - Importación masiva de usuarios/grupos con validación y vista previa.
 - Pruebas funcionales de Bash en un entorno aislado independiente, solo

@@ -5,6 +5,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab, redo, undo } from
 import { html } from '@codemirror/lang-html'
 import { css } from '@codemirror/lang-css'
 import { javascript } from '@codemirror/lang-javascript'
+import { python } from '@codemirror/lang-python'
 import { defaultHighlightStyle, indentOnInput, StreamLanguage, syntaxHighlighting } from '@codemirror/language'
 import { autocompletion } from '@codemirror/autocomplete'
 import { bracketMatching } from '@codemirror/language'
@@ -17,6 +18,7 @@ import {
   IconBrandCss3,
   IconBrandHtml5,
   IconBrandJavascript,
+  IconBrandPython,
   IconBrowser,
   IconCalendarEvent,
   IconChartBar,
@@ -74,12 +76,23 @@ tar -czf "$BACKUP_DIR/datos-$STAMP.tar.gz" "$SOURCE_DIR"
 echo "Copia preparada: $BACKUP_DIR/datos-$STAMP.tar.gz"`,
 }
 
+const PYTHON_FILES_DEFAULT = {
+  python: `# SGE · 2DAM
+productos = [
+    {"nombre": "Cuaderno", "precio": 4.5},
+    {"nombre": "Mochila", "precio": 24.0},
+]
+
+for producto in productos:
+    print(f"{producto['nombre']}: {producto['precio']:.2f} €")`,
+}
+
 const DEMO_USER_STUDENT = {
   id: 'demo-student',
   username: 'lucia.garcia',
   display_name: 'Lucía García',
   role: 'student',
-  group: '1SMR-A · Web + scripting',
+  group: '1SMR-A · Web / 2DAM-A · SGE',
 }
 
 const DEMO_USER_TEACHER = {
@@ -87,7 +100,7 @@ const DEMO_USER_TEACHER = {
   username: 'javier.martin',
   display_name: 'Javier Martín',
   role: 'teacher',
-  group: '1SMR-A · Web / 2ASIR · Seguridad',
+  group: '1SMR-A · Web / 2ASIR · Seguridad / 2DAM · SGE',
 }
 
 const DEMO_ACTIVITIES = [
@@ -187,6 +200,44 @@ const DEMO_ACTIVITIES = [
     earned_xp: 0,
     completed: false,
   },
+  {
+    id: 'python-variables',
+    title: 'Datos de un producto',
+    module: 'SGE · Unidad 01',
+    summary: 'Modela información sencilla de un producto como primer paso hacia Odoo.',
+    status: 'in_progress',
+    progress: 28,
+    due: 'Jueves, 23:59',
+    difficulty: 'beginner',
+    points: 10,
+    tests: 4,
+    attempts: 0,
+    revision: 1,
+    language: 'python',
+    track: 'python',
+    xp_reward: 75,
+    earned_xp: 21,
+    completed: false,
+  },
+  {
+    id: 'python-files',
+    title: 'Leer y guardar un inventario',
+    module: 'SGE · Unidad 05',
+    summary: 'Lee datos de un archivo y prepara una salida para seguir trabajando con ellos.',
+    status: 'not_started',
+    progress: 0,
+    due: 'Lunes próximo, 23:59',
+    difficulty: 'intermediate',
+    points: 10,
+    tests: 5,
+    attempts: 0,
+    revision: 1,
+    language: 'python',
+    track: 'python',
+    xp_reward: 130,
+    earned_xp: 0,
+    completed: false,
+  },
 ]
 
 const DEMO_TEACHER_ROWS = [
@@ -212,6 +263,14 @@ const DEMO_BASH_TESTS = [
   { id: 'bash-exit', title: 'Comunica el resultado', description: 'El script deja un mensaje o código de salida comprensible.', points: 1, status: 'pending', feedback: 'Incluye una salida útil para quien lo ejecute.' },
 ]
 
+const DEMO_PYTHON_TESTS = [
+  { id: 'python-syntax', title: 'El archivo tiene una estructura válida', description: 'La sintaxis Python se puede analizar sin errores.', points: 2, status: 'passed', feedback: 'El árbol sintáctico se ha podido construir.' },
+  { id: 'python-function', title: 'Organiza la lógica en una función', description: 'Define una función con un nombre claro y parámetros explícitos.', points: 2, status: 'pending', feedback: 'Señala qué parte del proceso quieres reutilizar.' },
+  { id: 'python-collections', title: 'Trabaja con datos estructurados', description: 'Usa una colección adecuada para representar los registros.', points: 2, status: 'pending', feedback: 'Un diccionario puede representar un registro de forma legible.' },
+  { id: 'python-files', title: 'Abre el archivo con un contexto seguro', description: 'La lectura o escritura usa with open(...) y un modo explícito.', points: 3, status: 'pending', feedback: 'El bloque with ayuda a cerrar el archivo aunque ocurra un error.' },
+  { id: 'python-exceptions', title: 'Cuida los errores de entrada y salida', description: 'Contempla excepciones previsibles al trabajar con datos.', points: 1, status: 'pending', feedback: 'Piensa qué puede pasar si el archivo no existe o no se puede leer.' },
+]
+
 const DEMO_GAMIFICATION = {
   total_xp: 420,
   level: 1,
@@ -230,6 +289,8 @@ const FILE_META = {
   css: { label: 'styles.css', short: 'CSS', icon: IconBrandCss3, className: 'file-css' },
   javascript: { label: 'script.js', short: 'JS', icon: IconBrandJavascript, className: 'file-js' },
 }
+
+const PYTHON_FILE_META = { python: { label: 'main.py', short: 'Python', icon: IconBrandPython, className: 'file-python' } }
 
 function readBootstrap() {
   const parseNode = (node) => {
@@ -288,10 +349,42 @@ const TRACKS = {
   all: { label: 'Todos los retos', shortLabel: 'Todo', description: 'Tu recorrido completo' },
   web: { label: 'Web · SMR', shortLabel: 'Web · SMR', description: 'HTML, CSS y JavaScript' },
   bash: { label: 'Bash · ASIR', shortLabel: 'Bash · ASIR', description: 'Linux, scripting y seguridad' },
+  python: { label: 'Python · DAM', shortLabel: 'Python · DAM', description: 'Base para SGE y Odoo' },
 }
 
 function normalizeLanguage(value) {
-  return String(value || 'web').toLowerCase() === 'bash' ? 'bash' : 'web'
+  const normalized = String(value || 'web').toLowerCase()
+  return normalized === 'bash' || normalized === 'python' ? normalized : 'web'
+}
+
+function getTrackIcon(language) {
+  return language === 'bash' ? IconTerminal2 : language === 'python' ? IconBrandPython : language === 'web' ? IconCode : IconLayoutDashboard
+}
+
+function getTrackLabel(language) {
+  return TRACKS[normalizeLanguage(language)]?.label || TRACKS.web.label
+}
+
+function getTrackTips(track) {
+  const key = track === 'all' ? 'all' : normalizeLanguage(track)
+  return {
+    all: [
+      'Divide el reto en decisiones pequeñas y comprueba cada una antes de seguir.',
+      'Guarda una versión estable antes de probar una idea nueva.',
+    ],
+    web: [
+      'Si un elemento no se centra, revisa primero quién es su contenedor.',
+      'Prueba primero la estructura y después ajusta el estilo: un cambio cada vez.',
+    ],
+    bash: [
+      'No ejecutes scripts que no entiendas: revisa rutas, permisos y códigos de salida.',
+      'Una ruta entre comillas protege los espacios y evita sorpresas al hacer copias.',
+    ],
+    python: [
+      'Usa nombres claros para que un registro de negocio se entienda antes de abrir Odoo.',
+      'Con with open(...) el archivo se cierra al salir del bloque, incluso si aparece un error.',
+    ],
+  }[key] || []
 }
 
 function trackForActivity(activity) {
@@ -350,8 +443,8 @@ function assignmentWithDefaults(assignment) {
   return {
     ...assignment,
     language,
-    module: assignment?.module || (language === 'bash' ? 'Seguridad · Linux' : 'Aplicaciones web · SMR'),
-    summary: assignment?.summary || (language === 'bash' ? 'Practica scripting de Linux y comprueba tus decisiones.' : 'Practica y entrega esta actividad desde el editor.'),
+    module: assignment?.module || (language === 'bash' ? 'Seguridad · Linux' : language === 'python' ? 'SGE · 2DAM' : 'Aplicaciones web · SMR'),
+    summary: assignment?.summary || (language === 'bash' ? 'Practica scripting de Linux y comprueba tus decisiones.' : language === 'python' ? 'Practica Python con datos de gestión y prepara tu base para Odoo.' : 'Practica y entrega esta actividad desde el editor.'),
     difficulty: assignment?.difficulty || 'beginner',
     xp_reward: Number.isFinite(reward) ? reward : 0,
     earned_xp: Number.isFinite(earned) ? earned : 0,
@@ -476,7 +569,7 @@ function LoginScreen({ onLogin }) {
           <div className="visual-copy">
             <p className="kicker kicker-light">Laboratorio de retos · 4 Vientos</p>
             <h1>Aprender haciendo<br /><em>se queda.</em></h1>
-            <p className="visual-lede">Retos de programación para practicar web en SMR y scripting de Linux en ASIR, con feedback y progreso visible.</p>
+            <p className="visual-lede">Retos de programación para practicar web en SMR, scripting de Linux en ASIR y Python aplicado a SGE en DAM, con feedback y progreso visible.</p>
           </div>
           <div className="visual-footer">
             <span className="pulse-dot" />
@@ -499,7 +592,7 @@ function LoginScreen({ onLogin }) {
           <div className="login-intro">
             <p className="kicker">Bienvenido de nuevo</p>
             <h2>Entra a tu espacio.</h2>
-            <p>Elige tu recorrido: web para SMR o Bash para seguridad y scripting en ASIR.</p>
+            <p>Elige tu recorrido: web para SMR, Bash para seguridad en ASIR o Python para Sistemas de Gestión Empresarial en DAM.</p>
           </div>
           <form className="login-form" onSubmit={submit}>
             <label htmlFor="username">Usuario</label>
@@ -707,13 +800,13 @@ function StudentDashboard({ user, data, onOpenActivity }) {
       <section className="track-switcher" aria-label="Filtrar itinerario">
         <div className="track-switcher-copy"><span className="card-overline">Tus itinerarios</span><strong>Practica por módulo</strong><small>Elige el contexto que quieres trabajar hoy.</small></div>
         <div className="track-options" role="group" aria-label="Itinerarios disponibles">
-          {Object.entries(TRACKS).map(([key, track]) => <button key={key} className={`track-option ${activeTrack === key ? 'is-active' : ''}`} type="button" aria-pressed={activeTrack === key} onClick={() => setActiveTrack(key)}><span className={`track-option-mark track-mark-${key}`}><Icon icon={key === 'bash' ? IconTerminal2 : key === 'web' ? IconCode : IconLayoutDashboard} size={16} /></span><span><strong>{track.label}</strong><small>{track.description}</small></span><span className="track-option-count">{key === 'all' ? activities.length : activities.filter((activity) => trackForActivity(activity) === key).length}</span></button>)}
+          {Object.entries(TRACKS).map(([key, track]) => <button key={key} className={`track-option ${activeTrack === key ? 'is-active' : ''}`} type="button" aria-pressed={activeTrack === key} onClick={() => setActiveTrack(key)}><span className={`track-option-mark track-mark-${key}`}><Icon icon={getTrackIcon(key)} size={16} /></span><span><strong>{track.label}</strong><small>{track.description}</small></span><span className="track-option-count">{key === 'all' ? activities.length : activities.filter((activity) => trackForActivity(activity) === key).length}</span></button>)}
         </div>
       </section>
       <section className="student-overview-grid" aria-label="Resumen de aprendizaje">
         <div className="continue-card">
           <div className="continue-card-top">
-            <span className="soft-pill pill-gold"><Icon icon={trackForActivity(currentActivity) === 'bash' ? IconTerminal2 : IconPlayerPlay} size={13} />{currentActivity.status ? currentStatus.label : 'Sin reto'}</span>
+            <span className="soft-pill pill-gold"><Icon icon={currentActivity.status ? getTrackIcon(trackForActivity(currentActivity)) : IconPlayerPlay} size={13} />{currentActivity.status ? currentStatus.label : 'Sin reto'}</span>
             <span className="continue-due"><Icon icon={IconClock} size={14} />{currentActivity.due_at ? formatDate(currentActivity.due_at) : currentActivity.due || 'Sin fecha'}</span>
           </div>
           <div className="continue-copy">
@@ -743,11 +836,11 @@ function StudentDashboard({ user, data, onOpenActivity }) {
       <section className="section-block activities-section">
         <div className="section-heading"><div><p className="kicker">{TRACKS[activeTrack].shortLabel}</p><h2>Retos disponibles</h2></div>{filteredActivities.length > 0 && <span className="section-count">{filteredActivities.length} {filteredActivities.length === 1 ? 'reto' : 'retos'}</span>}</div>
         <div className="activity-list">
-          {filteredActivities.length ? filteredActivities.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={activeTrack === 'bash' ? IconTerminal2 : IconCode} size={19} /><span>{activeTrack === 'all' ? 'Cuando te asignen un reto, aparecerá aquí.' : `Todavía no hay retos de ${TRACKS[activeTrack].label}.`}</span></div>}
+          {filteredActivities.length ? filteredActivities.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activeTrack === 'all' ? 'Cuando te asignen un reto, aparecerá aquí.' : `Todavía no hay retos de ${TRACKS[activeTrack].label}.`}</span></div>}
         </div>
       </section>
       <section className="student-lower-grid">
-        <div className="tip-card"><span className="tip-mark"><Icon icon={activeTrack === 'bash' ? IconTerminal2 : IconInfoCircle} size={18} /></span><div><p className="card-overline">Pista del día</p><p>{(activeTrack === 'bash' ? ['No ejecutes scripts que no entiendas: revisa rutas, permisos y códigos de salida.', 'Una ruta entre comillas protege los espacios y evita sorpresas al hacer copias.'] : ['Si un elemento no se centra, revisa primero quién es su contenedor.', 'Prueba primero la estructura y después ajusta el estilo: un cambio cada vez.'])[tipIndex % 2]}</p></div><button className="icon-button" type="button" aria-label="Siguiente pista" onClick={() => setTipIndex((value) => value + 1)}><Icon icon={IconArrowRight} size={17} /></button></div>
+        <div className="tip-card"><span className={`tip-mark tip-mark-${activeTrack}`}><Icon icon={activeTrack === 'all' ? IconInfoCircle : getTrackIcon(activeTrack)} size={18} /></span><div><p className="card-overline">Pista del día</p><p>{getTrackTips(activeTrack)[tipIndex % getTrackTips(activeTrack).length]}</p></div><button className="icon-button" type="button" aria-label="Siguiente pista" onClick={() => setTipIndex((value) => value + 1)}><Icon icon={IconArrowRight} size={17} /></button></div>
         {filteredActivities[1] && <div className="next-card"><div><p className="card-overline">Siguiente reto</p><h3>{filteredActivities[1].title}</h3><p>{filteredActivities[1].module || 'Reto'}</p></div><span className="next-number">02</span></div>}
       </section>
     </div>
@@ -770,7 +863,7 @@ function StudentActivityRow({ activity, onOpen }) {
   const completed = activity.completed
   return (
     <button className="activity-row" onClick={onOpen} type="button">
-      <span className={`activity-icon activity-icon-${language}`}><Icon icon={language === 'bash' ? IconTerminal2 : activity.id === 'semantic-html' ? IconBrandHtml5 : activity.id === 'dom-events' ? IconBrandJavascript : IconBrandCss3} size={22} /></span>
+      <span className={`activity-icon activity-icon-${language}`}><Icon icon={language === 'bash' ? IconTerminal2 : language === 'python' ? IconBrandPython : activity.id === 'semantic-html' ? IconBrandHtml5 : activity.id === 'dom-events' ? IconBrandJavascript : IconBrandCss3} size={22} /></span>
       <span className="activity-row-main"><span className="activity-row-title">{activity.title}</span><span className="activity-row-meta">{activity.module} <span className="meta-dot">·</span> {activity.summary}</span></span>
       <span className={`status-label status-${status.tone}`}><span className="status-dot" />{status.label}</span>
       <span className="activity-row-score">{activity.xp_reward ? <><strong>{formatXp(activity.earned_xp)} / {formatXp(activity.xp_reward)} XP</strong><small>{completed ? 'Reto completado' : 'XP logrados'}</small></> : activity.score != null ? `${Number(activity.score).toLocaleString('es-ES')}/10` : activity.progress != null ? `${activity.progress}%` : '—'}</span>
@@ -852,7 +945,7 @@ function ActivityCatalog({ data, onOpenActivity }) {
   const activities = source.map(assignmentWithDefaults)
   const [activeTrack, setActiveTrack] = useState('all')
   const visible = activeTrack === 'all' ? activities : activities.filter((activity) => trackForActivity(activity) === activeTrack)
-  return <section className="catalog-section" aria-label="Catálogo de retos"><div className="catalog-toolbar"><div><span className="card-overline">Filtrar por recorrido</span><p>{visible.length} {visible.length === 1 ? 'reto disponible' : 'retos disponibles'}</p></div><div className="catalog-filters" role="group" aria-label="Filtrar retos"><button className={activeTrack === 'all' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'all'} onClick={() => setActiveTrack('all')}>Todos</button><button className={activeTrack === 'web' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'web'} onClick={() => setActiveTrack('web')}>Web · SMR</button><button className={activeTrack === 'bash' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'bash'} onClick={() => setActiveTrack('bash')}>Bash · ASIR</button></div></div><div className="catalog-list">{visible.length ? visible.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={activeTrack === 'bash' ? IconTerminal2 : IconCode} size={19} /><span>Todavía no hay retos en este itinerario.</span></div>}</div></section>
+  return <section className="catalog-section" aria-label="Catálogo de retos"><div className="catalog-toolbar"><div><span className="card-overline">Filtrar por recorrido</span><p>{visible.length} {visible.length === 1 ? 'reto disponible' : 'retos disponibles'}</p></div><div className="catalog-filters" role="group" aria-label="Filtrar retos"><button className={activeTrack === 'all' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'all'} onClick={() => setActiveTrack('all')}>Todos</button><button className={activeTrack === 'web' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'web'} onClick={() => setActiveTrack('web')}>Web · SMR</button><button className={activeTrack === 'bash' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'bash'} onClick={() => setActiveTrack('bash')}>Bash · ASIR</button><button className={activeTrack === 'python' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'python'} onClick={() => setActiveTrack('python')}>Python · DAM</button></div></div><div className="catalog-list">{visible.length ? visible.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>Todavía no hay retos en este itinerario.</span></div>}</div></section>
 }
 
 function WorkspaceShell({ user, activity, onBack, onLogout }) {
@@ -901,11 +994,11 @@ function renderInlineText(value) {
 
 function Workspace({ activity, user }) {
   const initialLanguage = normalizeLanguage(activity.language || activity.track || activity.version?.language)
-  const initialFiles = DEMO_MODE ? (initialLanguage === 'bash' ? BASH_FILES_DEFAULT : FILES_DEFAULT) : (initialLanguage === 'bash' ? { bash: '' } : { html: '', css: '', javascript: '' })
+  const initialFiles = starterFilesFor(initialLanguage)
   const [language, setLanguage] = useState(initialLanguage)
   const [files, setFiles] = useState(initialFiles)
   const [starterFiles, setStarterFiles] = useState(initialFiles)
-  const [activeFile, setActiveFile] = useState(initialLanguage === 'bash' ? 'bash' : 'html')
+  const [activeFile, setActiveFile] = useState(primaryFileFor(initialLanguage))
   const [revision, setRevision] = useState(activity.revision || 0)
   const revisionRef = useRef(revision)
   const [saveState, setSaveState] = useState('saved')
@@ -914,7 +1007,7 @@ function Workspace({ activity, user }) {
   const [serverDraft, setServerDraft] = useState(null)
   const [workspaceData, setWorkspaceData] = useState(null)
   const [conflict, setConflict] = useState(false)
-  const [previewHtml, setPreviewHtml] = useState(() => initialLanguage === 'bash' ? '' : buildPreview(initialFiles))
+  const [previewHtml, setPreviewHtml] = useState(() => initialLanguage === 'web' ? buildPreview(initialFiles) : '')
   const [consoleEntries, setConsoleEntries] = useState([])
   const [tests, setTests] = useState([])
   const [testsState, setTestsState] = useState('idle')
@@ -924,7 +1017,6 @@ function Workspace({ activity, user }) {
   const [mobilePanel, setMobilePanel] = useState('instructions')
   const [showHistory, setShowHistory] = useState(false)
   const iframeRef = useRef(null)
-  const isBash = language === 'bash'
 
   useEffect(() => { revisionRef.current = revision }, [revision])
 
@@ -939,7 +1031,7 @@ function Workspace({ activity, user }) {
       const nextStarterFiles = normalizeFiles(data.version?.files || data.activity?.files || {}, nextLanguage)
       const nextFiles = data.draft?.files ? normalizeFiles(data.draft.files, nextLanguage) : nextStarterFiles
       setLanguage(nextLanguage)
-      setActiveFile(nextLanguage === 'bash' ? 'bash' : 'html')
+      setActiveFile(primaryFileFor(nextLanguage))
       setStarterFiles(nextStarterFiles)
       setFiles(nextFiles)
       setRevision(Number(data.draft?.revision ?? data.revision ?? 0))
@@ -984,7 +1076,7 @@ function Workspace({ activity, user }) {
       const data = await apiFetch(`${API_PREFIX}/assignments/${activity.id}/draft/`, {
         method: 'POST',
         headers: { 'If-Match': `"${revisionRef.current}"` },
-        body: JSON.stringify({ ...filesPayload(nextFiles, isBash), revision: revisionRef.current }),
+        body: JSON.stringify({ ...filesPayload(nextFiles, language), revision: revisionRef.current }),
       })
       const nextRevision = Number(data?.revision ?? revisionRef.current + 1)
       setRevision(nextRevision)
@@ -994,7 +1086,7 @@ function Workspace({ activity, user }) {
       setConflict(false)
     } catch (error) {
       if (error.status === 409) {
-        setServerDraft(normalizeFiles(error.payload?.current?.files || error.payload?.draft || error.payload || {}, isBash ? 'bash' : 'web'))
+        setServerDraft(normalizeFiles(error.payload?.current?.files || error.payload?.draft || error.payload || {}, language))
         const currentRevision = Number(error.payload?.revision)
         if (Number.isFinite(currentRevision)) {
           setRevision(currentRevision)
@@ -1008,11 +1100,11 @@ function Workspace({ activity, user }) {
         setSaveMessage('No se pudo guardar')
       }
     }
-  }, [activity.id, hydrated, isBash])
+  }, [activity.id, hydrated, language])
 
   const changeFile = (key, value) => setFiles((current) => ({ ...current, [key]: value }))
   const runPreview = () => {
-    if (isBash) return
+    if (language !== 'web') return
     setConsoleEntries([])
     setPreviewHtml(buildPreview(files))
     setNotice('Preview actualizada')
@@ -1020,17 +1112,17 @@ function Workspace({ activity, user }) {
 
   const runTests = async () => {
     setTestsState('running')
-    setNotice(isBash ? 'Analizando el script con las validaciones públicas…' : 'Ejecutando tests públicos…')
+    setNotice(language === 'web' ? 'Ejecutando tests públicos…' : `Analizando ${language === 'python' ? 'el archivo Python' : 'el script'} con las validaciones públicas…`)
     try {
-      const data = await apiFetch(`${API_PREFIX}/assignments/${activity.id}/tests/`, { method: 'POST', body: JSON.stringify(filesPayload(files, isBash)) })
+      const data = await apiFetch(`${API_PREFIX}/assignments/${activity.id}/tests/`, { method: 'POST', body: JSON.stringify(filesPayload(files, language)) })
       setTests(data?.results || [])
       setTestsState('done')
-      setNotice(`${isBash ? 'Validaciones' : 'Tests'} finalizados · ${formatScore(data?.score)}/10`)
+      setNotice(`${language === 'web' ? 'Tests' : 'Validaciones'} finalizados · ${formatScore(data?.score)}/10`)
     } catch (error) {
       if (DEMO_MODE) {
-        setTests(isBash ? DEMO_BASH_TESTS : DEMO_TESTS)
+        setTests(language === 'bash' ? DEMO_BASH_TESTS : language === 'python' ? DEMO_PYTHON_TESTS : DEMO_TESTS)
         setTestsState('done')
-        setNotice(isBash ? 'Validaciones de demostración finalizadas · revisa el detalle' : 'Tests de demostración finalizados · 7/10')
+        setNotice(language === 'web' ? 'Tests de demostración finalizados · 7/10' : 'Validaciones de demostración finalizadas · revisa el detalle')
       } else {
         setTestsState('error')
         setNotice(error.message || 'No se pudieron ejecutar las validaciones.')
@@ -1041,7 +1133,7 @@ function Workspace({ activity, user }) {
   const submit = async () => {
     setSubmitState('sending')
     try {
-      const data = await apiFetch(`${API_PREFIX}/assignments/${activity.id}/submit/`, { method: 'POST', body: JSON.stringify(filesPayload(files, isBash)) })
+      const data = await apiFetch(`${API_PREFIX}/assignments/${activity.id}/submit/`, { method: 'POST', body: JSON.stringify(filesPayload(files, language)) })
       setSubmitState('success')
       setSubmitOpen(false)
       if (data?.submission) setWorkspaceData((current) => ({ ...current, submissions: [...(current?.submissions || []), data.submission], gamification: data.gamification || current?.gamification }))
@@ -1075,39 +1167,41 @@ function Workspace({ activity, user }) {
   const activityVersion = workspaceData?.version || {}
   const effectiveLanguage = normalizeLanguage(activityVersion.language || language)
   const effectiveIsBash = effectiveLanguage === 'bash'
+  const effectiveIsPython = effectiveLanguage === 'python'
   const publicTests = activityVersion.public_tests || activityVersion.publicTests || []
-  const visibleTests = tests.length ? tests : (publicTests.length ? publicTests : (DEMO_MODE ? (effectiveIsBash ? DEMO_BASH_TESTS : DEMO_TESTS) : []))
+  const visibleTests = tests.length ? tests : (publicTests.length ? publicTests : (DEMO_MODE ? (effectiveIsBash ? DEMO_BASH_TESTS : effectiveIsPython ? DEMO_PYTHON_TESTS : DEMO_TESTS) : []))
   const submissions = workspaceData?.submissions || []
   const maxAttempts = Number(workspaceData?.max_attempts ?? activity.max_attempts ?? activity.attempts ?? 0)
   const maxAttemptsLabel = maxAttempts > 0 ? maxAttempts : 'sin límite'
   const currentAttempt = Math.max(1, submissions.length + 1)
   const activeTestCount = visibleTests.length
   const passedTestCount = visibleTests.filter((test) => test.status === 'passed' || test.passed === true).length
-  const instructions = activityVersion.instructions || activity.instructions || (effectiveIsBash ? 'Escribe un script Bash legible y seguro, y justifica las decisiones que tomes.' : 'Completa el reto siguiendo las indicaciones y prueba tu resultado antes de entregar.')
+  const instructions = activityVersion.instructions || activity.instructions || (effectiveIsBash ? 'Escribe un script Bash legible y seguro, y justifica las decisiones que tomes.' : effectiveIsPython ? 'Escribe un programa Python legible para trabajar con datos de gestión. Reto4V analiza su estructura sin ejecutarlo.' : 'Completa el reto siguiendo las indicaciones y prueba tu resultado antes de entregar.')
   const objectives = asList(activityVersion.objectives || activity.objectives)
   const hints = Array.isArray(activityVersion.hints || activity.hints) ? (activityVersion.hints || activity.hints) : []
   const challengeGamification = normalizeChallengeGamification(workspaceData || (DEMO_MODE ? { gamification: { xp_reward: activity.xp_reward, earned_xp: activity.earned_xp, completed: activity.completed, progress: activity.progress, language: effectiveLanguage, difficulty: activity.difficulty } } : null), activity)
   const xpReward = challengeGamification.xp_reward
   const earnedXp = challengeGamification.earned_xp
-  const editorKeys = effectiveIsBash ? ['bash'] : Object.keys(FILE_META)
-  const safeFiles = effectiveIsBash ? { bash: files.bash || '' } : files
+  const editorKeys = effectiveIsBash ? ['bash'] : effectiveIsPython ? ['python'] : Object.keys(FILE_META)
+  const safeFiles = effectiveIsBash ? { bash: files.bash || '' } : effectiveIsPython ? { python: files.python || '' } : files
+  const trackLabel = getTrackLabel(effectiveLanguage)
 
   return (
     <main className="workspace-main">
-      <div className="workspace-titlebar"><div><p className="kicker">{activity.module || activity.activity?.module || (effectiveIsBash ? 'Seguridad · ASIR' : 'Aplicaciones web · SMR')}</p><h1>{activity.title}</h1><p className="workspace-subtitle">{activity.summary || activity.description || (effectiveIsBash ? 'Resuelve el reto de scripting y deja una evidencia revisable.' : 'Completa el reto en el editor y comprueba el resultado antes de entregar.')}</p><div className="workspace-context-tags"><span className={`context-tag context-tag-${effectiveIsBash ? 'bash' : 'web'}`}><Icon icon={effectiveIsBash ? IconTerminal2 : IconCode} size={14} />{effectiveIsBash ? 'Bash · ASIR' : 'Web · SMR'}</span><span className="context-tag">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span>{xpReward > 0 && <span className="context-tag context-tag-xp"><Icon icon={IconRocket} size={13} />{formatXp(earnedXp)} / {formatXp(xpReward)} XP</span>}<span className={`context-tag ${challengeGamification.completed ? 'context-tag-complete' : ''}`}>{challengeGamification.completed ? 'Reto completado' : `${challengeGamification.progress}% de progreso`}</span></div></div><div className="workspace-title-actions"><span className={`save-status save-${saveState}`}><span className="save-status-icon">{saveState === 'saving' ? <span className="mini-spinner" /> : saveState === 'error' || saveState === 'conflict' ? <Icon icon={IconAlertTriangle} size={15} /> : <Icon icon={IconDeviceFloppy} size={15} />}</span>{saveMessage}</span><button className="button button-outline" type="button" onClick={() => setShowHistory((current) => !current)}><Icon icon={IconHistory} size={16} />Historial</button></div></div>
+      <div className="workspace-titlebar"><div><p className="kicker">{activity.module || activity.activity?.module || (effectiveIsBash ? 'Seguridad · ASIR' : effectiveIsPython ? 'SGE · 2DAM' : 'Aplicaciones web · SMR')}</p><h1>{activity.title}</h1><p className="workspace-subtitle">{activity.summary || activity.description || (effectiveIsBash ? 'Resuelve el reto de scripting y deja una evidencia revisable.' : effectiveIsPython ? 'Practica Python con datos de gestión y prepara tu base para trabajar con Odoo.' : 'Completa el reto en el editor y comprueba el resultado antes de entregar.')}</p><div className="workspace-context-tags"><span className={`context-tag context-tag-${effectiveLanguage}`}><Icon icon={getTrackIcon(effectiveLanguage)} size={14} />{trackLabel}</span>{effectiveIsPython && <span className="context-tag context-tag-curriculum">0491 · SGE</span>}<span className="context-tag">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span>{xpReward > 0 && <span className="context-tag context-tag-xp"><Icon icon={IconRocket} size={13} />{formatXp(earnedXp)} / {formatXp(xpReward)} XP</span>}<span className={`context-tag ${challengeGamification.completed ? 'context-tag-complete' : ''}`}>{challengeGamification.completed ? 'Reto completado' : `${challengeGamification.progress}% de progreso`}</span></div></div><div className="workspace-title-actions"><span className={`save-status save-${saveState}`}><span className="save-status-icon">{saveState === 'saving' ? <span className="mini-spinner" /> : saveState === 'error' || saveState === 'conflict' ? <Icon icon={IconAlertTriangle} size={15} /> : <Icon icon={IconDeviceFloppy} size={15} />}</span>{saveMessage}</span><button className="button button-outline" type="button" onClick={() => setShowHistory((current) => !current)}><Icon icon={IconHistory} size={16} />Historial</button></div></div>
       <div className="workspace-challenge-progress" aria-label={`Progreso del reto: ${challengeGamification.progress}%`}><div className="workspace-challenge-progress-copy"><span>Progreso del reto</span><strong>{challengeGamification.progress}%</strong></div><div className="progress-track"><span style={{ width: `${challengeGamification.progress}%` }} /></div>{challengeGamification.best_score != null && <small>Mejor nota: {formatScore(challengeGamification.best_score)}/10</small>}</div>
       {notice && <div className="workspace-notice" role="status"><Icon icon={IconInfoCircle} size={16} /><span>{notice}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setNotice('')}><Icon icon={IconX} size={15} /></button></div>}
       {!hydrated && <div className="workspace-loading" role="status"><span className="mini-spinner" />Cargando reto y borrador…</div>}
       {conflict && <div className="conflict-banner" role="alert"><span className="conflict-icon"><Icon icon={IconAlertTriangle} size={18} /></span><div><strong>Este borrador cambió en otra pestaña.</strong><p>Elige qué versión quieres conservar. No hemos sobrescrito tu trabajo.</p></div><div className="conflict-actions"><button className="button button-light button-small" onClick={restoreServerDraft}>Recargar servidor</button><button className="button button-dark button-small" onClick={useLocalCopy}>Conservar mi copia</button></div></div>}
-      <div className={`workspace-mobile-tabs ${effectiveIsBash ? 'workspace-mobile-tabs-bash' : ''}`} role="tablist" aria-label="Panel del reto"><button className={mobilePanel === 'instructions' ? 'is-active' : ''} onClick={() => setMobilePanel('instructions')} role="tab">Reto</button><button className={mobilePanel === 'editor' ? 'is-active' : ''} onClick={() => setMobilePanel('editor')} role="tab">Editor</button><button className={mobilePanel === 'preview' ? 'is-active' : ''} onClick={() => setMobilePanel('preview')} role="tab">{effectiveIsBash ? 'Validación' : 'Preview'}</button></div>
+      <div className={`workspace-mobile-tabs ${effectiveLanguage !== 'web' ? 'workspace-mobile-tabs-static' : ''}`} role="tablist" aria-label="Panel del reto"><button className={mobilePanel === 'instructions' ? 'is-active' : ''} onClick={() => setMobilePanel('instructions')} role="tab">Reto</button><button className={mobilePanel === 'editor' ? 'is-active' : ''} onClick={() => setMobilePanel('editor')} role="tab">Editor</button><button className={mobilePanel === 'preview' ? 'is-active' : ''} onClick={() => setMobilePanel('preview')} role="tab">{effectiveLanguage !== 'web' ? 'Análisis' : 'Preview'}</button></div>
       <section className="workspace-grid">
-        <aside className={`instructions-panel workspace-panel ${mobilePanel === 'instructions' ? 'mobile-panel-visible' : ''}`}><div className="panel-label-row"><span className="panel-label">01 · Reto</span><span className="soft-pill pill-dark">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span></div><h2>{activity.title || 'Tu reto de código'}</h2><InstructionText value={instructions} className="instruction-lede instruction-rich-text" />{objectives.length > 0 && <div className="instruction-section"><h3>Objetivos</h3><ul className="objective-list">{objectives.map((objective, index) => <li key={`${objective}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><InstructionText value={objective} compact /></li>)}</ul></div>}<div className="instruction-section"><h3>Qué tienes que conseguir</h3><ol className="challenge-list"><li><span>01</span><p>Lee el objetivo y tradúcelo a pequeñas decisiones de {effectiveIsBash ? 'scripting' : 'código'}.</p></li><li><span>02</span><p>{effectiveIsBash ? 'Revisa rutas, permisos y códigos de salida sin ejecutar el archivo desde la plataforma.' : 'Prueba cada cambio en la preview antes de pasar al siguiente.'}</p></li><li><span>03</span><p>Ejecuta las validaciones públicas y revisa el feedback.</p></li></ol></div><div className="instruction-section"><h3>Antes de entregar</h3><ul className="check-list"><li><Icon icon={IconCheck} size={15} />Tu resultado se entiende sin explicarlo.</li><li><Icon icon={IconCheck} size={15} />Has probado las validaciones públicas.</li><li><Icon icon={IconCheck} size={15} />El código está guardado.</li></ul></div>{hints.length > 0 ? <div className="hint-list">{hints.map((hint, index) => <details className="hint-block" key={`${hint}-${index}`}><summary><span className="hint-icon">?</span><strong>Pista {index + 1}</strong></summary><p>{typeof hint === 'string' ? hint : hint.text || hint.description || JSON.stringify(hint)}</p></details>)}</div> : <div className="hint-empty"><Icon icon={IconInfoCircle} size={15} /><span>Este reto no tiene pistas publicadas.</span></div>}<div className="instruction-footer"><span><Icon icon={IconClock} size={14} />{activity.duration || activity.estimated_minutes ? `${activity.duration || activity.estimated_minutes} min` : 'A tu ritmo'}</span><span><Icon icon={IconTestPipe} size={14} />{activeTestCount} validaciones</span></div></aside>
-        <section className={`editor-panel workspace-panel ${mobilePanel === 'editor' ? 'mobile-panel-visible' : ''}`}><div className="editor-toolbar"><div className="file-tabs" role="tablist" aria-label="Archivos del reto">{editorKeys.map((key) => { const meta = effectiveIsBash ? BASH_FILE_META : FILE_META; const item = meta[key]; return <button key={key} className={`file-tab ${activeFile === key ? 'is-active' : ''} ${item.className}`} type="button" role="tab" aria-selected={activeFile === key} onClick={() => setActiveFile(key)}><Icon icon={item.icon} size={16} /><span>{item.label}</span></button> })}</div><button className="icon-button" type="button" title="Restaurar archivo inicial" aria-label="Restaurar archivo inicial" onClick={() => { setFiles(starterFiles); if (!effectiveIsBash) setPreviewHtml(buildPreview(starterFiles)); setNotice('Archivo inicial restaurado') }}><Icon icon={IconRefresh} size={17} /></button></div><div className="editor-stage"><CodeEditor file={activeFile} value={safeFiles[activeFile] || ''} language={effectiveLanguage} onChange={(value) => changeFile(activeFile, value)} /></div><div className="editor-footer"><span><Icon icon={IconInfoCircle} size={14} />Los cambios se guardan automáticamente</span><span className="editor-shortcuts">{effectiveIsBash ? <><Icon icon={IconTerminal2} size={13} />Nunca se ejecuta desde la plataforma</> : <><kbd>Ctrl</kbd><span>+</span><kbd>Enter</kbd> ejecutar</>}</span></div></section>
-        {effectiveIsBash ? <BashValidationPanel source={safeFiles.bash || ''} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Resultado</span><h2>Tu preview</h2></div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Aislada</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />Ejecutar preview</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa del código del alumno" sandbox="allow-scripts" srcDoc={previewHtml} /></div><div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />Consola</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>Limpiar</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">Los mensajes de tu código aparecerán aquí.</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div></aside>}
+        <aside className={`instructions-panel workspace-panel ${mobilePanel === 'instructions' ? 'mobile-panel-visible' : ''}`}><div className="panel-label-row"><span className="panel-label">01 · Reto</span><span className="soft-pill pill-dark">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span></div><h2>{activity.title || 'Tu reto de código'}</h2><InstructionText value={instructions} className="instruction-lede instruction-rich-text" />{objectives.length > 0 && <div className="instruction-section"><h3>Objetivos</h3><ul className="objective-list">{objectives.map((objective, index) => <li key={`${objective}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><InstructionText value={objective} compact /></li>)}</ul></div>}<div className="instruction-section"><h3>Qué tienes que conseguir</h3><ol className="challenge-list"><li><span>01</span><p>Lee el objetivo y tradúcelo a pequeñas decisiones de {effectiveIsBash ? 'scripting' : effectiveIsPython ? 'Python' : 'código'}.</p></li><li><span>02</span><p>{effectiveIsBash ? 'Revisa rutas, permisos y códigos de salida sin ejecutar el archivo desde la plataforma.' : effectiveIsPython ? 'Revisa la estructura del programa y las operaciones de archivo sin ejecutarlo desde la plataforma.' : 'Prueba cada cambio en la preview antes de pasar al siguiente.'}</p></li><li><span>03</span><p>{effectiveLanguage === 'web' ? 'Ejecuta los tests públicos y revisa el feedback.' : 'Analiza el archivo con las validaciones públicas y revisa el feedback.'}</p></li></ol></div><div className="instruction-section"><h3>Antes de entregar</h3><ul className="check-list"><li><Icon icon={IconCheck} size={15} />Tu resultado se entiende sin explicarlo.</li><li><Icon icon={IconCheck} size={15} />Has probado las validaciones públicas.</li><li><Icon icon={IconCheck} size={15} />El código está guardado.</li></ul></div>{hints.length > 0 ? <div className="hint-list">{hints.map((hint, index) => <details className="hint-block" key={`${hint}-${index}`}><summary><span className="hint-icon">?</span><strong>Pista {index + 1}</strong></summary><p>{typeof hint === 'string' ? hint : hint.text || hint.description || JSON.stringify(hint)}</p></details>)}</div> : <div className="hint-empty"><Icon icon={IconInfoCircle} size={15} /><span>Este reto no tiene pistas publicadas.</span></div>}<div className="instruction-footer"><span><Icon icon={IconClock} size={14} />{activity.duration || activity.estimated_minutes ? `${activity.duration || activity.estimated_minutes} min` : 'A tu ritmo'}</span><span><Icon icon={IconTestPipe} size={14} />{activeTestCount} validaciones</span></div></aside>
+        <section className={`editor-panel workspace-panel ${mobilePanel === 'editor' ? 'mobile-panel-visible' : ''}`}><div className="editor-toolbar"><div className="file-tabs" role="tablist" aria-label="Archivos del reto">{editorKeys.map((key) => { const meta = effectiveIsBash ? BASH_FILE_META : effectiveIsPython ? PYTHON_FILE_META : FILE_META; const item = meta[key]; return <button key={key} className={`file-tab ${activeFile === key ? 'is-active' : ''} ${item.className}`} type="button" role="tab" aria-selected={activeFile === key} onClick={() => setActiveFile(key)}><Icon icon={item.icon} size={16} /><span>{item.label}</span></button> })}</div><button className="icon-button" type="button" title="Restaurar archivo inicial" aria-label="Restaurar archivo inicial" onClick={() => { setFiles(starterFiles); if (effectiveLanguage === 'web') setPreviewHtml(buildPreview(starterFiles)); setNotice('Archivo inicial restaurado') }}><Icon icon={IconRefresh} size={17} /></button></div><div className="editor-stage"><CodeEditor file={activeFile} value={safeFiles[activeFile] || ''} language={effectiveLanguage} onChange={(value) => changeFile(activeFile, value)} /></div><div className="editor-footer"><span><Icon icon={IconInfoCircle} size={14} />Los cambios se guardan automáticamente</span><span className="editor-shortcuts">{effectiveLanguage !== 'web' ? <><Icon icon={effectiveIsPython ? IconBrandPython : IconTerminal2} size={13} />Nunca se ejecuta desde la plataforma</> : <><kbd>Ctrl</kbd><span>+</span><kbd>Enter</kbd> ejecutar</>}</span></div></section>
+        {effectiveIsBash ? <BashValidationPanel source={safeFiles.bash || ''} mobileVisible={mobilePanel === 'preview'} /> : effectiveIsPython ? <PythonAnalysisPanel source={safeFiles.python || ''} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Resultado</span><h2>Tu preview</h2></div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Aislada</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />Ejecutar preview</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa del código del alumno" sandbox="allow-scripts" srcDoc={previewHtml} /></div><div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />Consola</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>Limpiar</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">Los mensajes de tu código aparecerán aquí.</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div></aside>}
       </section>
-      <section className="workspace-bottom"><div className="test-dock"><div className="test-dock-heading"><div><span className="panel-label">03 · Feedback</span><h2>{effectiveIsBash ? 'Validaciones públicas' : 'Tests públicos'}</h2></div><div className="test-summary">{testsState === 'running' ? <span className="running-test"><span className="mini-spinner" />Analizando…</span> : <><strong>{passedTestCount}/{activeTestCount}</strong> superadas</>}</div></div><div className="test-list">{visibleTests.length ? visibleTests.map((test, index) => <TestRow key={test.id || test.name || index} test={test} />) : <p className="empty-tests">{hydrated ? `Todavía no hay validaciones públicas para este reto.` : 'Cargando validaciones públicas…'}</p>}</div><div className="test-dock-actions"><button className="button button-outline" type="button" onClick={runTests} disabled={!hydrated || testsState === 'running'}><Icon icon={IconTestPipe} size={17} />{testsState === 'running' ? 'Analizando…' : effectiveIsBash ? 'Analizar script' : 'Ejecutar tests'}</button><button className="button button-dark" type="button" onClick={() => setSubmitOpen(true)} disabled={!hydrated}><Icon icon={IconRocket} size={17} />Entregar reto</button></div></div><div className="attempts-panel"><div className="attempts-heading"><div><span className="panel-label">04 · Evidencia</span><h2>Tus intentos</h2></div><span className="attempts-count">{submissions.length} / {maxAttemptsLabel}</span></div>{submissions.length ? submissions.map((submission) => <div className="attempt-row" key={submission.id || submission.attempt_number}><span className="attempt-number">{String(submission.attempt_number).padStart(2, '0')}</span><span className="attempt-copy"><strong>Entrega formal</strong><small>{formatDate(submission.submitted_at)}{submission.published_score != null ? ` · ${formatScore(submission.published_score)}/10` : ''}</small></span><span className="attempt-status attempt-good"><Icon icon={IconCircleCheck} size={15} />{submission.published_score != null ? formatScore(submission.published_score) : 'Enviada'}</span></div>) : <div className="empty-attempts"><Icon icon={IconHistory} size={18} /><span>Aún no hay entregas formales.</span></div>}<div className="attempt-row attempt-current"><span className="attempt-number">{String(currentAttempt).padStart(2, '0')}</span><span className="attempt-copy"><strong>Borrador actual</strong><small>Guardado en el servidor</small></span><span className="attempt-status"><span className="status-dot status-dot-gold" />En curso</span></div><button className="panel-footer-link" type="button" onClick={() => setShowHistory(true)}>Ver historial completo <Icon icon={IconArrowRight} size={15} /></button></div></section>
+      <section className="workspace-bottom"><div className="test-dock"><div className="test-dock-heading"><div><span className="panel-label">03 · Feedback</span><h2>{effectiveLanguage === 'web' ? 'Tests públicos' : 'Validaciones públicas'}</h2></div><div className="test-summary">{testsState === 'running' ? <span className="running-test"><span className="mini-spinner" />Analizando…</span> : <><strong>{passedTestCount}/{activeTestCount}</strong> superadas</>}</div></div><div className="test-list">{visibleTests.length ? visibleTests.map((test, index) => <TestRow key={test.id || test.name || index} test={test} />) : <p className="empty-tests">{hydrated ? `Todavía no hay validaciones públicas para este reto.` : 'Cargando validaciones públicas…'}</p>}</div><div className="test-dock-actions"><button className="button button-outline" type="button" onClick={runTests} disabled={!hydrated || testsState === 'running'}><Icon icon={IconTestPipe} size={17} />{testsState === 'running' ? 'Analizando…' : effectiveLanguage === 'web' ? 'Ejecutar tests' : effectiveIsPython ? 'Analizar Python' : 'Analizar script'}</button><button className="button button-dark" type="button" onClick={() => setSubmitOpen(true)} disabled={!hydrated}><Icon icon={IconRocket} size={17} />Entregar reto</button></div></div><div className="attempts-panel"><div className="attempts-heading"><div><span className="panel-label">04 · Evidencia</span><h2>Tus intentos</h2></div><span className="attempts-count">{submissions.length} / {maxAttemptsLabel}</span></div>{submissions.length ? submissions.map((submission) => <div className="attempt-row" key={submission.id || submission.attempt_number}><span className="attempt-number">{String(submission.attempt_number).padStart(2, '0')}</span><span className="attempt-copy"><strong>Entrega formal</strong><small>{formatDate(submission.submitted_at)}{submission.published_score != null ? ` · ${formatScore(submission.published_score)}/10` : ''}</small></span><span className="attempt-status attempt-good"><Icon icon={IconCircleCheck} size={15} />{submission.published_score != null ? formatScore(submission.published_score) : 'Enviada'}</span></div>) : <div className="empty-attempts"><Icon icon={IconHistory} size={18} /><span>Aún no hay entregas formales.</span></div>}<div className="attempt-row attempt-current"><span className="attempt-number">{String(currentAttempt).padStart(2, '0')}</span><span className="attempt-copy"><strong>Borrador actual</strong><small>Guardado en el servidor</small></span><span className="attempt-status"><span className="status-dot status-dot-gold" />En curso</span></div><button className="panel-footer-link" type="button" onClick={() => setShowHistory(true)}>Ver historial completo <Icon icon={IconArrowRight} size={15} /></button></div></section>
       {showHistory && <HistoryDrawer submissions={submissions} onClose={() => setShowHistory(false)} />}
-      {submitOpen && <SubmitDialog activity={activity} attemptNumber={currentAttempt} maxAttempts={maxAttempts} isBash={effectiveIsBash} onCancel={() => setSubmitOpen(false)} onSubmit={submit} state={submitState} />}
+      {submitOpen && <SubmitDialog activity={activity} attemptNumber={currentAttempt} maxAttempts={maxAttempts} isBash={effectiveIsBash} isPython={effectiveIsPython} onCancel={() => setSubmitOpen(false)} onSubmit={submit} state={submitState} />}
     </main>
   )
 }
@@ -1117,6 +1211,35 @@ const BASH_FILE_META = { bash: { label: 'script.sh', short: 'Bash', icon: IconTe
 function BashValidationPanel({ source, mobileVisible }) {
   const checks = inspectBash(source)
   return <aside className={`preview-panel workspace-panel bash-validation-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Lectura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="bash-validation-body"><div className="bash-safety-note"><Icon icon={IconTerminal2} size={18} /><div><strong>El script no se ejecuta aquí</strong><p>Reto4V solo guarda y valida el texto. No hay terminal real ni salida simulada.</p></div></div><div className="bash-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.commands}</strong><small>comandos</small></span><span><strong>{checks.variables}</strong><small>variables</small></span></div><div className="bash-check-list" aria-label="Indicadores de lectura estática">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />La validación oficial y la nota se calculan en el servidor al analizar o entregar.</p></div></aside>
+}
+
+function PythonAnalysisPanel({ source, mobileVisible }) {
+  const checks = inspectPython(source)
+  return <aside className={`preview-panel workspace-panel python-analysis-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Análisis</span><h2>Estructura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="python-analysis-body"><div className="python-safety-note"><Icon icon={IconBrandPython} size={18} /><div><strong>El código Python no se ejecuta aquí</strong><p>Reto4V solo analiza el texto y guarda tu evidencia. No hay intérprete, archivos reales ni salida simulada.</p></div></div><div className="python-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.functions}</strong><small>funciones</small></span><span><strong>{checks.imports}</strong><small>imports</small></span><span><strong>{checks.operations}</strong><small>operaciones</small></span></div><div className="bash-check-list python-check-list" aria-label="Indicadores orientativos de estructura Python">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />Estos indicadores son orientativos. La validación oficial y la calificación proceden del servidor.</p></div></aside>
+}
+
+function inspectPython(source = '') {
+  const text = String(source)
+  const lines = text ? text.split(/\r?\n/).filter((line) => line.trim()).length : 0
+  const functions = text ? (text.match(/^\s*(?:async\s+)?def\s+[A-Za-z_]\w*/gm) || []).length : 0
+  const imports = text ? (text.match(/^\s*(?:from\s+[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\s+import|import\s+[A-Za-z_]\w*)/gm) || []).length : 0
+  const operations = text ? (text.match(/\b(?:open|read_text|write_text|read_bytes|write_bytes)\s*\(/g) || []).length : 0
+  const hasCollection = /(?:\[[^\]]*\]|\{[^}]*\}|\([^)]*,[^)]*\))/.test(text)
+  const hasControlFlow = /^\s*(?:if|for|while|try)\b/m.test(text)
+  const hasFileContext = /\bwith\s+open\s*\(/.test(text)
+  return {
+    lines,
+    functions,
+    imports,
+    operations,
+    items: [
+      { id: 'python-structure', label: 'Estructura del programa', detail: functions ? `${functions} función(es) definida(s) para organizar la lógica.` : 'Puedes separar la lógica repetida en funciones.', state: functions ? 'detected' : 'pending' },
+      { id: 'python-collections', label: 'Datos estructurados', detail: hasCollection ? 'Se detectan colecciones literales para representar datos.' : 'Prueba una lista o diccionario para representar registros.', state: hasCollection ? 'detected' : 'pending' },
+      { id: 'python-control-flow', label: 'Decisiones y repeticiones', detail: hasControlFlow ? 'Se detecta una estructura de control para procesar los datos.' : 'Todavía no se detectan decisiones o bucles.', state: hasControlFlow ? 'detected' : 'pending' },
+      { id: 'python-file-context', label: 'Lectura y escritura', detail: operations ? `${operations} operación(es) de archivo para revisar de forma estática.` : 'Cuando trabajes con archivos, usa with open(...) o pathlib.', state: operations ? 'detected' : 'pending' },
+      { id: 'python-safe-context', label: 'Contexto de archivo', detail: hasFileContext ? 'Se detecta with open(...), una forma clara de cerrar el archivo.' : 'Para archivos, revisa que el contexto with cierre el recurso.', state: hasFileContext ? 'detected' : 'pending' },
+    ],
+  }
 }
 
 function inspectBash(source = '') {
@@ -1145,7 +1268,7 @@ function CodeEditor({ file, value, language = 'web', onChange }) {
   useEffect(() => { valueRef.current = value }, [value])
   useEffect(() => {
     if (!editorRef.current) return undefined
-    const syntax = language === 'bash' ? bashLanguage() : file === 'html' ? html() : file === 'css' ? css() : javascript()
+    const syntax = language === 'bash' ? bashLanguage() : language === 'python' ? python() : file === 'html' ? html() : file === 'css' ? css() : javascript()
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) onChange(update.state.doc.toString())
     })
@@ -1164,7 +1287,8 @@ function CodeEditor({ file, value, language = 'web', onChange }) {
     const current = view.state.doc.toString()
     if (current !== value) view.dispatch({ changes: { from: 0, to: current.length, insert: value } })
   }, [value])
-  return <div className="code-editor" ref={editorRef} aria-label={`Editor de ${language === 'bash' ? BASH_FILE_META.bash.label : FILE_META[file].label}`} />
+  const meta = language === 'bash' ? BASH_FILE_META : language === 'python' ? PYTHON_FILE_META : FILE_META
+  return <div className="code-editor" ref={editorRef} aria-label={`Editor de ${meta[file]?.label || file}`} />
 }
 
 const BASH_KEYWORDS = new Set(['if', 'then', 'elif', 'else', 'fi', 'for', 'while', 'until', 'in', 'do', 'done', 'case', 'esac', 'function', 'select', 'time'])
@@ -1207,20 +1331,44 @@ function HistoryItem({ number, title, detail, score, current }) {
   return <div className={`history-item ${current ? 'is-current' : ''}`}><span className="history-line" /><span className="history-number">{number}</span><div className="history-copy"><strong>{title}</strong><small>{detail}</small></div><span className={current ? 'history-status' : 'history-score'}>{score}</span></div>
 }
 
-function SubmitDialog({ activity, attemptNumber, maxAttempts, isBash = false, onCancel, onSubmit, state }) {
+function SubmitDialog({ activity, attemptNumber, maxAttempts, isBash = false, isPython = false, onCancel, onSubmit, state }) {
   const maxAttemptsLabel = maxAttempts > 0 ? maxAttempts : 'sin límite'
   const isError = state === 'error'
-  return <div className="dialog-backdrop"><div className="submit-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-title"><button className="icon-button dialog-close" onClick={onCancel} aria-label="Cancelar entrega"><Icon icon={IconX} /></button><span className={`dialog-icon ${isError ? 'dialog-icon-error' : ''}`}>{isError ? <Icon icon={IconAlertTriangle} size={24} /> : <Icon icon={isBash ? IconTerminal2 : IconRocket} size={24} />}</span><p className="kicker">Entrega formal</p><h2 id="submit-title">{isError ? 'No se pudo entregar' : '¿Listo para entregar?'}</h2><p>{isError ? 'Revisa el mensaje del reto y vuelve a intentarlo cuando el servidor esté disponible.' : <>Se guardará {isBash ? 'el script actual' : 'el código actual'} como el <strong>intento {String(attemptNumber).padStart(2, '0')} de {maxAttemptsLabel}</strong>. Después podrás ver esta evidencia, pero no editarla.</>}</p><div className="submit-checks"><span><Icon icon={IconCheck} size={15} />{isBash ? '1 archivo incluido' : '3 archivos incluidos'}</span><span><Icon icon={IconTestPipe} size={15} />Validaciones públicas disponibles</span><span><Icon icon={IconClock} size={15} />Fecha del servidor</span></div><div className="dialog-actions"><button className="button button-outline" onClick={onCancel}>Volver al editor</button>{!isError && <button className="button button-dark" onClick={onSubmit} disabled={state === 'sending'}>{state === 'sending' ? <span className="button-loader" /> : <Icon icon={isBash ? IconTerminal2 : IconRocket} size={17} />}{state === 'sending' ? 'Enviando…' : `Entregar ${activity.title}`}</button>}</div></div></div>
+  const isStatic = isBash || isPython
+  const trackIcon = isPython ? IconBrandPython : isBash ? IconTerminal2 : IconRocket
+  return <div className="dialog-backdrop"><div className="submit-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-title"><button className="icon-button dialog-close" onClick={onCancel} aria-label="Cancelar entrega"><Icon icon={IconX} /></button><span className={`dialog-icon ${isError ? 'dialog-icon-error' : ''}`}>{isError ? <Icon icon={IconAlertTriangle} size={24} /> : <Icon icon={trackIcon} size={24} />}</span><p className="kicker">Entrega formal</p><h2 id="submit-title">{isError ? 'No se pudo entregar' : '¿Listo para entregar?'}</h2><p>{isError ? 'Revisa el mensaje del reto y vuelve a intentarlo cuando el servidor esté disponible.' : <>Se guardará {isBash ? 'el script actual' : isPython ? 'el archivo Python actual' : 'el código actual'} como el <strong>intento {String(attemptNumber).padStart(2, '0')} de {maxAttemptsLabel}</strong>. Después podrás ver esta evidencia, pero no editarla.</>}</p><div className="submit-checks"><span><Icon icon={IconCheck} size={15} />{isStatic ? '1 archivo incluido' : '3 archivos incluidos'}</span><span><Icon icon={IconTestPipe} size={15} />Validaciones públicas disponibles</span><span><Icon icon={IconClock} size={15} />Fecha del servidor</span></div><div className="dialog-actions"><button className="button button-outline" onClick={onCancel}>Volver al editor</button>{!isError && <button className="button button-dark" onClick={onSubmit} disabled={state === 'sending'}>{state === 'sending' ? <span className="button-loader" /> : <Icon icon={trackIcon} size={17} />}{state === 'sending' ? 'Enviando…' : `Entregar ${activity.title}`}</button>}</div></div></div>
 }
 
 function normalizeFiles(data, language = 'web') {
   const value = data && typeof data === 'object' ? data : {}
-  if (normalizeLanguage(language) === 'bash') return { bash: typeof value.bash === 'string' ? value.bash : typeof value.script === 'string' ? value.script : '' }
+  const normalizedLanguage = normalizeLanguage(language)
+  if (normalizedLanguage === 'bash') return { bash: typeof value.bash === 'string' ? value.bash : typeof value.script === 'string' ? value.script : '' }
+  if (normalizedLanguage === 'python') return { python: typeof value.python === 'string' ? value.python : typeof value.main === 'string' ? value.main : '' }
   return { html: typeof value.html === 'string' ? value.html : '', css: typeof value.css === 'string' ? value.css : '', javascript: typeof value.javascript === 'string' ? value.javascript : typeof value.js === 'string' ? value.js : '' }
 }
 
-function filesPayload(files, isBash = false) {
-  return isBash ? { bash: typeof files?.bash === 'string' ? files.bash : '' } : { html: files?.html || '', css: files?.css || '', javascript: files?.javascript || '' }
+function starterFilesFor(language) {
+  const normalizedLanguage = normalizeLanguage(language)
+  if (DEMO_MODE) {
+    if (normalizedLanguage === 'bash') return BASH_FILES_DEFAULT
+    if (normalizedLanguage === 'python') return PYTHON_FILES_DEFAULT
+    return FILES_DEFAULT
+  }
+  if (normalizedLanguage === 'bash') return { bash: '' }
+  if (normalizedLanguage === 'python') return { python: '' }
+  return { html: '', css: '', javascript: '' }
+}
+
+function primaryFileFor(language) {
+  const normalizedLanguage = normalizeLanguage(language)
+  return normalizedLanguage === 'bash' ? 'bash' : normalizedLanguage === 'python' ? 'python' : 'html'
+}
+
+function filesPayload(files, languageOrIsBash = 'web') {
+  const language = typeof languageOrIsBash === 'boolean' ? languageOrIsBash ? 'bash' : 'web' : normalizeLanguage(languageOrIsBash)
+  if (language === 'bash') return { bash: typeof files?.bash === 'string' ? files.bash : '' }
+  if (language === 'python') return { python: typeof files?.python === 'string' ? files.python : '' }
+  return { html: files?.html || '', css: files?.css || '', javascript: files?.javascript || '' }
 }
 
 function asList(value) {

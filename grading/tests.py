@@ -114,6 +114,156 @@ backup() { printf 'preparado\\n'; }
             )
             parse.assert_called_once()
 
+    def test_python_evaluator_uses_static_ast_checks(self):
+        source = '''from pathlib import Path
+import json
+
+records = [{"name": "Libro"}]
+for record in records:
+    print(record["name"])
+
+def normalise(value):
+    return value.strip()
+
+try:
+    total = int("3")
+except ValueError:
+    total = 0
+
+with open("input.txt", "r", encoding="utf-8") as source_file:
+    lines = source_file.readlines()
+with open("output.json", "w", encoding="utf-8") as target_file:
+    json.dump(records, target_file)
+'''
+        tests = [
+            {"name": "sintaxis", "type": "python.syntax_valid", "definition": {}, "points": 1},
+            {"name": "asignación", "type": "python.assignment", "definition": {"name": "records"}, "points": 1},
+            {"name": "función", "type": "python.function_declared", "definition": {"name": "normalise"}, "points": 1},
+            {"name": "for", "type": "python.node_kind", "definition": {"kind": "for"}, "points": 1},
+            {"name": "call cualificada", "type": "python.call_used", "definition": {"name": "json.dump"}, "points": 1},
+            {"name": "import", "type": "python.import_used", "definition": {"module": "pathlib"}, "points": 1},
+            {"name": "lectura", "type": "python.file_opened", "definition": {"mode": "r", "context_manager": True, "encoding": "utf-8"}, "points": 1},
+            {"name": "escritura", "type": "python.file_opened", "definition": {"mode": "w", "context_manager": True}, "points": 1},
+        ]
+        report = evaluate_tests({"python": source}, tests, language="python")
+        self.assertEqual(report.status, "passed")
+        self.assertEqual(report.score, Decimal("10"))
+
+    def test_python_ast_is_parsed_once_and_never_executes_source(self):
+        from unittest.mock import patch
+
+        source = "raise RuntimeError('esto no debe ejecutarse')\nprint('sin efectos')\n"
+        tests = [
+            {"name": "sintaxis", "type": "python.syntax_valid", "definition": {}, "points": 1},
+            {"name": "salida", "type": "python.call_used", "definition": {"name": "print"}, "points": 1},
+        ]
+        with patch("grading.evaluator._parse_python", wraps=__import__("grading.evaluator", fromlist=["_parse_python"])._parse_python) as parse:
+            report = evaluate_tests({"python": source}, tests, language="python")
+        parse.assert_called_once()
+        self.assertEqual(report.status, "passed")
+
+    def test_python_dsl_rejects_unknown_fields_and_mixed_languages(self):
+        with self.assertRaises(ValueError):
+            validate_test_definition("python.call_used", {"name": "print", "execute": True})
+        with self.assertRaises(ValueError):
+            validate_test_definition("python.file_opened", {"mode": "delete"})
+        with self.assertRaises(ValueError):
+            validate_test_definition("python.node_kind", {"kind": "arbitrary_node"})
+        with self.assertRaises(ValueError):
+            evaluate_tests({"python": "print('ok')", "bash": "echo nope"}, [], language="python")
+        with self.assertRaises(ValueError):
+            evaluate_tests({"python": "print('ok')"}, [{"type": "bash.syntax_valid", "definition": {}}], language="python")
+
+    def test_python_file_opened_requires_direct_context_and_literal_mode(self):
+        source = "mode = get_mode()\nwith wrapper(open('datos.txt', mode)) as managed:\n    print(managed)\n"
+        report = evaluate_tests(
+            {"python": source},
+            [
+                {
+                    "name": "lectura literal",
+                    "type": "python.file_opened",
+                    "definition": {"mode": "r", "context_manager": True},
+                    "points": 1,
+                }
+            ],
+            language="python",
+        )
+        self.assertFalse(report.results[0].passed)
+
+    def test_python_file_opened_rejects_shadowed_open_and_arbitrary_methods(self):
+        test_case = {
+            "name": "lectura",
+            "type": "python.file_opened",
+            "definition": {"mode": "r", "context_manager": True, "encoding": "utf-8"},
+            "points": 1,
+        }
+        shadowed = """def open(path, mode="r", encoding=None):
+    return object()
+
+with open("datos.txt", "r", encoding="utf-8") as stream:
+    pass
+"""
+        fake_receiver = """class Inventario:
+    def open(self, mode="r", encoding=None):
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+archivo = Inventario()
+with archivo.open("r", encoding="utf-8") as stream:
+    pass
+"""
+        for source in (shadowed, fake_receiver):
+            report = evaluate_tests({"python": source}, [test_case], language="python")
+            self.assertFalse(report.results[0].passed)
+
+        pathlib_source = """from pathlib import Path
+archivo = Path("datos.txt")
+with archivo.open("r", encoding="utf-8") as stream:
+    pass
+"""
+        report = evaluate_tests({"python": pathlib_source}, [test_case], language="python")
+        self.assertTrue(report.results[0].passed)
+
+    def test_python_limits_reject_excessive_ast_nodes_and_depth(self):
+        many_assignments = "\n".join(f"value_{index} = {index}" for index in range(1300))
+        with self.assertRaises(ValueError):
+            evaluate_tests({"python": many_assignments}, [], language="python")
+        nested = ""
+        for _ in range(82):
+            nested += "    " * (_ if _ else 0) + "if True:\n"
+        nested += "    " * 82 + "pass\n"
+        with self.assertRaises(ValueError):
+            evaluate_tests({"python": nested}, [], language="python")
+
+    def test_python_catalogue_does_not_accept_structurally_empty_minimums(self):
+        from learning.management.commands.seed_python import CHALLENGES
+
+        weak_sources = {
+            "02-tipos-y-cadenas": 'producto = "Módulo"\ncantidad = 3\netiqueta = producto\nprint(etiqueta)\n',
+            "03-condicionales-de-stock": 'stock = 12\nif stock > 0:\n    print("Disponible")\n',
+            "04-listas-y-bucles": "productos = None\nfor item in productos:\n    print(item)\n",
+            "05-diccionarios-de-registro": "producto = {}\nprint(producto)\n",
+            "06-funciones-reutilizables": "def normaliza_nombre():\n    pass\n\nnormaliza_nombre()\n",
+            "07-excepciones-de-datos": 'importe_texto = "120"\ntry:\n    importe = int(importe_texto)\nexcept:\n    importe = 0\n',
+            "08-imports-y-fechas": "from datetime import date\nimport json\nhoy = date.today()\nprint(hoy)\n",
+            "09-rutas-con-pathlib": 'from pathlib import Path\nfichero = Path("datos.txt")\nprint(fichero)\n',
+            "10-lectura-de-texto": 'ruta = "datos.txt"\nwith open(ruta, "r", encoding="utf-8"):\n    pass\n',
+            "11-escritura-json": 'import json\nproductos = []\nopen("resumen.json", "w", encoding="utf-8")\njson.dump(productos, None)\n',
+            "12-integracion-archivos": 'from pathlib import Path\n\ndef transformar(linea):\n    pass\n\nentrada = Path("entrada.txt")\nsalida = Path("salida.txt")\nwith entrada.open("r", encoding="utf-8"):\n    pass\nwith salida.open("w", encoding="utf-8"):\n    pass\n',
+        }
+        for challenge in CHALLENGES[1:]:
+            cases = [
+                {"name": name, "type": test_type, "definition": definition, "points": points}
+                for name, test_type, definition, points, _visibility in challenge["tests"]
+            ]
+            report = evaluate_tests({"python": weak_sources[challenge["slug"]]}, cases, language="python")
+            self.assertNotEqual(report.score, Decimal("10"), challenge["slug"])
+
 
 class SubmissionTests(GradingFactoryMixin, TestCase):
     def test_submission_snapshot_and_attempts(self):

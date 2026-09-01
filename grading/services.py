@@ -20,6 +20,7 @@ from .models import AuditEvent, GradeCalculation, Submission, SubmissionFile, Te
 
 FILE_KEYS = ("html", "css", "javascript")
 BASH_FILE_KEYS = ("bash",)
+PYTHON_FILE_KEYS = ("python",)
 MAX_FILE_BYTES = 256 * 1024
 MAX_TOTAL_BYTES = 1024 * 1024
 
@@ -31,7 +32,9 @@ BADGE_DEFINITIONS = (
     ("five-challenges", "Cinco retos", "Has completado cinco retos."),
     ("web-path", "Constructor web", "Has completado un reto de HTML, CSS o JavaScript."),
     ("bash-path", "Terminal en marcha", "Has completado un reto de Bash."),
-    ("cross-path", "Doble itinerario", "Has completado retos web y Bash."),
+    ("python-path", "Python en marcha", "Has completado un reto de Python."),
+    ("cross-path", "Doble itinerario", "Has completado retos de al menos dos itinerarios."),
+    ("triple-path", "Tridente digital", "Has completado retos web, Bash y Python."),
     ("xp-500", "Medio millar", "Has alcanzado 500 XP."),
     ("perfect-score", "Reto perfecto", "Has conseguido un 10 en un reto automático."),
 )
@@ -52,19 +55,33 @@ def normalise_workspace_files(payload: dict, *, language: str = "web") -> dict[s
         raise EvaluatorValidationError("Los archivos deben recibirse como un objeto JSON.")
     if isinstance(payload.get("files"), dict):
         payload = payload["files"]
-    if language not in {"web", "bash"}:
+    if language not in {"web", "bash", "python"}:
         raise EvaluatorValidationError("El lenguaje de la actividad no es válido.")
     aliases = {"html": "html", "css": "css", "js": "javascript", "javascript": "javascript"}
-    allowed = set(BASH_FILE_KEYS if language == "bash" else FILE_KEYS)
+    if language == "bash":
+        allowed = set(BASH_FILE_KEYS)
+    elif language == "python":
+        allowed = set(PYTHON_FILE_KEYS)
+    else:
+        allowed = set(FILE_KEYS)
     files = {key: "" for key in allowed}
     total = 0
     for raw_name, raw_content in payload.items():
         if raw_name in {"revision", "csrfmiddlewaretoken"}:
             continue
         raw_key = str(raw_name).lower()
-        key = "bash" if language == "bash" and raw_key == "bash" else aliases.get(raw_key)
+        if language == "bash":
+            key = "bash" if raw_key == "bash" else None
+        elif language == "python":
+            key = "python" if raw_key in {"python", "main.py"} else None
+        else:
+            key = aliases.get(raw_key)
         if key is None or key not in allowed:
-            expected = "bash" if language == "bash" else "html, css y javascript"
+            expected = {
+                "bash": "bash",
+                "python": "python (main.py)",
+                "web": "html, css y javascript",
+            }[language]
             raise EvaluatorValidationError(f"Solo se permiten {expected} en esta actividad.")
         if not isinstance(raw_content, str):
             raise EvaluatorValidationError(f"El archivo {raw_name} debe ser texto.")
@@ -130,7 +147,13 @@ def save_draft(user, assignment: Assignment, payload: dict) -> Draft:
 
 def _file_digest(files: dict[str, str], *, language: str = "web") -> str:
     digest = hashlib.sha256()
-    keys = BASH_FILE_KEYS if language == "bash" else FILE_KEYS
+    keys = {
+        "bash": BASH_FILE_KEYS,
+        "python": PYTHON_FILE_KEYS,
+        "web": FILE_KEYS,
+    }.get(language)
+    if keys is None:
+        raise EvaluatorValidationError("El lenguaje de la actividad no es válido.")
     for key in keys:
         content = files.get(key, "")
         digest.update(key.encode("utf-8"))
@@ -204,7 +227,11 @@ def create_submission(user, assignment: Assignment, payload: dict) -> tuple[Subm
                     size_bytes=len(files[key].encode("utf-8")),
                     sha256=hashlib.sha256(files[key].encode("utf-8")).hexdigest(),
                 )
-                for key in (BASH_FILE_KEYS if locked_assignment.activity_version.language == "bash" else FILE_KEYS)
+                for key in {
+                    "bash": BASH_FILE_KEYS,
+                    "python": PYTHON_FILE_KEYS,
+                    "web": FILE_KEYS,
+                }[locked_assignment.activity_version.language]
             ]
         )
         if report is not None:
@@ -383,7 +410,9 @@ def gamification_for_assignments(student, assignments) -> dict:
         "five-challenges": len(completed_rows) >= 5,
         "web-path": "web" in languages,
         "bash-path": "bash" in languages,
-        "cross-path": {"web", "bash"}.issubset(languages),
+        "python-path": "python" in languages,
+        "cross-path": len(languages) >= 2,
+        "triple-path": {"web", "bash", "python"}.issubset(languages),
         "xp-500": total_xp >= 500,
         "perfect-score": any(score >= Decimal("10") for score in best_scores),
     }

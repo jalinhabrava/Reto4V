@@ -96,13 +96,14 @@ jobs:
           docker compose --env-file .env exec -T web python manage.py check --database default
           docker compose --env-file .env exec -T web python manage.py migrate --check
 
-      - name: Crear propietario efímero y sembrar Bash
+      - name: Crear propietario efímero y sembrar itinerarios
         run: |
           docker compose --env-file .env exec -T web python manage.py shell -c \
             "from accounts.models import User; u, _ = User.objects.get_or_create(username='ci-owner', defaults={'role': User.Role.TEACHER, 'display_name': 'CI Owner'}); u.role = User.Role.TEACHER; u.set_unusable_password(); u.save()"
           docker compose --env-file .env exec -T web python manage.py seed_bash --owner ci-owner --cohort 2ASIR
+          docker compose --env-file .env exec -T web python manage.py seed_python --owner ci-owner --cohort 2DAM
           docker compose --env-file .env exec -T web python manage.py shell -c \
-            "from learning.models import Activity; assert Activity.objects.filter(slug='01-variables-y-salida').exists()"
+            "from learning.models import Activity, ActivityVersion; assert Activity.objects.filter(slug='01-variables-y-salida').exists(); assert ActivityVersion.objects.filter(language='python').count() == 12"
 
       - name: Verificar perfil proxy con TLS interno
         run: |

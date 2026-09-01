@@ -10,6 +10,11 @@ la autenticación, la separación de permisos o las copias de seguridad.
   un iframe sin acceso al origen de la aplicación y sin conexiones de red.
 - Los scripts Bash se analizan mediante Tree-sitter. No se ejecutan, no
   acceden a archivos y no disponen de una terminal del servidor.
+- Los ejercicios Python se analizan con `ast` en memoria. El servidor no
+  evalúa ni ejecuta el árbol, no carga los imports escritos por el alumnado y
+  no invoca `exec`, `eval`, `importlib`, `subprocess` ni `open` a partir del
+  código entregado. Tampoco genera bytecode ni toca el disco.
+  La lectura y escritura de archivos solo se reconoce de forma estructural.
 - El proceso web no recibe el socket Docker, carpetas del host ni privilegios
   para administrar contenedores.
 - Las notas se calculan en el servidor; no se aceptan puntuaciones del cliente.
@@ -23,6 +28,15 @@ script funcione correctamente, restaure una copia o sea seguro al ejecutarlo.
 Puede contener código inalcanzable u operaciones con efectos no deducibles por
 un test estructural. Una insignia o 100% de tests no equivale a certificación
 de seguridad ni a una calificación oficial del módulo.
+
+En Python, un árbol AST válido solo demuestra que el texto puede analizarse con
+la gramática Python del servidor y que contiene las construcciones que declara
+el reto. No garantiza que el programa funcione, que los datos tengan el formato
+esperado, que un archivo exista o que una integración con Odoo sea correcta.
+El análisis aplica límites de tamaño, profundidad y nodos para reducir el
+impacto de entradas patológicas, pero no sustituye a la ejecución aislada de
+prácticas en una VM de laboratorio. Los ejercicios de archivos no leen ni
+escriben el sistema del centro.
 
 Las prácticas de ejecución real deben hacerse en una VM de laboratorio
 separada, con datos ficticios y validación docente. No ejecutes entregas en el

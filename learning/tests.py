@@ -60,6 +60,125 @@ class DraftTests(LearningFactoryMixin, TestCase):
         changed.refresh_from_db()
         self.assertEqual(changed.reference_solution, {"bash": "solución docente externa"})
 
+    def test_seed_python_is_idempotent_and_reference_solutions_pass(self):
+        from grading.evaluator import evaluate_tests
+
+        call_command("seed_python", owner=self.teacher.username, cohort="2DAM", academic_year="2026-2027")
+        versions = list(
+            ActivityVersion.objects.filter(language=ActivityVersion.Language.PYTHON)
+            .prefetch_related("test_cases")
+        )
+        self.assertEqual(len(versions), 12)
+        self.assertEqual(sum(version.test_cases.count() for version in versions), 67)
+        self.assertEqual(Assignment.objects.filter(activity_version__in=versions).count(), 12)
+        self.assertTrue(all(not version.learning_outcomes and not version.assessment_criteria for version in versions))
+        reports = [
+            evaluate_tests(version.reference_solution, list(version.test_cases.all()), language="python")
+            for version in versions
+        ]
+        self.assertTrue(all(report.status == "passed" and report.score == 10 for report in reports))
+        changed = versions[0]
+        changed.reference_solution = {"python": "solución docente externa"}
+        ActivityVersion.objects.filter(pk=changed.pk).update(reference_solution=changed.reference_solution)
+        call_command("seed_python", owner=self.teacher.username, cohort="2DAM", academic_year="2026-2027", stdout=None)
+        changed.refresh_from_db()
+        self.assertEqual(changed.reference_solution, {"python": "solución docente externa"})
+
+    def test_python_version_scopes_files_and_snapshot(self):
+        python_activity = Activity.objects.create(
+            module=self.module,
+            title="Reto Python",
+            slug="reto-python",
+            created_by=self.teacher,
+            status=Activity.Status.PUBLISHED,
+        )
+        python_version = ActivityVersion.objects.create(
+            activity=python_activity,
+            version_number=1,
+            language=ActivityVersion.Language.PYTHON,
+            starter_files={"python": "print('inicio')\n"},
+            reference_solution={"python": "print('solución')\n"},
+            grading_mode=ActivityVersion.GradingMode.AUTOMATIC_STATIC,
+            created_by=self.teacher,
+        )
+        python_activity.current_version = python_version
+        python_activity.save(update_fields=["current_version", "updated_at"])
+        ActivityTestCase.objects.create(
+            activity_version=python_version,
+            name="sintaxis",
+            type="python.syntax_valid",
+            definition={},
+        )
+        assignment = Assignment.objects.create(
+            activity=python_activity,
+            activity_version=python_version,
+            created_by=self.teacher,
+            status=Assignment.Status.PUBLISHED,
+            published_at=timezone.now(),
+        )
+        AssignmentCohort.objects.create(assignment=assignment, cohort=self.cohort)
+        draft = get_or_create_draft(self.student, assignment)
+        self.assertEqual(draft.files, {"python": "print('inicio')\n"})
+        submission, report = create_submission(
+            self.student,
+            assignment,
+            {"python": "print('ok')\n"},
+        )
+        self.assertEqual(submission.files.count(), 1)
+        self.assertEqual(submission.files.get().path, "python")
+        self.assertEqual(report.score, 10)
+
+    def test_python_version_rejects_other_language_files(self):
+        invalid = ActivityVersion(
+            activity=self.activity,
+            version_number=2,
+            language=ActivityVersion.Language.PYTHON,
+            starter_files={"bash": "echo no"},
+            created_by=self.teacher,
+        )
+        with self.assertRaises(ValidationError):
+            invalid.full_clean()
+
+    def test_test_case_validates_python_dsl_and_maximum_on_save(self):
+        python_activity = Activity.objects.create(
+            module=self.module,
+            title="Validación Python",
+            slug="validacion-python",
+            created_by=self.teacher,
+        )
+        python_version = ActivityVersion.objects.create(
+            activity=python_activity,
+            version_number=1,
+            language=ActivityVersion.Language.PYTHON,
+            created_by=self.teacher,
+        )
+        with self.assertRaises(ValidationError):
+            ActivityTestCase.objects.create(
+                activity_version=python_version,
+                name="definición inválida",
+                type="python.call_used",
+                definition={"name": "print", "execute": True},
+            )
+
+        ActivityTestCase.objects.bulk_create(
+            [
+                ActivityTestCase(
+                    activity_version=python_version,
+                    name=f"sintaxis-{index}",
+                    type="python.syntax_valid",
+                    definition={},
+                )
+                for index in range(200)
+            ]
+        )
+        with self.assertRaises(ValidationError):
+            ActivityTestCase.objects.create(
+                activity_version=python_version,
+                name="sintaxis-201",
+                type="python.syntax_valid",
+                definition={},
+            )
+
     def test_activity_version_language_scopes_files(self):
         bash_version = ActivityVersion(
             activity=self.activity,

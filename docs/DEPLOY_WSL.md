@@ -211,6 +211,26 @@ bash scripts/install.sh --no-build --skip-admin --seed-bash \
   --owner profesor --cohort 2ASIR
 ```
 
+Para cargar la ruta Python de 2.º DAM (módulo 0491) usa el mismo instalador:
+
+```bash
+bash scripts/install.sh --no-build --skip-admin --seed-python \
+  --owner profesor --python-cohort 2DAM
+```
+
+También se pueden cargar ambas rutas en una sola ejecución. `--cohort` se
+mantiene como alias histórico del grupo Bash; `--bash-cohort` es equivalente y
+`--python-cohort` es independiente (por defecto `2DAM`):
+
+```bash
+bash scripts/install.sh --no-build --skip-admin \
+  --seed-bash --seed-python --owner profesor \
+  --cohort 2ASIR --python-cohort 2DAM
+```
+
+El propietario debe ser una cuenta local de profesor o administración ya
+creada. Los seeds son idempotentes y no crean alumnos ni contraseñas.
+
 `web` ejecuta las migraciones y `collectstatic` antes de Gunicorn. Un reinicio
 normal no elimina los volúmenes. No uses `docker compose down -v` en la
 instalación real: elimina los datos de PostgreSQL y los archivos locales.

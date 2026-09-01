@@ -19,8 +19,10 @@ TLS_EXPLICIT=0
 NO_BUILD=0
 SKIP_ADMIN=0
 SEED_BASH=0
+SEED_PYTHON=0
 SEED_OWNER=""
 SEED_COHORT="2ASIR"
+SEED_PYTHON_COHORT="2DAM"
 
 usage() {
   cat <<'EOF'
@@ -34,8 +36,13 @@ Opciones:
   --tls             Usa Caddyfile.internal-tls con TLS interno (implica --proxy).
   --direct          Vuelve explícitamente al modo web directo HTTP.
   --seed-bash       Carga la ruta de retos Bash de demostración, si está disponible.
-  --owner USERNAME  Usuario propietario de los retos Bash (requiere --seed-bash).
-  --cohort NAME     Grupo de los retos Bash (por defecto: 2ASIR).
+  --seed-python     Carga la ruta Python de demostración para 2.º DAM, si está disponible.
+  --owner USERNAME  Usuario propietario de los retos solicitados (requiere un --seed-*).
+  --cohort NAME     Grupo Bash (alias legado; por defecto: 2ASIR).
+  --bash-cohort NAME
+                    Grupo Bash, forma explícita equivalente a --cohort.
+  --python-cohort NAME
+                    Grupo Python (por defecto: 2DAM).
   --no-build        No reconstruye la imagen; usa la imagen local existente.
   --skip-admin      No abre createsuperuser (útil en automatizaciones).
   -h, --help        Muestra esta ayuda.
@@ -44,6 +51,9 @@ Ejemplos:
   bash scripts/install.sh --host 192.168.20.10 --port 8080
   bash scripts/install.sh --host reto4v.instituto.lan --port 8443 --tls
   bash scripts/install.sh --seed-bash --owner profesor
+  bash scripts/install.sh --seed-python --owner profesor --python-cohort 2DAM
+  bash scripts/install.sh --seed-bash --seed-python --owner profesor \
+    --cohort 2ASIR --python-cohort 2DAM
 EOF
 }
 
@@ -348,6 +358,15 @@ seed_bash_if_requested() {
   fi
 }
 
+seed_python_if_requested() {
+  (( SEED_PYTHON )) || return 0
+  echo "Cargando retos Python para $SEED_OWNER ($SEED_PYTHON_COHORT) …"
+  if ! compose_run exec -T web python manage.py seed_python --owner "$SEED_OWNER" --cohort "$SEED_PYTHON_COHORT"; then
+    echo "No se pudo ejecutar seed_python. Comprueba que el usuario y el comando estén disponibles." >&2
+    return 1
+  fi
+}
+
 while (($#)); do
   case "$1" in
     --host)
@@ -360,12 +379,22 @@ while (($#)); do
     --tls) USE_TLS=1; USE_PROXY=1; TLS_EXPLICIT=1; PROXY_EXPLICIT=1; shift ;;
     --direct) USE_PROXY=0; USE_TLS=0; TLS_EXPLICIT=1; PROXY_EXPLICIT=1; shift ;;
     --seed-bash) SEED_BASH=1; shift ;;
+    --seed-python) SEED_PYTHON=1; shift ;;
     --owner)
       (($# >= 2)) || die "Falta el valor de --owner."
       SEED_OWNER=$2; shift 2 ;;
     --cohort)
       (($# >= 2)) || die "Falta el valor de --cohort."
+      [[ "$2" != -* ]] || die "Falta el valor de --cohort; no puede empezar por '-'."
       SEED_COHORT=$2; shift 2 ;;
+    --bash-cohort)
+      (($# >= 2)) || die "Falta el valor de --bash-cohort."
+      [[ "$2" != -* ]] || die "Falta el valor de --bash-cohort; no puede empezar por '-'."
+      SEED_COHORT=$2; shift 2 ;;
+    --python-cohort)
+      (($# >= 2)) || die "Falta el valor de --python-cohort."
+      [[ "$2" != -* ]] || die "Falta el valor de --python-cohort; no puede empezar por '-'."
+      SEED_PYTHON_COHORT=$2; shift 2 ;;
     --no-build) NO_BUILD=1; shift ;;
     --skip-admin) SKIP_ADMIN=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -377,6 +406,16 @@ if [[ -n "$PORT" ]]; then is_uint "$PORT" || die "--port debe estar entre 1 y 65
 if [[ -n "$HOST" ]]; then is_host "$HOST" || die "--host debe ser una IP o nombre DNS sin esquema ni puerto."; fi
 if (( USE_TLS && ! USE_PROXY )); then die "--tls requiere --proxy."; fi
 if (( USE_TLS && TLS_EXPLICIT )) && [[ -z "$HOST" ]]; then die "--tls requiere --host para generar un certificado interno útil."; fi
+if (( SEED_BASH || SEED_PYTHON )); then
+  [[ -n "$SEED_OWNER" ]] || die "--seed-bash/--seed-python requieren --owner USERNAME."
+  is_identifier "$SEED_OWNER" || die "--owner solo puede contener letras, números, punto, guion o guion bajo."
+fi
+if (( SEED_BASH )); then
+  [[ -n "$SEED_COHORT" ]] || die "El grupo Bash no puede estar vacío."
+fi
+if (( SEED_PYTHON )); then
+  [[ -n "$SEED_PYTHON_COHORT" ]] || die "El grupo Python no puede estar vacío."
+fi
 
 cd "$PROJECT_DIR"
 ensure_env
@@ -410,6 +449,7 @@ fi
 wait_and_check
 first_admin
 seed_bash_if_requested
+seed_python_if_requested
 
 echo
 echo "Instalación terminada."

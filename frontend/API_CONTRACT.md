@@ -8,6 +8,7 @@ Cada actividad publicada pertenece a un itinerario:
 
 - `language: "web"`: editor de `html`, `css` y `javascript` para el módulo de Aplicaciones web de SMR.
 - `language: "bash"`: editor de un único archivo `bash` (`script.sh`) para scripting y seguridad de ASIR. El navegador no ejecuta este archivo.
+- `language: "python"`: editor de un único archivo `python` (`main.py`) para la introducción a Python de 2.º DAM, Sistemas de Gestión Empresarial (0491), como preparación para trabajar con Odoo. El navegador no ejecuta este archivo.
 
 La versión puede incluir `difficulty` (`beginner`, `intermediate`, `advanced`), `xp_reward` (entero no negativo) y `hints` (lista de textos u objetos). El cliente no inventa puntos, insignias ni progreso en producción: si un dato no llega, muestra un estado vacío o cero.
 
@@ -63,7 +64,7 @@ El usuario necesita, como mínimo, `id`, `username`, `display_name`, `role` (`st
 
 `completed` debe significar dominio según la política académica del servidor; una entrega corregida no equivale automáticamente a reto completado. `earned_xp` y `progress` son independientes de la nota publicada.
 
-El filtro `Todos`, `Web · SMR`, `Bash · ASIR` se aplica sobre `language` y no altera los datos del servidor.
+El filtro `Todos`, `Web · SMR`, `Bash · ASIR`, `Python · DAM` se aplica sobre `language` y no altera los datos del servidor.
 
 ## Navegación cliente
 
@@ -100,12 +101,12 @@ El editor se abre en `/assignments/<uuid>/` mediante `history.pushState`, sin de
 }
 ```
 
-Para `language: "web"`, `files` conserva las claves `{html, css, javascript}` y el editor mantiene la preview aislada.
+Para `language: "web"`, `files` conserva las claves `{html, css, javascript}` y el editor mantiene la preview aislada. Para `language: "python"`, `files` contiene únicamente `{python}` y el editor muestra `main.py` con resaltado Python.
 
 En el workspace, `gamification` es el resumen del reto actual (no el total del alumno); el total, nivel e insignias globales solo aparecen en el dashboard.
 
-- `POST /api/assignments/<uuid>/draft/`: web `{html, css, javascript, revision}`; Bash `{bash, revision}`. El servidor valida tamaño, compara `revision`/`If-Match` y devuelve `{revision, saved_at}`. En conflicto responde HTTP `409` con `{detail, revision, current:{files, updated_at}}`.
-- `POST /api/assignments/<uuid>/tests/`: recibe las mismas claves de archivos según `language` y devuelve `{score, passed_points, total_points, results}`. Para Bash la validación es estática y nunca ejecuta el script.
+- `POST /api/assignments/<uuid>/draft/`: web `{html, css, javascript, revision}`; Bash `{bash, revision}`; Python `{python, revision}`. El servidor valida tamaño, compara `revision`/`If-Match` y devuelve `{revision, saved_at}`. En conflicto responde HTTP `409` con `{detail, revision, current:{files, updated_at}}`.
+- `POST /api/assignments/<uuid>/tests/`: recibe las mismas claves de archivos según `language` y devuelve `{score, passed_points, total_points, results}`. Para Bash y Python la validación es estática y nunca ejecuta el script o programa.
 - `POST /api/assignments/<uuid>/submit/`: recibe las mismas claves. Devuelve HTTP `201` con `{submission:{id, attempt_number, submitted_at, status, is_late}, report:{score, results}, gamification?}`. La evidencia es inmutable.
 
 Todas las mutaciones incluyen la cookie CSRF mediante `X-CSRFToken`. El cliente no muestra nunca tests privados.
@@ -114,4 +115,4 @@ Todas las mutaciones incluyen la cookie CSRF mediante `X-CSRFToken`. El cliente 
 
 Solo las actividades web se escriben en `iframe[srcDoc]` con `sandbox="allow-scripts"`, sin `allow-same-origin`, y con CSP interna sin red (`connect-src 'none'`). El puente de consola envía mensajes `postMessage` con canal `aulaweb-preview`; la aplicación acepta únicamente mensajes cuya ventana emisora sea el iframe actual, limita el tamaño y trata todos los valores como texto no fiable.
 
-Las actividades Bash muestran una revisión estática local (líneas, variables y patrones orientativos) claramente marcada como no ejecución. La validación oficial y la calificación proceden del servidor.
+Las actividades Bash muestran una revisión estática local (líneas, variables y patrones orientativos) y las actividades Python muestran métricas de estructura (líneas, funciones, imports y operaciones de archivo), siempre claramente marcadas como no ejecución. La validación oficial y la calificación proceden del servidor.

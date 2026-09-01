@@ -23,6 +23,12 @@ class TestCaseAdmin(admin.ModelAdmin):
     list_display = ("name", "activity_version", "type", "visibility", "points")
     list_filter = ("visibility", "type")
 
+    def save_model(self, request, obj, form, change):
+        # Keep the DSL and per-version test limit enforced even if an admin
+        # integration saves an object without going through the form.
+        obj.full_clean()
+        super().save_model(request, obj, form, change)
+
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.activity_version.assignments.exists():
             return tuple(field.name for field in self.model._meta.fields)

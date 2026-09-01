@@ -133,6 +133,7 @@ class ActivityVersion(models.Model):
     class Language(models.TextChoices):
         WEB = "web", "HTML/CSS/JavaScript"
         BASH = "bash", "Bash"
+        PYTHON = "python", "Python"
 
     class Difficulty(models.TextChoices):
         BEGINNER = "beginner", "Inicial"
@@ -188,7 +189,12 @@ class ActivityVersion(models.Model):
         for name, value in (("starter_files", self.starter_files), ("reference_solution", self.reference_solution)):
             if not isinstance(value, dict):
                 raise ValidationError({name: "Debe ser un objeto de archivos."})
-            allowed = {"bash"} if self.language == self.Language.BASH else {"html", "css", "javascript", "js"}
+            if self.language == self.Language.BASH:
+                allowed = {"bash"}
+            elif self.language == self.Language.PYTHON:
+                allowed = {"python"}
+            else:
+                allowed = {"html", "css", "javascript", "js"}
             unsupported = set(value) - allowed
             if unsupported:
                 raise ValidationError(
@@ -213,6 +219,8 @@ class ActivityVersion(models.Model):
     def files(self):
         if self.language == self.Language.BASH:
             return {"bash": self.starter_files.get("bash", "")}
+        if self.language == self.Language.PYTHON:
+            return {"python": self.starter_files.get("python", "")}
         return {"html": self.starter_files.get("html", ""), "css": self.starter_files.get("css", ""), "javascript": self.starter_files.get("javascript", self.starter_files.get("js", ""))}
 
 
@@ -235,9 +243,28 @@ class TestCase(models.Model):
         ordering = ("position", "name")
         constraints = [models.UniqueConstraint(fields=("activity_version", "name"), name="uniq_test_name_version")]
 
+    def clean(self):
+        super().clean()
+        from grading.evaluator import MAX_TESTS, validate_test_definition
+
+        errors = {}
+        try:
+            validate_test_definition(self.type, self.definition, points=self.points)
+        except (TypeError, ValueError, KeyError) as exc:
+            errors["definition"] = str(exc)
+
+        if self._state.adding and self.activity_version_id:
+            existing = type(self).objects.filter(activity_version_id=self.activity_version_id).count()
+            if existing >= MAX_TESTS:
+                errors["activity_version"] = f"Una versión no puede tener más de {MAX_TESTS} tests."
+
+        if errors:
+            raise ValidationError(errors)
+
     def save(self, *args, **kwargs):
         if self.activity_version_id and self.activity_version.assignments.exists():
             raise ValidationError("No se pueden añadir ni modificar tests de una versión asignada; crea otra versión.")
+        self.clean()
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

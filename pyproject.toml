@@ -1,7 +1,7 @@
 [project]
 name = "reto4v"
-version = "0.2.0"
-description = "Gamificación LAN para aprender programación web y scripting Bash en FP"
+version = "0.3.0"
+description = "Gamificación LAN para aprender programación web, scripting Bash y fundamentos de Python en FP"
 requires-python = ">=3.10,<3.14"
 dependencies = [
   "Django>=5.2,<5.3",
