@@ -7,6 +7,8 @@ from django.utils import timezone
 
 from accounts.models import User
 from grading.services import DraftConflict, create_submission, get_or_create_draft, save_draft
+from learning.management.commands.seed_web import CHALLENGES as WEB_CHALLENGES
+from learning.services import clear_student_enrollment, set_student_cohort
 
 from .models import (
     AcademicYear,
@@ -32,7 +34,7 @@ class LearningFactoryMixin:
         self.student = User.objects.create_user(username="student", password="UnaClaveSegura123!", role=User.Role.STUDENT)
         self.other_student = User.objects.create_user(username="other", password="UnaClaveSegura123!", role=User.Role.STUDENT)
         self.year = AcademicYear.objects.create(name="2025-2026")
-        self.cohort = Cohort.objects.create(name="1SMR-A", academic_year=self.year)
+        self.cohort = Cohort.objects.create(name="1SMR-A", academic_year=self.year, track=Cohort.Track.WEB)
         Enrollment.objects.create(cohort=self.cohort, student=self.student)
         TeachingAssignment.objects.create(cohort=self.cohort, teacher=self.teacher)
         self.course = Course.objects.create(title="Web", slug="web", created_by=self.teacher)
@@ -46,6 +48,209 @@ class LearningFactoryMixin:
 
 
 class DraftTests(LearningFactoryMixin, TestCase):
+    def test_seed_web_is_idempotent_and_reference_solutions_pass(self):
+        from grading.evaluator import evaluate_tests
+
+        call_command("seed_web", owner=self.teacher.username, cohort="1SMR", academic_year="2025-2026")
+        course = Course.objects.get(slug="fundamentos-web-smr")
+        versions = list(
+            ActivityVersion.objects.filter(activity__module__course=course)
+            .prefetch_related("test_cases")
+            .order_by("activity__title")
+        )
+        self.assertEqual(len(versions), 12)
+        self.assertTrue(all(version.language == ActivityVersion.Language.WEB for version in versions))
+        self.assertEqual(
+            sum(version.test_cases.count() for version in versions),
+            sum(len(item["tests"]) for item in WEB_CHALLENGES),
+        )
+        for index, version in enumerate(versions, start=1):
+            self.assertNotEqual(version.starter_files, version.reference_solution)
+            if index <= 6:
+                self.assertNotIn("<main", version.starter_files["html"])
+            elif index <= 9:
+                self.assertEqual(version.starter_files["css"], "")
+            else:
+                self.assertEqual(version.starter_files["javascript"], "")
+        reports = [
+            evaluate_tests(version.reference_solution, list(version.test_cases.all()), language="web")
+            for version in versions
+        ]
+        self.assertTrue(all(report.status == "passed" and report.score == 10 for report in reports))
+        call_command("seed_web", owner=self.teacher.username, cohort="1SMR", academic_year="2025-2026", stdout=None)
+        self.assertEqual(
+            ActivityVersion.objects.filter(activity__module__course=course).count(),
+            12,
+        )
+
+    def test_bootstrap_catalogs_is_idempotent_and_creates_all_tracks_without_students(self):
+        from accounts.models import CATALOG_SERVICE_USERNAME
+
+        before_students = User.objects.filter(role=User.Role.STUDENT).count()
+        call_command("bootstrap_catalogs")
+        expected_courses = {
+            "fundamentos-web-smr": ActivityVersion.Language.WEB,
+            "laboratorio-bash-seguridad-asir": ActivityVersion.Language.BASH,
+            "introduccion-python-sge-dam": ActivityVersion.Language.PYTHON,
+        }
+        for slug, language in expected_courses.items():
+            course = Course.objects.get(slug=slug)
+            versions = ActivityVersion.objects.filter(activity__module__course=course)
+            self.assertEqual(versions.count(), 12)
+            self.assertEqual(versions.values_list("language", flat=True).distinct().get(), language)
+            self.assertEqual(
+                Assignment.objects.filter(activity_version__in=versions).count(),
+                12,
+            )
+        self.assertEqual(User.objects.filter(role=User.Role.STUDENT).count(), before_students)
+        service_owner = User.objects.get(username=CATALOG_SERVICE_USERNAME)
+        self.assertFalse(service_owner.is_active)
+        self.assertFalse(service_owner.has_usable_password())
+        call_command("bootstrap_catalogs", stdout=None)
+        self.assertEqual(Course.objects.filter(slug__in=expected_courses).count(), 3)
+        self.assertEqual(
+            ActivityVersion.objects.filter(activity__module__course__slug__in=expected_courses).count(),
+            36,
+        )
+
+    def test_bootstrap_uses_an_active_fallback_without_reactivating_closed_year(self):
+        from learning.management.commands.bootstrap_catalogs import Command
+
+        current_name = Command.academic_year_name()
+        current = AcademicYear.objects.create(name=current_name, active=False)
+        self.year.active = False
+        self.year.save(update_fields=["active"])
+        call_command("bootstrap_catalogs", stdout=None)
+        current.refresh_from_db()
+        self.assertFalse(current.active)
+        fallback = AcademicYear.objects.exclude(pk=current.pk).get(active=True)
+        self.assertTrue(fallback.name.startswith(f"{current_name}-catalogo"))
+        self.assertEqual(
+            Cohort.objects.filter(
+                academic_year=fallback,
+                track__in=(Cohort.Track.WEB, Cohort.Track.BASH, Cohort.Track.PYTHON),
+            ).count(),
+            3,
+        )
+
+    def test_student_cohort_switch_keeps_history_and_only_one_active_enrollment(self):
+        other_cohort = Cohort.objects.create(
+            name="2ASIR-B",
+            academic_year=self.year,
+            track=Cohort.Track.BASH,
+        )
+        call_command(
+            "seed_bash",
+            owner=self.teacher.username,
+            cohort=other_cohort.name,
+            academic_year=self.year.name,
+            stdout=None,
+        )
+        switched = set_student_cohort(self.student, other_cohort)
+        self.assertEqual(switched.cohort_id, other_cohort.id)
+        self.assertEqual(Enrollment.objects.filter(student=self.student, active=True).count(), 1)
+        self.assertFalse(Enrollment.objects.get(student=self.student, cohort=self.cohort).active)
+        restored = set_student_cohort(self.student, self.cohort)
+        self.assertEqual(restored.pk, Enrollment.objects.get(student=self.student, cohort=self.cohort).pk)
+        self.assertEqual(Enrollment.objects.filter(student=self.student, active=True).count(), 1)
+        self.assertEqual(Enrollment.objects.filter(student=self.student).count(), 2)
+        clear_student_enrollment(self.student)
+        self.assertFalse(Enrollment.objects.filter(student=self.student, active=True).exists())
+        with self.assertRaises(ValidationError):
+            set_student_cohort(self.teacher, self.cohort)
+
+    def test_student_sees_first_seeded_assignment_and_cross_track_isolation(self):
+        call_command("seed_web", owner=self.teacher.username, cohort="1SMR", academic_year="2025-2026", stdout=None)
+        seeded_cohort = Cohort.objects.get(name="1SMR", academic_year=self.year)
+        set_student_cohort(self.student, seeded_cohort)
+        self.client.force_login(self.student)
+        dashboard = self.client.get(reverse("student_dashboard"), HTTP_ACCEPT="application/json")
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertEqual(len(dashboard.json()["assignments"]), 12)
+        self.assertEqual(dashboard.json()["assignments"][0]["title"], "01 · Estructura semántica")
+
+        foreign_cohort = Cohort.objects.create(
+            name="2ASIR-C",
+            academic_year=self.year,
+            track=Cohort.Track.BASH,
+        )
+        foreign_activity = Activity.objects.create(
+            module=self.module,
+            title="Privado Bash",
+            slug="privado-bash",
+            created_by=self.teacher,
+        )
+        foreign_version = ActivityVersion.objects.create(
+            activity=foreign_activity,
+            version_number=1,
+            language=ActivityVersion.Language.BASH,
+            starter_files={"bash": "#!/usr/bin/env bash\n"},
+            created_by=self.teacher,
+        )
+        foreign_assignment = Assignment.objects.create(
+            activity=foreign_activity,
+            activity_version=foreign_version,
+            created_by=self.teacher,
+            status=Assignment.Status.PUBLISHED,
+            published_at=timezone.now(),
+        )
+        AssignmentCohort.objects.create(assignment=foreign_assignment, cohort=foreign_cohort)
+        self.assertEqual(
+            self.client.get(reverse("workspace_detail_api", args=[foreign_assignment.id])).status_code,
+            404,
+        )
+
+    def test_seed_reuses_one_deterministic_assignment_when_legacy_duplicates_exist(self):
+        call_command("seed_bash", owner=self.teacher.username, cohort="2ASIR", academic_year="2025-2026", stdout=None)
+        activity = Activity.objects.filter(module__course__slug="laboratorio-bash-seguridad-asir").order_by("title").first()
+        version = activity.current_version
+        first = Assignment.objects.get(activity=activity, activity_version=version)
+        duplicate = Assignment.objects.create(
+            activity=activity,
+            activity_version=version,
+            status=Assignment.Status.PUBLISHED,
+            published_at=timezone.now(),
+            created_by=self.teacher,
+        )
+        call_command("seed_bash", owner=self.teacher.username, cohort="2ASIR", academic_year="2025-2026", stdout=None)
+        self.assertEqual(Assignment.objects.filter(activity=activity, activity_version=version).count(), 2)
+        self.assertTrue(AssignmentCohort.objects.filter(assignment=first, cohort__name="2ASIR").exists())
+        self.assertFalse(AssignmentCohort.objects.filter(assignment=duplicate, cohort__name="2ASIR").exists())
+
+    def test_assignment_cohort_track_mismatch_is_rejected_and_not_granted(self):
+        foreign_cohort = Cohort.objects.create(
+            name="2ASIR-mismatch",
+            academic_year=self.year,
+            track=Cohort.Track.BASH,
+        )
+        invalid_link = AssignmentCohort(assignment=self.assignment, cohort=foreign_cohort)
+        with self.assertRaises(ValidationError):
+            invalid_link.full_clean()
+        AssignmentCohort.objects.create(assignment=self.assignment, cohort=foreign_cohort)
+        Enrollment.objects.create(cohort=foreign_cohort, student=self.other_student)
+        self.assertIsNone(
+            __import__("grading.services", fromlist=["student_assignment_or_404"]).student_assignment_or_404(
+                self.other_student,
+                self.assignment.id,
+            )
+        )
+
+    def test_inactive_cohort_and_academic_year_hide_assignments(self):
+        self.client.force_login(self.student)
+        self.cohort.active = False
+        self.cohort.save(update_fields=["active"])
+        dashboard = self.client.get(reverse("student_dashboard"), HTTP_ACCEPT="application/json")
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertEqual(dashboard.json()["assignments"], [])
+        self.cohort.active = True
+        self.cohort.save(update_fields=["active"])
+        self.year.active = False
+        self.year.save(update_fields=["active"])
+        dashboard = self.client.get(reverse("student_dashboard"), HTTP_ACCEPT="application/json")
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertEqual(dashboard.json()["assignments"], [])
+        self.assertEqual(self.client.get(reverse("workspace_detail_api", args=[self.assignment.id])).status_code, 404)
+
     def test_seed_bash_is_idempotent_and_does_not_overwrite_assigned_versions(self):
         call_command("seed_bash", owner=self.teacher.username, cohort="2ASIR", academic_year="2025-2026")
         versions = ActivityVersion.objects.filter(language=ActivityVersion.Language.BASH)
@@ -116,7 +321,13 @@ class DraftTests(LearningFactoryMixin, TestCase):
             status=Assignment.Status.PUBLISHED,
             published_at=timezone.now(),
         )
-        AssignmentCohort.objects.create(assignment=assignment, cohort=self.cohort)
+        python_cohort = Cohort.objects.create(
+            name="2DAM-A",
+            academic_year=self.year,
+            track=Cohort.Track.PYTHON,
+        )
+        AssignmentCohort.objects.create(assignment=assignment, cohort=python_cohort)
+        set_student_cohort(self.student, python_cohort)
         draft = get_or_create_draft(self.student, assignment)
         self.assertEqual(draft.files, {"python": "print('inicio')\n"})
         submission, report = create_submission(
@@ -245,7 +456,13 @@ class DraftTests(LearningFactoryMixin, TestCase):
             status=Assignment.Status.PUBLISHED,
             published_at=timezone.now(),
         )
-        AssignmentCohort.objects.create(assignment=assignment, cohort=self.cohort)
+        bash_cohort = Cohort.objects.create(
+            name="2ASIR-A",
+            academic_year=self.year,
+            track=Cohort.Track.BASH,
+        )
+        AssignmentCohort.objects.create(assignment=assignment, cohort=bash_cohort)
+        set_student_cohort(self.student, bash_cohort)
         draft = get_or_create_draft(self.student, assignment)
         self.assertEqual(draft.files, {"bash": "#!/usr/bin/env bash\n"})
         submission, report = create_submission(
@@ -332,7 +549,11 @@ class DraftTests(LearningFactoryMixin, TestCase):
             password="UnaClaveSegura123!",
             role=User.Role.TEACHER,
         )
-        other_cohort = Cohort.objects.create(name="1SMR-B", academic_year=self.year)
+        other_cohort = Cohort.objects.create(
+            name="1SMR-B",
+            academic_year=self.year,
+            track=Cohort.Track.WEB,
+        )
         Enrollment.objects.create(cohort=other_cohort, student=self.other_student)
         TeachingAssignment.objects.create(cohort=other_cohort, teacher=other_teacher)
         AssignmentCohort.objects.create(assignment=self.assignment, cohort=other_cohort)

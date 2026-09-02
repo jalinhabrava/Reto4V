@@ -1,5 +1,5 @@
 [Unit]
-Description=Reto4V scheduled backup
+Description=Programmy4V scheduled backup
 Requires=reto4v-compose.service
 After=reto4v-compose.service
 

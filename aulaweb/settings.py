@@ -1,4 +1,4 @@
-"""Django settings for the LAN AulaWeb installation.
+"""Django settings for the LAN Programmy4V installation.
 
 The defaults intentionally work with a local SQLite database.  Production uses
 PostgreSQL by setting DATABASE_URL (or the individual DB_* variables); no

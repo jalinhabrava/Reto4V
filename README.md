@@ -1,6 +1,6 @@
-# Reto4V
+# Programmy4V
 
-Reto4V es una herramienta de gamificación para el aprendizaje de programación,
+Programmy4V es una herramienta de gamificación para el aprendizaje de programación,
 pensada para funcionar en la red local de un centro educativo. Ofrece retos,
 puntuación, progreso y revisión docente sin depender de servicios externos en
 tiempo de uso.
@@ -23,7 +23,7 @@ archivos; los retos de lectura y escritura solo comprueban la estructura del
 código. La puntuación de juego (XP, niveles e insignias) es motivacional y no
 sustituye a la calificación académica que decida el profesorado.
 
-![Panel del alumno de Reto4V](docs/images/dashboard.png)
+![Panel del alumno de Programmy4V](docs/images/dashboard.png)
 
 *Vista de ejemplo con datos ficticios; no representa alumnado real.* Consulta
 también los espacios de trabajo [Bash](docs/images/bash-workspace.png) y
@@ -45,36 +45,62 @@ cd Reto4V
 bash scripts/install.sh --host 192.168.20.10 --port 8080
 ```
 
+La marca que verá el alumnado es **Programmy4V**. Se conserva `Reto4V` en la
+URL del repositorio y en el nombre de la carpeta del ejemplo para que las
+actualizaciones de instalaciones existentes sigan funcionando; también se
+mantienen los nombres internos de Django, Compose y los scripts por la misma
+razón.
+
 El instalador comprueba Docker, crea `.env` sin sobrescribir uno existente,
 genera secretos independientes con permisos `600`, construye la imagen,
-arranca PostgreSQL y Reto4V, espera al endpoint de salud y ofrece crear la
+arranca PostgreSQL y Programmy4V, espera al endpoint de salud y ofrece crear la
 primera cuenta administradora. Cambia la IP de ejemplo por la del servidor o
 por el nombre DNS interno del centro. Para una prueba únicamente local usa
 `--host localhost`.
 
-Para cargar los retos de Bash de demostración después de crear la cuenta del
-profesor:
+La imagen precarga automáticamente, al arrancar por primera vez, los tres
+catálogos formativos y sus grupos base: Web · SMR, Bash · ASIR y Python · DAM.
+No crea alumnos ni contraseñas de demostración. El proceso es idempotente y
+puede repetirse al actualizar la instalación. La opción está controlada por
+`PRELOAD_CATALOGS=1` (valor predeterminado); para una instalación que deba
+arrancar sin tocar el catálogo, establece `PRELOAD_CATALOGS=0` en `.env`.
+
+Después de iniciar sesión como administrador, crea cada alumno desde
+`/admin-ui/users/` y selecciona su ciclo e itinerario en el campo **Ciclo e
+itinerario**. Esa acción crea la matrícula activa automáticamente; el alumno
+verá su primer reto en cuanto entre. Cada alumno puede tener un único ciclo e
+itinerario activo. Para cambiarlo, edita la cuenta y selecciona el nuevo grupo;
+la matrícula anterior queda inactiva para conservar la trazabilidad.
+
+Si necesitas volver a cargar o reparar el catálogo de forma manual, ejecuta:
 
 ```bash
-bash scripts/install.sh --no-build --skip-admin --seed-bash \
+docker compose --env-file .env exec web python manage.py bootstrap_catalogs
+```
+
+### Actualizar una instalación existente
+
+Haz primero una copia de seguridad y, desde la carpeta clonada dentro de WSL,
+aplica la nueva versión con:
+
+```bash
+bash scripts/backup.sh
+git pull --ff-only
+bash scripts/install.sh --skip-admin
+```
+
+El último paso conserva `.env` y los volúmenes, reconstruye la aplicación,
+aplica las migraciones y precarga de forma idempotente los 36 retos. No uses
+`docker compose down -v`: ese modificador sí elimina los datos persistentes.
+
+También puedes cargar un itinerario concreto, manteniendo el propietario y el
+grupo que el centro haya elegido:
+
+```bash
+docker compose --env-file .env exec web python manage.py seed_bash \
   --owner profesor --cohort 2ASIR
-```
-
-Para cargar también Python para el grupo de 2.º DAM:
-
-```bash
-bash scripts/install.sh --no-build --skip-admin --seed-python \
-  --owner profesor --python-cohort 2DAM
-```
-
-También puedes cargar ambos itinerarios en una sola ejecución. `--cohort` es
-el nombre histórico del grupo Bash; `--bash-cohort` es su forma explícita y
-`--python-cohort` mantiene por defecto `2DAM`:
-
-```bash
-bash scripts/install.sh --no-build --skip-admin \
-  --seed-bash --seed-python --owner profesor \
-  --cohort 2ASIR --python-cohort 2DAM
+docker compose --env-file .env exec web python manage.py seed_python \
+  --owner profesor --cohort 2DAM
 ```
 
 El instalador es idempotente: repetirlo no elimina volúmenes ni usuarios. Las
@@ -120,11 +146,11 @@ modo mirrored, funcionamiento sin Internet y copias de seguridad:
 
 ## Estado curricular
 
-La versión 0.3 trae una actividad web y dos rutas iniciales de doce retos:
-Bash para los fundamentos prácticos de Seguridad de 2.º ASIR y Python para
-preparar el trabajo posterior con Odoo en Sistemas de gestión empresarial de
-2.º DAM. El banco completo de actividades y la cobertura de todos los
-resultados de aprendizaje se ampliarán por fases.
+El catálogo inicial trae doce retos por itinerario (36 en total): Web para
+Aplicaciones web de SMR, Bash para los fundamentos prácticos de Seguridad de
+2.º ASIR y Python para preparar el trabajo posterior con Odoo en Sistemas de
+gestión empresarial de 2.º DAM. El banco completo de actividades y la
+cobertura de todos los resultados de aprendizaje se ampliarán por fases.
 
 La ruta Python es una preparación parcial, no una implementación de Odoo ni
 una acreditación del módulo. El currículo navarro vigente sitúa `0491 ·
@@ -142,6 +168,7 @@ uv sync --all-groups --frozen
 npm ci
 npm run build
 uv run python manage.py migrate
+uv run python manage.py bootstrap_catalogs
 uv run python manage.py runserver 127.0.0.1:8000
 ```
 

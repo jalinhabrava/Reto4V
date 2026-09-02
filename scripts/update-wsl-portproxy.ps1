@@ -31,5 +31,5 @@ if (-not (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContin
     New-NetFirewallRule -DisplayName $ruleName -Direction Inbound -Action Allow -Protocol TCP -LocalPort $ListenPort -Profile Domain,Private -RemoteAddress $RemoteAddress | Out-Null
 }
 
-Write-Host "Reto4V LAN: $ListenAddress`:$ListenPort -> WSL $wslAddress`:$ConnectPort"
+Write-Host "Programmy4V LAN: $ListenAddress`:$ListenPort -> WSL $wslAddress`:$ConnectPort"
 Write-Host "Comprueba: netsh interface portproxy show v4tov4"

@@ -1,4 +1,4 @@
-"""Declarative, non-executing evaluator for the first AulaWeb milestone.
+"""Declarative, non-executing evaluator for the first Programmy4V milestone.
 
 Student files are parsed as data.  The evaluator never imports, evaluates or
 executes JavaScript, Bash or Python and never renders student HTML in the

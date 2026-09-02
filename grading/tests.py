@@ -31,7 +31,7 @@ class GradingFactoryMixin:
         self.teacher = User.objects.create_user(username="teacher", password="UnaClaveSegura123!", role=User.Role.TEACHER)
         self.student = User.objects.create_user(username="student", password="UnaClaveSegura123!", role=User.Role.STUDENT)
         year = AcademicYear.objects.create(name="2025-2026")
-        cohort = Cohort.objects.create(name="1SMR-A", academic_year=year)
+        cohort = Cohort.objects.create(name="1SMR-A", academic_year=year, track=Cohort.Track.WEB)
         Enrollment.objects.create(cohort=cohort, student=self.student)
         TeachingAssignment.objects.create(cohort=cohort, teacher=self.teacher)
         course = Course.objects.create(title="Web", slug="web", created_by=self.teacher)

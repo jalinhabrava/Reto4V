@@ -1,10 +1,10 @@
-# Desplegar Reto4V en WSL2 con Docker Engine
+# Desplegar Programmy4V en WSL2 con Docker Engine
 
-Esta guía sirve para la primera versión de Reto4V en una máquina Windows que ejecuta
+Esta guía sirve para desplegar Programmy4V en una máquina Windows que ejecuta
 Ubuntu dentro de WSL2. El motor de contenedores es **Docker Engine dentro de
 WSL**; Docker Desktop no es un requisito ni una dependencia del despliegue.
 
-Reto4V y PostgreSQL se ejecutan en contenedores Linux. PostgreSQL no publica
+Programmy4V y PostgreSQL se ejecutan en contenedores Linux. PostgreSQL no publica
 ningún puerto en Windows: solo es accesible desde la red privada de Compose.
 El único puerto de aula es el de `web` (por defecto TCP 8080).
 
@@ -171,13 +171,18 @@ git clone https://github.com/jalinhabrava/Reto4V.git Reto4V
 cd Reto4V
 ```
 
+El nombre visible para el centro es **Programmy4V**. Se conservan `Reto4V` en
+la URL y carpeta de clonación, y los nombres internos de Compose, Django,
+volúmenes, imágenes, servicios y scripts, para que una instalación existente
+pueda actualizarse sin renombrados ni pérdida de datos.
+
 Si la política del centro exige `/opt/reto4v`, crea esa ruta una vez con
 `sudo`, clona y devuelve la propiedad del checkout al usuario de operación.
 Si recibes el código desde Windows, copia el árbol de trabajo a una ruta Linux
 con `cp --archive`, pero no copies un `.env` que contenga credenciales desde
 una carpeta compartida.
 
-## 6. Instalación de Reto4V
+## 6. Instalación de Programmy4V
 
 El instalador es idempotente y no instala paquetes del sistema ni usa `sudo`.
 Comprueba Docker Engine y Compose v2, crea `.env` con secretos aleatorios
@@ -204,7 +209,28 @@ En una ejecución sin terminal puedes crearla después con:
 docker compose --env-file .env exec web python manage.py createsuperuser
 ```
 
-Para cargar los retos Bash de demostración de 2.º ASIR:
+El servicio `web` precarga automáticamente los tres catálogos formativos al
+arrancar después de las migraciones: Web · SMR, Bash · ASIR y Python · DAM,
+con doce retos publicados por itinerario. No crea alumnos ni contraseñas de
+demostración. Este paso se controla con `PRELOAD_CATALOGS=1` en `.env` (valor
+predeterminado) y es idempotente; al repetir la instalación no borra cuentas,
+matrículas ni entregas.
+
+Para comprobar o repetir el bootstrap de catálogo manualmente:
+
+```bash
+docker compose --env-file .env exec web python manage.py bootstrap_catalogs
+```
+
+Después entra en `/admin-ui/classrooms/` para comprobar los ciclos y el número
+de retos publicados. En `/admin-ui/users/`, crea cada cuenta individual y
+selecciona **Ciclo e itinerario**. Esa selección crea la matrícula activa y
+concede los retos publicados del grupo: no hay que asignar actividades una a
+una. Cada alumno conserva un único ciclo activo; editarlo cambia el acceso y
+desactiva la matrícula anterior sin borrar su historial.
+
+Para cargar un itinerario adicional o un grupo con nombre propio, puedes usar
+los seeds de forma controlada. Para Bash:
 
 ```bash
 bash scripts/install.sh --no-build --skip-admin --seed-bash \
@@ -229,7 +255,9 @@ bash scripts/install.sh --no-build --skip-admin \
 ```
 
 El propietario debe ser una cuenta local de profesor o administración ya
-creada. Los seeds son idempotentes y no crean alumnos ni contraseñas.
+creada. Los seeds son idempotentes y no crean alumnos ni contraseñas. Si
+`PRELOAD_CATALOGS=0`, estos comandos son la forma manual de poblar solo los
+itinerarios que el centro haya aprobado.
 
 `web` ejecuta las migraciones y `collectstatic` antes de Gunicorn. Un reinicio
 normal no elimina los volúmenes. No uses `docker compose down -v` en la
@@ -237,7 +265,7 @@ instalación real: elimina los datos de PostgreSQL y los archivos locales.
 
 La base de datos solo está en la red Compose `backend`, marcada como `internal`;
 `web` también se conecta a la red `edge` para que el puerto publicado y Caddy
-puedan servir la aplicación. Reto4V no necesita CDN, fuentes, analytics ni APIs
+puedan servir la aplicación. Programmy4V no necesita CDN, fuentes, analytics ni APIs
 para funcionar. La conectividad de salida del contenedor web no es una frontera
 de seguridad: si el centro la necesita, bloquéala con la política del host o del
 firewall. Conserva las imágenes ya construidas si vas a trabajar sin Internet.
@@ -279,7 +307,7 @@ netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=$Listen
 netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=$ListenPort connectaddress=$WslIp connectport=$ListenPort
 
 # Sustituye estas redes por la subred exacta del aula si es posible.
-New-NetFirewallRule -DisplayName "Reto4V LAN TCP $ListenPort" `
+New-NetFirewallRule -DisplayName "Programmy4V LAN TCP $ListenPort" `
   -Direction Inbound -Action Allow -Protocol TCP -LocalPort $ListenPort `
   -Profile Domain,Private -RemoteAddress 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ```
@@ -330,10 +358,10 @@ regla Hyper-V con este identificador de creador de WSL:
 
 ```powershell
 New-NetFirewallHyperVRule -Name "Reto4V-8080" `
-  -DisplayName "Reto4V WSL TCP 8080" -Direction Inbound `
+  -DisplayName "Programmy4V WSL TCP 8080" -Direction Inbound `
   -VMCreatorId "{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}" `
   -Protocol TCP -LocalPorts 8080
-New-NetFirewallRule -DisplayName "Reto4V LAN TCP 8080" `
+New-NetFirewallRule -DisplayName "Programmy4V LAN TCP 8080" `
   -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8080 `
   -Profile Domain,Private -RemoteAddress 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ```
@@ -499,9 +527,21 @@ Antes de actualizar:
 
 1. Ejecuta y verifica un backup.
 2. Prueba el cambio con una copia de la base de datos si afecta al esquema.
-3. Con Internet disponible, reconstruye (`docker compose build --pull`).
-4. Arranca con `docker compose up -d`; verifica login, editor, entrega y CSV.
-5. Comprueba desde un equipo de alumno y desde el profesor.
+3. Descarga la versión y repite el instalador, que conserva `.env` y los
+   volúmenes existentes:
+
+   ```bash
+   bash scripts/backup.sh
+   git pull --ff-only
+   bash scripts/install.sh --skip-admin
+   ```
+
+4. El servicio aplica migraciones y vuelve a ejecutar el bootstrap idempotente
+   si `PRELOAD_CATALOGS=1`.
+5. Verifica `/admin-ui/classrooms/`, login, editor, entrega y CSV desde un
+   equipo de alumno y desde el profesor. Si el catálogo estaba desactivado,
+   ejecuta `docker compose --env-file .env exec web python manage.py
+   bootstrap_catalogs` una vez aprobado el contenido.
 
 El Dockerfile instala el `requirements.lock` exportado desde `uv.lock` con
 hashes verificados y usa `package-lock.json` para npm. Registra los digests de
@@ -524,6 +564,14 @@ el flujo documentado aquí.
 Consulta `docker compose logs web`. Comprueba que `DB_*` coincide con
 `POSTGRES_*`, que las migraciones terminaron y que `HEALTHCHECK_PATH` apunta a
 una ruta que responde (`/health/` por defecto).
+
+### El alumno no ve retos
+
+Comprueba que el grupo aparece activo en `/admin-ui/classrooms/`, que tiene
+retos publicados y que la cuenta tiene seleccionado el **Ciclo e itinerario**
+correcto en `/admin-ui/users/`. Si el catálogo está vacío, revisa
+`PRELOAD_CATALOGS` y repite `bootstrap_catalogs`; no asignes actividades
+directamente a un alumno ni crees una segunda matrícula activa.
 
 ### El navegador del servidor funciona, pero el aula no conecta
 

@@ -25,6 +25,10 @@ if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
   python manage.py migrate --noinput
 fi
 
+if [ "${PRELOAD_CATALOGS:-1}" = "1" ]; then
+  python manage.py bootstrap_catalogs
+fi
+
 if [ "${RUN_COLLECTSTATIC:-1}" = "1" ]; then
   python manage.py collectstatic --noinput --clear
 fi

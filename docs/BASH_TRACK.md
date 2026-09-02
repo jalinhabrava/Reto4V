@@ -1,4 +1,4 @@
-# Itinerario Bash · Reto4V
+# Itinerario Bash · Programmy4V
 
 ## Propósito
 
@@ -22,8 +22,10 @@ RA/CE.
 
 ## Crear el itinerario
 
-Después de crear una cuenta de profesor o administrador y ejecutar las
-migraciones:
+En una instalación nueva, el catálogo Bash se precarga automáticamente en el
+grupo base **Bash · ASIR** después de las migraciones (`PRELOAD_CATALOGS=1`).
+Para una instalación con el bootstrap desactivado o para un grupo adicional,
+crea el itinerario después de tener una cuenta de profesor o administrador:
 
 ```bash
 python manage.py seed_bash --owner profesor --cohort 2ASIR
@@ -37,9 +39,16 @@ Opciones disponibles:
 
 El comando crea el curso `Laboratorio Bash para Seguridad · ASIR`, un módulo
 de apoyo `/laboratorio`, doce actividades publicadas y sus asignaciones al
-grupo indicado. No crea alumnos, contraseñas ni datos personales. Es
-idempotente: reutiliza actividades, versiones, tests y asignaciones que ya
-existan; nunca reemplaza una versión asignada.
+grupo indicado. El grupo queda marcado con `track=bash`, que permite que el
+panel admin lo muestre como **Bash · ASIR** y que las cuentas de alumno lo
+seleccionen. No crea alumnos, contraseñas ni datos personales. Es idempotente:
+reutiliza actividades, versiones, tests y asignaciones que ya existan; nunca
+reemplaza una versión asignada.
+
+Al crear o editar un alumno en `/admin-ui/users/`, selecciona su ciclo e
+itinerario. Esa selección activa su única matrícula; no hay que asignar cada
+reto por separado. Si cambias a otro ciclo, la matrícula anterior se conserva
+como historial pero deja de dar acceso.
 
 El catálogo contiene teoría, reto, pistas, una plantilla Bash y una solución
 de referencia para que el docente pueda revisar el diseño. Como el repositorio

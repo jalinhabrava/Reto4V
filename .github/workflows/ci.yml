@@ -1,4 +1,4 @@
-name: Reto4V CI
+name: Programmy4V CI
 
 on:
   push:
@@ -95,6 +95,11 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:18080/static/dist/assets/app.js >/dev/null
           docker compose --env-file .env exec -T web python manage.py check --database default
           docker compose --env-file .env exec -T web python manage.py migrate --check
+
+      - name: Verificar catálogos precargados
+        run: |
+          docker compose --env-file .env exec -T web python manage.py shell -c \
+            "from learning.models import ActivityVersion, Cohort; assert ActivityVersion.objects.filter(language='web').count() == 12; assert ActivityVersion.objects.filter(language='bash').count() == 12; assert ActivityVersion.objects.filter(language='python').count() == 12; assert Cohort.objects.filter(track__in=('web', 'bash', 'python'), active=True).count() >= 3"
 
       - name: Crear propietario efímero y sembrar itinerarios
         run: |

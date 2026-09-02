@@ -36,7 +36,7 @@ echo "Guardando media local…"
 "${compose[@]}" exec -T web sh -c 'tar -czf - -C /app/media .' > "${TMP_DIR}/media.tar.gz"
 
 {
-  echo "Reto4V backup"
+  echo "Programmy4V backup"
   echo "created_at_utc=${STAMP}"
   echo "project_dir=${PROJECT_DIR}"
   echo "compose_project=${COMPOSE_PROJECT_NAME:-reto4v}"

@@ -7,6 +7,11 @@ from aulaweb.health import health_view
 from learning.views import workspace_page
 
 urlpatterns = [
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url="/static/brand-mark.svg", permanent=True),
+        name="favicon",
+    ),
     path("admin/", admin.site.urls),
     path("login/", login_view, name="login"),
     path("health/", health_view, name="health"),

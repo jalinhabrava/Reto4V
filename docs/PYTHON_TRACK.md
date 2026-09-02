@@ -1,4 +1,4 @@
-# Itinerario Python · Reto4V
+# Itinerario Python · Programmy4V
 
 ## Propósito
 
@@ -17,14 +17,16 @@ modificación del currículo de grado superior](https://www.educacion.navarra.es
 
 Como contexto técnico, la documentación oficial de [Odoo Server
 framework 101](https://www.odoo.com/documentation/19.0/developer/tutorials/server_framework_101.html)
-presenta objetos y modelos desarrollados con Python. Reto4V solo trabaja los
+presenta objetos y modelos desarrollados con Python. Programmy4V solo trabaja los
 fundamentos previos; las APIs, módulos, seguridad y ORM de Odoo requieren un
 entorno Odoo de prácticas separado.
 
 ## Crear el itinerario
 
-Después de crear una cuenta de profesor o administrador y ejecutar las
-migraciones:
+En una instalación nueva, el catálogo Python se precarga automáticamente en el
+grupo base **Python · DAM** después de las migraciones (`PRELOAD_CATALOGS=1`).
+Para una instalación con el bootstrap desactivado o para un grupo adicional,
+crea el itinerario después de tener una cuenta de profesor o administrador:
 
 ```bash
 python manage.py seed_python --owner profesor --cohort 2DAM
@@ -37,10 +39,17 @@ Opciones disponibles:
 - `--academic-year AAAA-AAAA`: curso académico; si se omite se calcula según la fecha del servidor.
 
 El comando crea el curso `Introducción a Python para SGE · DAM`, un módulo de
-apoyo y doce actividades publicadas con sus asignaciones al grupo. No crea
-alumnos, contraseñas ni datos personales. Es idempotente: reutiliza actividades,
-versiones, tests y asignaciones que ya existan; nunca reemplaza una versión
-asignada ni modifica su evidencia.
+apoyo y doce actividades publicadas con sus asignaciones al grupo. El grupo
+queda marcado con `track=python`, que permite mostrarlo como **Python · DAM**
+en el panel local. No crea alumnos, contraseñas ni datos personales. Es
+idempotente: reutiliza actividades, versiones, tests y asignaciones que ya
+existan; nunca reemplaza una versión asignada ni modifica su evidencia.
+
+Al crear o editar un alumno en `/admin-ui/users/`, selecciona su ciclo e
+itinerario. Esa selección activa su única matrícula y habilita el primer reto
+al iniciar sesión; no hay que asignar actividades una por una. Si cambias a
+otro ciclo, la matrícula anterior se conserva como historial pero deja de dar
+acceso.
 
 El catálogo incluye una solución de referencia para revisar el diseño. Como el
 repositorio es público, las soluciones **no son respuestas secretas** ni deben

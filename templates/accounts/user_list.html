@@ -5,28 +5,35 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; frame-src 'none'" />
-    <title>Usuarios · Reto4V</title>
+    <title>Usuarios · Programmy4V</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'brand-mark.svg' %}" />
     <link rel="stylesheet" href="{% static 'dist/assets/app.css' %}" />
   </head>
   <body class="account-body">
     <main class="account-page">
       <header class="review-topbar">
-        <a class="brand" href="{% url 'teacher_dashboard' %}"><img src="{% static 'brand-mark.svg' %}" alt="" width="36" height="36" /><span>Reto4V<span class="brand-dot">.</span></span></a>
-        <nav class="review-nav"><a href="{% url 'teacher_dashboard' %}">Volver al panel</a></nav>
+        <a class="brand" href="{% url 'teacher_dashboard' %}"><img src="{% static 'brand-mark.svg' %}" alt="" width="36" height="36" /><span>Programmy4V<span class="brand-dot">.</span></span></a>
+        <nav class="review-nav"><a href="{% url 'classrooms_overview' %}">Aulas e itinerarios</a><a href="{% url 'teacher_dashboard' %}">Volver al panel</a></nav>
       </header>
       <section class="account-heading">
-        <div><p class="kicker">Administración local</p><h1>Usuarios</h1><p>Las bajas se gestionan desactivando la cuenta para conservar las evidencias académicas.</p></div>
+        <div><p class="kicker">Administración local</p><h1>Usuarios</h1><p>Asigna un ciclo e itinerario al crear cada alumno. Así sus retos aparecen listos desde el primer acceso.</p></div>
         <a class="button button-dark" href="{% url 'user_create' %}">Crear cuenta</a>
       </section>
+      {% if messages %}<div class="account-messages">{% for message in messages %}<p class="review-message">{{ message }}</p>{% endfor %}</div>{% endif %}
       <div class="account-table-wrap">
         <table class="account-table">
-          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Ciclo e itinerario</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody>
             {% for user in users %}
               <tr>
                 <td><strong>{{ user.username }}</strong></td>
                 <td>{{ user.display_name }}</td>
-                <td>{{ user.get_role_display }}</td>
+                <td>{% if user.is_superuser %}Administrador{% else %}{{ user.get_role_display }}{% endif %}</td>
+                <td>
+                  {% with enrollment=user.active_enrollment_records|first %}
+                    {% if enrollment %}<strong>{{ enrollment.cohort.get_track_display }}</strong><small class="account-table-subtext">{{ enrollment.cohort.name }} · {{ enrollment.cohort.academic_year.name }}</small>{% else %}<span class="account-muted">Sin itinerario</span>{% endif %}
+                  {% endwith %}
+                </td>
                 <td><span class="account-status {% if user.is_active %}is-active{% endif %}">{% if user.is_active %}Activa{% else %}Desactivada{% endif %}</span></td>
                 <td class="account-actions">
                   <a href="{% url 'user_update' user.id %}">Editar</a>
@@ -34,7 +41,7 @@
                 </td>
               </tr>
             {% empty %}
-              <tr><td colspan="5">No hay usuarios.</td></tr>
+              <tr><td colspan="6">No hay usuarios.</td></tr>
             {% endfor %}
           </tbody>
         </table>

@@ -5,7 +5,7 @@ from decimal import ROUND_FLOOR, Decimal
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Max
+from django.db.models import F, Max
 from django.utils import timezone
 
 from learning.models import Assignment, Draft, Enrollment, TestCase
@@ -105,6 +105,9 @@ def student_assignment_or_404(user, assignment_id: str) -> Assignment:
             status__in=(Assignment.Status.PUBLISHED, Assignment.Status.CLOSED),
             cohort_links__cohort__enrollments__student=user,
             cohort_links__cohort__enrollments__active=True,
+            cohort_links__cohort__active=True,
+            cohort_links__cohort__academic_year__active=True,
+            cohort_links__cohort__track=F("activity_version__language"),
         )
         .distinct()
         .first()
@@ -198,6 +201,9 @@ def create_submission(user, assignment: Assignment, payload: dict) -> tuple[Subm
             student=user,
             active=True,
             cohort__assignment_links__assignment=locked_assignment,
+            cohort__active=True,
+            cohort__academic_year__active=True,
+            cohort__track=locked_assignment.activity_version.language,
         ).exists():
             raise PermissionDenied("No estás matriculado en esta actividad.")
         latest = Submission.objects.filter(assignment=locked_assignment, student=user).aggregate(max_attempt=Max("attempt_number"))["max_attempt"]

@@ -1,6 +1,6 @@
-# Contrato de integración de Reto4V
+# Contrato de integración de Programmy4V
 
-El bundle React se sirve desde las plantillas Django y usa únicamente rutas relativas del mismo origen. La sesión se entrega en `user-data` (o en `aulaweb-bootstrap`) mediante `json_script`; nunca se persiste en `localStorage`.
+El bundle React se sirve desde las plantillas Django y usa únicamente rutas relativas del mismo origen. La sesión se entrega en `user-data` (o en `aulaweb-bootstrap`) mediante `json_script`; nunca se persiste en `localStorage`. La marca visible es **Programmy4V**; `aulaweb-bootstrap`, `aulaweb-preview` y los nombres históricos de las rutas se conservan como identificadores internos compatibles.
 
 ## Conceptos compartidos
 
@@ -12,6 +12,45 @@ Cada actividad publicada pertenece a un itinerario:
 
 La versión puede incluir `difficulty` (`beginner`, `intermediate`, `advanced`), `xp_reward` (entero no negativo) y `hints` (lista de textos u objetos). El cliente no inventa puntos, insignias ni progreso en producción: si un dato no llega, muestra un estado vacío o cero.
 
+Un `Cohort` representa el ciclo/grupo que recibe un itinerario y declara
+`track` como `web`, `bash` o `python`. Una cuenta de alumno debe tener como
+máximo una `Enrollment` activa; el alta y el cambio de itinerario se realizan
+desde la administración local y desactivan la matrícula anterior sin borrar
+su historial. Las consultas del servidor vuelven a comprobar esta matrícula,
+el estado activo del grupo/año académico y los `AssignmentCohort` publicados:
+el filtro visual del navegador no es un control de permisos.
+
+El panel de administración local ofrece `/admin-ui/classrooms/` para consultar
+los ciclos e itinerarios activos y `/admin-ui/users/` para crear o editar
+alumnos. El campo `cohort` (etiquetado **Ciclo e itinerario**) es obligatorio
+para el rol alumno. Al guardarlo, se crea la matrícula de forma atómica y el
+primer reto publicado del itinerario queda disponible en la siguiente sesión;
+si no existe matrícula, el dashboard explica que el administrador debe
+asignarla.
+
+## Catálogo inicial y bootstrap
+
+Al arrancar el servicio `web`, después de las migraciones, la instalación
+ejecuta `python manage.py bootstrap_catalogs` cuando `PRELOAD_CATALOGS=1` (el
+valor predeterminado). El comando es idempotente, crea o actualiza solo el
+contenido de catálogo y no crea alumnos, contraseñas de demostración ni
+entregas. Los grupos base son **Web · SMR**, **Bash · ASIR** y **Python · DAM**;
+la versión actual precarga doce retos publicados por itinerario (36 en total).
+El propietario interno del catálogo no puede iniciar sesión y no se muestra
+en la lista de usuarios.
+
+Para repetir el bootstrap tras una actualización:
+
+```bash
+docker compose --env-file .env exec web python manage.py bootstrap_catalogs
+```
+
+Para una instalación que deba preservar el catálogo sin ejecutar el bootstrap
+automático, establece `PRELOAD_CATALOGS=0` en `.env`. Los cambios de código se
+aplican con `git pull`, una copia de seguridad y `docker compose build`/`up`
+según [`docs/DEPLOY_WSL.md`](../docs/DEPLOY_WSL.md); volver a arrancar el
+contenedor no elimina usuarios, matrículas ni evidencias.
+
 ## Bootstrap de Django
 
 En las plantillas de dashboard y workspace:
@@ -21,7 +60,11 @@ En las plantillas de dashboard y workspace:
 {{ workspace|json_script:"workspace-data" }}
 ```
 
-El usuario necesita, como mínimo, `id`, `username`, `display_name`, `role` (`student`, `teacher` o `admin`) y `groups` (lista).
+El usuario necesita, como mínimo, `id`, `username`, `display_name`, `role`
+(`student`, `teacher` o `admin`) y, para un alumno, `cohort` (`id`, `name`,
+`track`, `track_label`, `academic_year`, `active`). `groups` puede mantenerse
+como lista de compatibilidad en bootstraps antiguos; no sustituye a la
+matrícula activa que aplica el servidor.
 
 ## Sesión
 
@@ -62,6 +105,12 @@ El usuario necesita, como mínimo, `id`, `username`, `display_name`, `role` (`st
 }
 ```
 
+La lista ya está limitada al único ciclo activo del alumno y ordenada por
+módulo, posición y título. El primer elemento es el reto que debe comenzar;
+cuando está sin iniciar, el cliente muestra **Empezar primer reto**. Con cero
+asignaciones, no se fabrica ninguna actividad: se muestra una indicación para
+que el administrador seleccione el ciclo e itinerario desde el panel.
+
 `completed` debe significar dominio según la política académica del servidor; una entrega corregida no equivale automáticamente a reto completado. `earned_xp` y `progress` son independientes de la nota publicada.
 
 El filtro `Todos`, `Web · SMR`, `Bash · ASIR`, `Python · DAM` se aplica sobre `language` y no altera los datos del servidor.
@@ -74,6 +123,12 @@ El editor se abre en `/assignments/<uuid>/` mediante `history.pushState`, sin de
 
 - `GET /teacher/dashboard/` con `Accept: application/json` → `{ "assignments": [{ "id", "title", "submissions", "graded", "language", "difficulty", "xp_reward" }], "reviews": [], "pending_reviews": 0 }`.
 - `GET /teacher/exports/?format=long|wide` → CSV UTF-8 con BOM y separador `;`. El cliente conserva este enlace y no reinterpreta ni recalcula las notas.
+
+La navegación de administración queda separada del dashboard docente: el
+enlace **Aulas e itinerarios** abre `/admin-ui/classrooms/` y **Usuarios** abre
+`/admin-ui/users/`. Ambas vistas requieren el rol administrador y muestran
+únicamente datos locales; el catálogo precargado se comparte mediante la
+matrícula del ciclo, no mediante asignaciones manuales alumno por alumno.
 
 ## Workspace
 

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+CATALOG_SERVICE_USERNAME = "__programmy4v_catalog__"
+
 
 class User(AbstractUser):
     class Role(models.TextChoices):
@@ -20,6 +22,11 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if not self.display_name:
             self.display_name = self.get_full_name() or self.username
+        # ``createsuperuser`` sets the Django flag but does not know about
+        # this application's role field.  Keep the two privilege systems in
+        # sync so a superuser is never presented as an unassigned student.
+        if self.is_superuser:
+            self.role = self.Role.ADMIN
         # Django's admin checks this flag.  Recompute it on every save so
         # demoting an administrator cannot leave a stale staff privilege.
         self.is_staff = bool(self.is_superuser or self.role == self.Role.ADMIN)

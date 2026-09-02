@@ -1,8 +1,8 @@
-# Especificación de producto · Reto4V
+# Especificación de producto · Programmy4V
 
 ## Objetivo
 
-Herramienta de gamificación para aprender programación en la LAN del centro.
+Programmy4V es una herramienta de gamificación para aprender programación en la LAN del centro.
 Tres recorridos comparten cuentas, grupos, editor, entregas y revisión docente:
 HTML/CSS/JavaScript para SMR, Bash para Seguridad de 2.º ASIR y Python
 introductorio para Sistemas de gestión empresarial de 2.º DAM.
@@ -17,7 +17,10 @@ en la instalación del centro. No se requiere OAuth, IA ni un servicio SaaS.
   edición, desactivación y restablecimiento de contraseña. No hay registro
   público. La desactivación conserva las evidencias.
 - Grupos, matrículas y relaciones docentes gestionados en la administración
-  local. Cada alumno y profesor accede a los grupos que tiene autorizados.
+  local. Cada alumno puede tener un único ciclo e itinerario activo; al crear o
+  editar la cuenta, el administrador selecciona el campo **Ciclo e itinerario**
+  y la matrícula se crea o cambia de forma atómica. Cada alumno solo recibe el
+  catálogo publicado de su grupo.
 - Actividades versionadas, asignaciones, plazos y política de intentos.
   Los cambios de un reto ya asignado necesitan una nueva versión.
 - Editor web con HTML, CSS, JavaScript y preview aislada en el navegador.
@@ -34,20 +37,30 @@ en la instalación del centro. No se requiere OAuth, IA ni un servicio SaaS.
   Los XP no se usan como nota académica ni como ranking público.
 - Docker Compose con PostgreSQL persistente; instalador para Linux/WSL2,
   HTTPS interno opcional, comprobación de salud y backup/restauración.
+- Bootstrap idempotente de catálogo al iniciar `web` (`PRELOAD_CATALOGS=1`),
+  sin crear alumnos ni contraseñas de demostración. La administración local
+  ofrece la vista **Aulas e itinerarios** para comprobar los grupos y sus
+  retos antes de crear las cuentas.
 
-La edición de cursos, grupos y actividades usa por ahora la administración
-de Django; no se presenta como un constructor visual de contenidos.
+La edición avanzada de cursos, grupos y actividades usa por ahora la
+administración de Django; usuarios, matrículas y enlaces grupo-reto quedan allí
+en modo de consulta para no saltarse los servicios académicos. El panel local
+de **Aulas e itinerarios** sirve para consultar el catálogo y la gestión
+cotidiana de matrículas, mientras que los grupos adicionales se preparan con
+los comandos `seed_*`. No se presenta como un constructor visual de contenidos.
 
 ## Contenido y currículo
 
-El catálogo inicial incluye **una actividad introductoria web**, **doce retos
-de Bash** y **doce retos de Python**. No representa la programación completa de
-ninguno de los módulos.
+El catálogo inicial incluye **doce retos web**, **doce retos de Bash** y
+**doce retos de Python** (36 retos publicados en total). Se cargan en los
+grupos base Web · SMR, Bash · ASIR y Python · DAM durante el bootstrap. No
+representa la programación completa de ninguno de los módulos.
 
 En SMR se mantiene la referencia navarra de `0228 · Aplicaciones web`, con
 trazabilidad curricular por versión. El banco completo debe desarrollarse
 conforme a la programación didáctica y al
-[Decreto Foral 109/2024, modificación de grado medio](https://www.educacion.navarra.es/documents/27590/558252/DF%2B109_2024%2Bmodificacion%2BGM.pdf/6641c899-fd0f-89e3-83f4-aa30c8224707).
+[Decreto Foral 49/2010 consolidado, currículo navarro de SMR](https://www.lexnavarra.navarra.es/detalle.asp?r=9129),
+con sus modificaciones vigentes.
 
 Bash apoya de forma transversal `0378 · Seguridad y alta disponibilidad`:
 variables, condiciones, bucles, funciones, argumentos, códigos de salida,
@@ -83,6 +96,10 @@ terminal que no existe.
 El estudiante debe poder recargar un reto y recuperar el borrador guardado,
 volver al resumen y ver el progreso actualizado. Un conflicto de edición
 debe ofrecer una decisión explícita, nunca sobrescribir silenciosamente.
+Al crear la cuenta, el administrador elige un único ciclo e itinerario; en el
+primer acceso el alumno debe encontrar su primer reto publicado ya disponible.
+Una cuenta sin matrícula muestra una orientación clara para solicitar la
+asignación, no un catálogo inventado.
 
 ## Requisitos del despliegue
 
@@ -94,7 +111,10 @@ solicitar recursos externos durante la clase.
 La instalación debe conservar configuración, secretos, usuarios y volúmenes
 al repetirse. La restauración es una operación distinta y requiere
 confirmación. Antes de usar datos reales se exige TLS, firewall del aula,
-backup comprobado y política de retención del centro.
+backup comprobado y política de retención del centro. El arranque automático
+del catálogo se puede desactivar con `PRELOAD_CATALOGS=0`; al actualizar con
+`git pull`, reconstruir y levantar la imagen vuelve a ejecutarse de forma
+idempotente cuando permanece en `1`.
 
 ## Criterios de aceptación del piloto en el centro
 

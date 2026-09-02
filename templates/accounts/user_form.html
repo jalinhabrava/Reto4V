@@ -5,15 +5,22 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; frame-src 'none'" />
-    <title>{{ title }} · Reto4V</title>
+    <title>{{ title }} · Programmy4V</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'brand-mark.svg' %}" />
     <link rel="stylesheet" href="{% static 'dist/assets/app.css' %}" />
   </head>
   <body class="account-body">
     <main class="account-page account-page-narrow">
-      <header class="review-topbar"><a class="brand" href="{% url 'user_list' %}"><img src="{% static 'brand-mark.svg' %}" alt="" width="36" height="36" /><span>Reto4V<span class="brand-dot">.</span></span></a><nav class="review-nav"><a href="{% url 'user_list' %}">Cancelar</a></nav></header>
+      <header class="review-topbar"><a class="brand" href="{% url 'user_list' %}"><img src="{% static 'brand-mark.svg' %}" alt="" width="36" height="36" /><span>Programmy4V<span class="brand-dot">.</span></span></a><nav class="review-nav"><a href="{% url 'classrooms_overview' %}">Aulas e itinerarios</a><a href="{% url 'user_list' %}">Cancelar</a></nav></header>
       <section class="account-form-card">
         <p class="kicker">Administración local</p><h1>{{ title }}</h1>
-        <form method="post" class="account-form">{% csrf_token %}{{ form.as_p }}<button class="button button-dark" type="submit">Guardar</button></form>
+        <div class="account-form-intro">
+          <span class="account-form-intro-mark">01 · Acceso al aula</span>
+          <h2>Elige el recorrido de aprendizaje</h2>
+          <p>Selecciona <strong>Ciclo e itinerario</strong> para que la cuenta de alumno reciba automáticamente los retos precargados de su clase. Al iniciar sesión encontrará el primer reto listo para empezar.</p>
+          <div class="account-track-notes"><span><strong>Web · SMR</strong><small>HTML, CSS y JavaScript</small></span><span><strong>Bash · ASIR</strong><small>Scripting y seguridad</small></span><span><strong>Python · DAM</strong><small>SGE y Odoo</small></span></div>
+        </div>
+        <form method="post" class="account-form">{% csrf_token %}{{ form.as_p }}<button class="button button-dark" type="submit">Guardar cuenta</button></form>
       </section>
     </main>
   </body>

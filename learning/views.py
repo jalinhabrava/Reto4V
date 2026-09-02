@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Prefetch
+from django.db.models import F, Prefetch
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -38,15 +38,47 @@ MAX_JSON_BODY = 2 * 1024 * 1024
 def _user_payload(user):
     effective_role = User.Role.ADMIN if user.is_superuser else user.role
     groups = []
+    tracks = []
+    cohort_payload = None
     if effective_role == User.Role.STUDENT:
-        groups = list(user.enrollments.filter(active=True).values_list("cohort__name", flat=True))
+        active_enrollments = list(
+            user.enrollments.filter(
+                active=True,
+                cohort__active=True,
+                cohort__academic_year__active=True,
+            )
+            .select_related("cohort", "cohort__academic_year")
+            .order_by("enrolled_at", "id")
+        )
+        groups = [enrollment.cohort.name for enrollment in active_enrollments]
+        tracks = [enrollment.cohort.track for enrollment in active_enrollments]
+        if active_enrollments:
+            cohort = active_enrollments[0].cohort
+            cohort_payload = {
+                "id": str(cohort.pk),
+                "name": cohort.name,
+                "track": cohort.track,
+                "track_label": cohort.get_track_display(),
+                "academic_year": cohort.academic_year.name,
+                "active": bool(cohort.active and cohort.academic_year.active),
+            }
     elif effective_role == User.Role.TEACHER:
         groups = list(
             user.teaching_assignments.filter(active=True)
             .values_list("cohort__name", flat=True)
             .distinct()
         )
-    return {"id": user.pk, "username": user.username, "display_name": user.display_name, "role": effective_role, "groups": groups, "group": groups[0] if groups else ""}
+    return {
+        "id": user.pk,
+        "username": user.username,
+        "display_name": user.display_name,
+        "role": effective_role,
+        "groups": groups,
+        "group": groups[0] if groups else "",
+        "tracks": tracks,
+        "track": tracks[0] if tracks else "",
+        "cohort": cohort_payload,
+    }
 
 
 def _json_body(request) -> dict:
@@ -230,6 +262,9 @@ def student_dashboard(request):
             status__in=(Assignment.Status.PUBLISHED, Assignment.Status.CLOSED),
             cohort_links__cohort__enrollments__student=request.user,
             cohort_links__cohort__enrollments__active=True,
+            cohort_links__cohort__active=True,
+            cohort_links__cohort__academic_year__active=True,
+            cohort_links__cohort__track=F("activity_version__language"),
         )
         .order_by("activity__module__position", "activity__title", "id")
         .distinct()
@@ -594,7 +629,7 @@ def teacher_export(request):
     if selected and selected in assignment_ids:
         assignments = [item for item in assignments if str(item.id) == selected]
     response = HttpResponse(content_type="text/csv; charset=utf-8")
-    response["Content-Disposition"] = 'attachment; filename="aulaweb-calificaciones.csv"'
+    response["Content-Disposition"] = 'attachment; filename="programmy4v-calificaciones.csv"'
     response.write("\ufeff")
     writer = csv.writer(response, delimiter=";", lineterminator="\r\n")
     if request.GET.get("format") == "wide":

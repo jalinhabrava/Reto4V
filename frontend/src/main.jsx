@@ -548,11 +548,11 @@ function LoginScreen({ onLogin }) {
       if (DEMO_MODE && username && password === 'demo') {
         onLogin(username.toLowerCase().includes('profe') || username.toLowerCase().includes('javier') ? DEMO_USER_TEACHER : DEMO_USER_STUDENT)
       } else {
-        setError(response.status === 429 ? 'Demasiados intentos. Espera cinco minutos antes de volver a probar.' : response.status >= 500 ? 'No se pudo conectar con Reto4V.' : 'Usuario o contraseña incorrectos.')
+        setError(response.status === 429 ? 'Demasiados intentos. Espera cinco minutos antes de volver a probar.' : response.status >= 500 ? 'No se pudo conectar con Programmy4V.' : 'Usuario o contraseña incorrectos.')
       }
     } catch {
       if (DEMO_MODE && username && password === 'demo') onLogin(username.toLowerCase().includes('profe') || username.toLowerCase().includes('javier') ? DEMO_USER_TEACHER : DEMO_USER_STUDENT)
-      else setError('No se pudo conectar con Reto4V.')
+      else setError('No se pudo conectar con Programmy4V.')
     } finally {
       setBusy(false)
     }
@@ -560,11 +560,11 @@ function LoginScreen({ onLogin }) {
 
   return (
     <main className="login-page">
-      <section className="login-visual" aria-label="Reto4V para aprender programación">
+      <section className="login-visual" aria-label="Programmy4V para aprender programación">
         <div className="login-visual-inner">
-          <a className="brand brand-light" href="/" aria-label="Reto4V, inicio">
+          <a className="brand brand-light" href="/" aria-label="Programmy4V, inicio">
             <img src="/static/brand-mark.svg" alt="" width="42" height="42" />
-            <span>Reto4V<span className="brand-dot">.</span></span>
+            <span>Programmy4V<span className="brand-dot">.</span></span>
           </a>
           <div className="visual-copy">
             <p className="kicker kicker-light">Laboratorio de retos · 4 Vientos</p>
@@ -587,7 +587,7 @@ function LoginScreen({ onLogin }) {
         <div className="login-panel-inner">
           <div className="login-mobile-brand brand">
             <img src="/static/brand-mark.svg" alt="" width="38" height="38" />
-            <span>Reto4V<span className="brand-dot">.</span></span>
+            <span>Programmy4V<span className="brand-dot">.</span></span>
           </div>
           <div className="login-intro">
             <p className="kicker">Bienvenido de nuevo</p>
@@ -608,7 +608,7 @@ function LoginScreen({ onLogin }) {
             {error && <div className="form-error" role="alert"><Icon icon={IconAlertTriangle} size={17} />{error}</div>}
             <button className="button button-primary button-wide" type="submit" disabled={busy}>
               {busy ? <span className="button-loader" /> : <Icon icon={IconArrowRight} size={18} />}
-              {busy ? 'Comprobando…' : 'Entrar en Reto4V'}
+              {busy ? 'Comprobando…' : 'Entrar en Programmy4V'}
             </button>
           </form>
           {DEMO_MODE && <div className="demo-login">
@@ -724,7 +724,7 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
         <div className="sidebar-top">
           <a className="brand" href="#dashboard" onClick={(event) => { event.preventDefault(); navigate('dashboard') }}>
             <img src="/static/brand-mark.svg" alt="" width="36" height="36" />
-            <span>Reto4V<span className="brand-dot">.</span></span>
+            <span>Programmy4V<span className="brand-dot">.</span></span>
           </a>
           <button type="button" className="icon-button sidebar-close" aria-label="Cerrar menú" onClick={() => setSidebarOpen(false)}><Icon icon={IconX} /></button>
         </div>
@@ -737,7 +737,10 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
           <button className={`nav-item ${view === 'dashboard' ? 'is-active' : ''}`} onClick={() => navigate('dashboard')}><Icon icon={IconLayoutDashboard} /><span>Resumen</span></button>
           {!isTeacher && <button className={`nav-item ${view === 'activities' ? 'is-active' : ''}`} onClick={() => navigate('activities')}><Icon icon={IconCode} /><span>Mis retos</span><span className="nav-count">{activityCount || ''}</span></button>}
           {isTeacher && <a className="nav-item" href="/teacher/exports/?format=wide"><Icon icon={IconChartBar} /><span>Exportar calificaciones</span></a>}
-          {user.role === 'admin' && <button className="nav-item" onClick={() => window.location.assign('/admin-ui/users/')}><Icon icon={IconUsers} /><span>Usuarios</span></button>}
+          {user.role === 'admin' && <>
+            <a className="nav-item" href="/admin-ui/classrooms/"><Icon icon={IconSchool} /><span>Aulas e itinerarios</span></a>
+            <button className="nav-item" onClick={() => window.location.assign('/admin-ui/users/')}><Icon icon={IconUsers} /><span>Usuarios</span></button>
+          </>}
         </nav>
         <div className="sidebar-bottom">
           <div className="server-status"><span className="pulse-dot pulse-dot-dark" /><span>Servidor local operativo</span></div>
@@ -752,7 +755,7 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
       <main className="app-main">
         {!workspaceOpen && <header className="mobile-header">
           <button type="button" className="icon-button" aria-label="Abrir menú" onClick={() => setSidebarOpen(true)}><Icon icon={IconMenu2} /></button>
-          <a className="brand" href="#dashboard" onClick={(event) => { event.preventDefault(); navigate('dashboard') }}><img src="/static/brand-mark.svg" alt="" width="32" height="32" /><span>Reto4V<span className="brand-dot">.</span></span></a>
+          <a className="brand" href="#dashboard" onClick={(event) => { event.preventDefault(); navigate('dashboard') }}><img src="/static/brand-mark.svg" alt="" width="32" height="32" /><span>Programmy4V<span className="brand-dot">.</span></span></a>
           <button type="button" className="avatar avatar-small" onClick={onLogout} aria-label="Cerrar sesión">{getInitials(user.display_name)}</button>
         </header>}
         {routeError && !workspaceOpen && <div className="route-error" role="alert"><Icon icon={IconAlertTriangle} size={15} />{routeError}</div>}
@@ -790,17 +793,25 @@ function StudentDashboard({ user, data, onOpenActivity }) {
   const gamification = normalizeGamification(data || (DEMO_MODE ? { gamification: DEMO_GAMIFICATION } : null))
   const [activeTrack, setActiveTrack] = useState('all')
   const [tipIndex, setTipIndex] = useState(0)
+  const availableTrackEntries = Object.entries(TRACKS).filter(([key]) => key === 'all' || activities.some((activity) => trackForActivity(activity) === key))
+  const availableTrackKeys = availableTrackEntries.map(([key]) => key).join('|')
+  useEffect(() => {
+    if (!availableTrackKeys.split('|').includes(activeTrack)) setActiveTrack('all')
+  }, [activeTrack, availableTrackKeys])
   const filteredActivities = activeTrack === 'all' ? activities : activities.filter((activity) => trackForActivity(activity) === activeTrack)
   const currentActivity = filteredActivities[0] || {}
   const currentStatus = getStudentStatus(currentActivity.status)
   const measuredProgress = currentActivity.progress != null && Number.isFinite(Number(currentActivity.progress)) ? Number(currentActivity.progress) : null
+  const isFirstChallenge = Boolean(filteredActivities.length && currentActivity.status === 'not_started' && (measuredProgress == null || measuredProgress === 0) && !currentActivity.completed)
+  const primaryActionLabel = isFirstChallenge ? 'Empezar primer reto' : 'Continuar reto'
+  const noAssignmentMessage = 'El administrador debe asignarte un ciclo e itinerario. En cuanto lo haga, aquí aparecerá tu primer reto.'
   return (
     <div className="dashboard-page student-page">
-      <DashboardHeader eyebrow={`Mi espacio · ${user.group || 'Reto4V'}`} title={`Hola, ${firstName}.`} subtitle={activities.length ? 'Elige un reto y convierte la práctica en progreso.' : 'Todavía no tienes retos asignados.'} action={filteredActivities.length ? { label: 'Abrir reto', icon: IconArrowRight } : null} onAction={() => onOpenActivity(currentActivity)} />
+      <DashboardHeader eyebrow={`Mi espacio · ${user.group || 'Programmy4V'}`} title={`Hola, ${firstName}.`} subtitle={activities.length ? 'Elige un reto y convierte la práctica en progreso.' : 'El administrador debe asignarte un itinerario para empezar.'} action={filteredActivities.length ? { label: primaryActionLabel, icon: IconArrowRight } : null} onAction={() => onOpenActivity(currentActivity)} />
       <section className="track-switcher" aria-label="Filtrar itinerario">
         <div className="track-switcher-copy"><span className="card-overline">Tus itinerarios</span><strong>Practica por módulo</strong><small>Elige el contexto que quieres trabajar hoy.</small></div>
         <div className="track-options" role="group" aria-label="Itinerarios disponibles">
-          {Object.entries(TRACKS).map(([key, track]) => <button key={key} className={`track-option ${activeTrack === key ? 'is-active' : ''}`} type="button" aria-pressed={activeTrack === key} onClick={() => setActiveTrack(key)}><span className={`track-option-mark track-mark-${key}`}><Icon icon={getTrackIcon(key)} size={16} /></span><span><strong>{track.label}</strong><small>{track.description}</small></span><span className="track-option-count">{key === 'all' ? activities.length : activities.filter((activity) => trackForActivity(activity) === key).length}</span></button>)}
+          {availableTrackEntries.map(([key, track]) => <button key={key} className={`track-option ${activeTrack === key ? 'is-active' : ''}`} type="button" aria-pressed={activeTrack === key} onClick={() => setActiveTrack(key)}><span className={`track-option-mark track-mark-${key}`}><Icon icon={getTrackIcon(key)} size={16} /></span><span><strong>{track.label}</strong><small>{track.description}</small></span><span className="track-option-count">{key === 'all' ? activities.length : activities.filter((activity) => trackForActivity(activity) === key).length}</span></button>)}
         </div>
       </section>
       <section className="student-overview-grid" aria-label="Resumen de aprendizaje">
@@ -812,14 +823,14 @@ function StudentDashboard({ user, data, onOpenActivity }) {
           <div className="continue-copy">
             <p className="card-overline">{currentActivity.module || 'Reto disponible'}</p>
             <h2>{currentActivity.title || 'Sin actividad'}<br /><em>{currentActivity.status ? currentStatus.label.toLowerCase() : 'pendiente'}</em></h2>
-            <p>{currentActivity.summary || 'Cuando tu profesor publique un reto aparecerá aquí.'}</p>
+            <p>{currentActivity.summary || noAssignmentMessage}</p>
           </div>
           <div className="continue-progress">
             <div className="progress-meta"><span>Progreso registrado</span><strong>{measuredProgress == null ? '—' : `${measuredProgress}%`}</strong></div>
             <div className="progress-track"><span style={{ width: `${measuredProgress || 0}%` }} /></div>
           </div>
           <div className="continue-meta"><span><Icon icon={IconRocket} size={14} />+{currentActivity.xp_reward || 0} XP</span><span>{getDifficultyLabel(currentActivity.difficulty)}</span></div>
-          <button className="button button-light" onClick={() => onOpenActivity(currentActivity)} disabled={!filteredActivities.length}>Abrir reto <Icon icon={IconArrowRight} size={17} /></button>
+          <button className="button button-light" onClick={() => onOpenActivity(currentActivity)} disabled={!filteredActivities.length}>{filteredActivities.length ? primaryActionLabel : 'Esperando itinerario'} <Icon icon={IconArrowRight} size={17} /></button>
           <div className="continue-decoration decoration-bracket" aria-hidden="true">&lt;/&gt;</div>
         </div>
         <GamificationCard gamification={gamification} />
@@ -836,7 +847,7 @@ function StudentDashboard({ user, data, onOpenActivity }) {
       <section className="section-block activities-section">
         <div className="section-heading"><div><p className="kicker">{TRACKS[activeTrack].shortLabel}</p><h2>Retos disponibles</h2></div>{filteredActivities.length > 0 && <span className="section-count">{filteredActivities.length} {filteredActivities.length === 1 ? 'reto' : 'retos'}</span>}</div>
         <div className="activity-list">
-          {filteredActivities.length ? filteredActivities.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activeTrack === 'all' ? 'Cuando te asignen un reto, aparecerá aquí.' : `Todavía no hay retos de ${TRACKS[activeTrack].label}.`}</span></div>}
+          {filteredActivities.length ? filteredActivities.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activeTrack === 'all' ? noAssignmentMessage : activities.length ? `Todavía no hay retos de ${TRACKS[activeTrack].label} en tu itinerario.` : noAssignmentMessage}</span></div>}
         </div>
       </section>
       <section className="student-lower-grid">
@@ -944,13 +955,18 @@ function ActivityCatalog({ data, onOpenActivity }) {
   const source = Array.isArray(data?.assignments) ? data.assignments : (DEMO_MODE ? DEMO_ACTIVITIES : [])
   const activities = source.map(assignmentWithDefaults)
   const [activeTrack, setActiveTrack] = useState('all')
+  const availableTrackEntries = Object.entries(TRACKS).filter(([key]) => key === 'all' || activities.some((activity) => trackForActivity(activity) === key))
+  const availableTrackKeys = availableTrackEntries.map(([key]) => key).join('|')
+  useEffect(() => {
+    if (!availableTrackKeys.split('|').includes(activeTrack)) setActiveTrack('all')
+  }, [activeTrack, availableTrackKeys])
   const visible = activeTrack === 'all' ? activities : activities.filter((activity) => trackForActivity(activity) === activeTrack)
-  return <section className="catalog-section" aria-label="Catálogo de retos"><div className="catalog-toolbar"><div><span className="card-overline">Filtrar por recorrido</span><p>{visible.length} {visible.length === 1 ? 'reto disponible' : 'retos disponibles'}</p></div><div className="catalog-filters" role="group" aria-label="Filtrar retos"><button className={activeTrack === 'all' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'all'} onClick={() => setActiveTrack('all')}>Todos</button><button className={activeTrack === 'web' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'web'} onClick={() => setActiveTrack('web')}>Web · SMR</button><button className={activeTrack === 'bash' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'bash'} onClick={() => setActiveTrack('bash')}>Bash · ASIR</button><button className={activeTrack === 'python' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'python'} onClick={() => setActiveTrack('python')}>Python · DAM</button></div></div><div className="catalog-list">{visible.length ? visible.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>Todavía no hay retos en este itinerario.</span></div>}</div></section>
+  return <section className="catalog-section" aria-label="Catálogo de retos"><div className="catalog-toolbar"><div><span className="card-overline">Filtrar por recorrido</span><p>{visible.length} {visible.length === 1 ? 'reto disponible' : 'retos disponibles'}</p></div><div className="catalog-filters" role="group" aria-label="Filtrar retos">{availableTrackEntries.map(([key, track]) => <button key={key} className={activeTrack === key ? 'is-active' : ''} type="button" aria-pressed={activeTrack === key} onClick={() => setActiveTrack(key)}>{track.label}</button>)}</div></div><div className="catalog-list">{visible.length ? visible.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activities.length ? `Todavía no hay retos de ${TRACKS[activeTrack].label} en tu itinerario.` : 'El administrador debe asignarte un ciclo e itinerario. En cuanto lo haga, aquí aparecerá tu primer reto.'}</span></div>}</div></section>
 }
 
 function WorkspaceShell({ user, activity, onBack, onLogout }) {
   const moduleLabel = activity.module || activity.activity?.module || 'Actividad'
-  return <div className="workspace-shell"><header className="workspace-header"><div className="workspace-header-left"><button className="icon-button" onClick={onBack} aria-label="Volver al resumen"><Icon icon={IconArrowLeft} /></button><span className="workspace-breadcrumb"><span>Reto4V</span><Icon icon={IconChevronRight} size={14} /><span>{moduleLabel}</span><Icon icon={IconChevronRight} size={14} /><strong>{activity.title}</strong></span></div><div className="workspace-header-right"><span className="workspace-lan"><span className="pulse-dot pulse-dot-dark" />Solo LAN</span><button className="avatar avatar-small" onClick={onLogout} aria-label="Cerrar sesión">{getInitials(user.display_name)}</button></div></header><Workspace user={user} activity={activity} onBack={onBack} /></div>
+  return <div className="workspace-shell"><header className="workspace-header"><div className="workspace-header-left"><button className="icon-button" onClick={onBack} aria-label="Volver al resumen"><Icon icon={IconArrowLeft} /></button><span className="workspace-breadcrumb"><span>Programmy4V</span><Icon icon={IconChevronRight} size={14} /><span>{moduleLabel}</span><Icon icon={IconChevronRight} size={14} /><strong>{activity.title}</strong></span></div><div className="workspace-header-right"><span className="workspace-lan"><span className="pulse-dot pulse-dot-dark" />Solo LAN</span><button className="avatar avatar-small" onClick={onLogout} aria-label="Cerrar sesión">{getInitials(user.display_name)}</button></div></header><Workspace user={user} activity={activity} onBack={onBack} /></div>
 }
 
 function InstructionText({ value, className = 'instruction-rich-text', compact = false }) {
@@ -1176,7 +1192,7 @@ function Workspace({ activity, user }) {
   const currentAttempt = Math.max(1, submissions.length + 1)
   const activeTestCount = visibleTests.length
   const passedTestCount = visibleTests.filter((test) => test.status === 'passed' || test.passed === true).length
-  const instructions = activityVersion.instructions || activity.instructions || (effectiveIsBash ? 'Escribe un script Bash legible y seguro, y justifica las decisiones que tomes.' : effectiveIsPython ? 'Escribe un programa Python legible para trabajar con datos de gestión. Reto4V analiza su estructura sin ejecutarlo.' : 'Completa el reto siguiendo las indicaciones y prueba tu resultado antes de entregar.')
+  const instructions = activityVersion.instructions || activity.instructions || (effectiveIsBash ? 'Escribe un script Bash legible y seguro, y justifica las decisiones que tomes.' : effectiveIsPython ? 'Escribe un programa Python legible para trabajar con datos de gestión. Programmy4V analiza su estructura sin ejecutarlo.' : 'Completa el reto siguiendo las indicaciones y prueba tu resultado antes de entregar.')
   const objectives = asList(activityVersion.objectives || activity.objectives)
   const hints = Array.isArray(activityVersion.hints || activity.hints) ? (activityVersion.hints || activity.hints) : []
   const challengeGamification = normalizeChallengeGamification(workspaceData || (DEMO_MODE ? { gamification: { xp_reward: activity.xp_reward, earned_xp: activity.earned_xp, completed: activity.completed, progress: activity.progress, language: effectiveLanguage, difficulty: activity.difficulty } } : null), activity)
@@ -1210,12 +1226,12 @@ const BASH_FILE_META = { bash: { label: 'script.sh', short: 'Bash', icon: IconTe
 
 function BashValidationPanel({ source, mobileVisible }) {
   const checks = inspectBash(source)
-  return <aside className={`preview-panel workspace-panel bash-validation-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Lectura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="bash-validation-body"><div className="bash-safety-note"><Icon icon={IconTerminal2} size={18} /><div><strong>El script no se ejecuta aquí</strong><p>Reto4V solo guarda y valida el texto. No hay terminal real ni salida simulada.</p></div></div><div className="bash-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.commands}</strong><small>comandos</small></span><span><strong>{checks.variables}</strong><small>variables</small></span></div><div className="bash-check-list" aria-label="Indicadores de lectura estática">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />La validación oficial y la nota se calculan en el servidor al analizar o entregar.</p></div></aside>
+  return <aside className={`preview-panel workspace-panel bash-validation-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Lectura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="bash-validation-body"><div className="bash-safety-note"><Icon icon={IconTerminal2} size={18} /><div><strong>El script no se ejecuta aquí</strong><p>Programmy4V solo guarda y valida el texto. No hay terminal real ni salida simulada.</p></div></div><div className="bash-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.commands}</strong><small>comandos</small></span><span><strong>{checks.variables}</strong><small>variables</small></span></div><div className="bash-check-list" aria-label="Indicadores de lectura estática">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />La validación oficial y la nota se calculan en el servidor al analizar o entregar.</p></div></aside>
 }
 
 function PythonAnalysisPanel({ source, mobileVisible }) {
   const checks = inspectPython(source)
-  return <aside className={`preview-panel workspace-panel python-analysis-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Análisis</span><h2>Estructura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="python-analysis-body"><div className="python-safety-note"><Icon icon={IconBrandPython} size={18} /><div><strong>El código Python no se ejecuta aquí</strong><p>Reto4V solo analiza el texto y guarda tu evidencia. No hay intérprete, archivos reales ni salida simulada.</p></div></div><div className="python-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.functions}</strong><small>funciones</small></span><span><strong>{checks.imports}</strong><small>imports</small></span><span><strong>{checks.operations}</strong><small>operaciones</small></span></div><div className="bash-check-list python-check-list" aria-label="Indicadores orientativos de estructura Python">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />Estos indicadores son orientativos. La validación oficial y la calificación proceden del servidor.</p></div></aside>
+  return <aside className={`preview-panel workspace-panel python-analysis-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Análisis</span><h2>Estructura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="python-analysis-body"><div className="python-safety-note"><Icon icon={IconBrandPython} size={18} /><div><strong>El código Python no se ejecuta aquí</strong><p>Programmy4V solo analiza el texto y guarda tu evidencia. No hay intérprete, archivos reales ni salida simulada.</p></div></div><div className="python-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.functions}</strong><small>funciones</small></span><span><strong>{checks.imports}</strong><small>imports</small></span><span><strong>{checks.operations}</strong><small>operaciones</small></span></div><div className="bash-check-list python-check-list" aria-label="Indicadores orientativos de estructura Python">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />Estos indicadores son orientativos. La validación oficial y la calificación proceden del servidor.</p></div></aside>
 }
 
 function inspectPython(source = '') {

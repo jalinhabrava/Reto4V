@@ -23,15 +23,54 @@ class AcademicYear(models.Model):
 
 
 class Cohort(models.Model):
+    class Track(models.TextChoices):
+        """The learning route a cohort follows.
+
+        ``track`` is intentionally optional for old cohorts created before
+        routes were introduced.  New cohorts created from the dashboard must
+        choose one of these values so that a student can only see the catalog
+        assigned to their group.
+        """
+
+        WEB = "web", "Web · SMR"
+        BASH = "bash", "Bash · ASIR"
+        PYTHON = "python", "Python · DAM"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=120)
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.PROTECT, related_name="cohorts")
     active = models.BooleanField(default=True)
+    track = models.CharField(
+        max_length=20,
+        choices=Track.choices,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Itinerario formativo del grupo (Web, Bash o Python).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ("name",)
         constraints = [models.UniqueConstraint(fields=("academic_year", "name"), name="uniq_cohort_year_name")]
+
+    def clean(self):
+        super().clean()
+        if not self.pk:
+            return
+        if not self.track and self.enrollments.filter(active=True).exists():
+            raise ValidationError("No se puede quitar el itinerario de un grupo con matrículas activas.")
+        if self.track:
+            languages = set(
+                self.assignment_links.values_list(
+                    "assignment__activity_version__language",
+                    flat=True,
+                )
+            )
+            if languages and languages != {self.track}:
+                raise ValidationError(
+                    "El itinerario del grupo no coincide con sus actividades asignadas."
+                )
 
     def __str__(self):
         return f"{self.name} ({self.academic_year})"
@@ -45,7 +84,14 @@ class Enrollment(models.Model):
     enrolled_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=("cohort", "student"), name="uniq_enrollment")]
+        constraints = [
+            models.UniqueConstraint(fields=("cohort", "student"), name="uniq_enrollment"),
+            models.UniqueConstraint(
+                fields=("student",),
+                condition=models.Q(active=True),
+                name="uniq_active_enrollment_student",
+            ),
+        ]
         indexes = [models.Index(fields=("student", "active")), models.Index(fields=("cohort", "active"))]
 
     def clean(self):
@@ -366,6 +412,18 @@ class AssignmentCohort(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=("assignment", "cohort"), name="uniq_assignment_cohort")]
         indexes = [models.Index(fields=("cohort", "assignment"))]
+
+    def clean(self):
+        super().clean()
+        if not self.assignment_id or not self.cohort_id:
+            return
+        assignment = self.assignment
+        cohort = self.cohort
+        language = assignment.activity_version.language
+        if cohort.track and cohort.track != language:
+            raise ValidationError(
+                "El itinerario del grupo no coincide con el lenguaje de la actividad."
+            )
 
 
 class Draft(models.Model):

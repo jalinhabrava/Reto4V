@@ -1,5 +1,5 @@
 [Unit]
-Description=Reto4V LAN containers
+Description=Programmy4V LAN containers
 Requires=docker.service
 After=docker.service network-online.target
 Wants=network-online.target

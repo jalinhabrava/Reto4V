@@ -38,7 +38,8 @@ test('los tres itinerarios usan archivos y copy de producto propios', () => {
   assert.match(source, /PythonAnalysisPanel/)
   assert.match(source, /El código Python no se ejecuta aquí/)
   assert.match(source, /filesPayload\(files, language\)/)
-  assert.match(source, /Reto4V/)
+  assert.match(source, /Programmy4V/)
+  assert.doesNotMatch(source, /Reto4V/)
 })
 
 test('la gamificación se pinta desde el contrato del servidor', () => {
@@ -52,6 +53,13 @@ test('la gamificación se pinta desde el contrato del servidor', () => {
   assert.match(source, /Bash · ASIR/)
   assert.match(source, /Python · DAM/)
   assert.match(source, /0491 · SGE/)
+})
+
+test('el alumno solo ve los itinerarios que tiene asignados', () => {
+  assert.match(source, /availableTrackEntries = Object\.entries\(TRACKS\)\.filter/)
+  assert.match(source, /activities\.some\(\(activity\) => trackForActivity\(activity\) === key\)/)
+  assert.match(source, /El administrador debe asignarte un ciclo e itinerario/)
+  assert.match(source, /Empezar primer reto/)
 })
 
 test('Python mantiene el archivo aislado y solo ofrece análisis indicativo', () => {

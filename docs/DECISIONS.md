@@ -1,24 +1,38 @@
-# Decisiones de Reto4V 0.2
+# Decisiones de Programmy4V 0.2
 
 ## Identidad y distribución
 
-El nombre público es **Reto4V**, por su enfoque en retos y su vinculación con
-4Vientos. Se presenta como una herramienta de gamificación para aprender
-programación. El repositorio contiene código y contenido de ejemplo; nunca
-datos de una instalación docente.
+El nombre público es **Programmy4V**, por su enfoque práctico en programación
+y su vinculación con 4Vientos. Se presenta como una herramienta de
+gamificación para aprender programación. El repositorio contiene código y
+contenido de ejemplo; nunca datos de una instalación docente.
+
+La URL y la carpeta de clonación pueden seguir mostrando `Reto4V` porque son
+identificadores históricos del repositorio. También se mantienen los nombres
+internos de Django, Compose, volúmenes, imágenes, rutas y scripts para no
+romper instalaciones ya desplegadas; el producto que se muestra al alumnado
+y al profesorado se llama Programmy4V.
 
 La publicación del repositorio no publica el servidor del centro: las cuentas,
 entregas, notas y copias permanecen en los volúmenes de la instalación LAN.
 La licencia de redistribución del código propio queda pendiente de elección
 por su titular; no se presume una licencia por el hecho de ser visible.
 
-## Dos itinerarios, una plataforma
+## Tres itinerarios, una plataforma
 
 - **Web / SMR:** conserva el editor HTML, CSS y JavaScript, la preview y los
   mecanismos de entrega existentes.
 - **Bash / ASIR:** incorpora scripts, retos de automatización y seguridad,
   pistas y evaluación estática. El contenido es apoyo transversal a la
   asignatura, no una acreditación automática de sus resultados de aprendizaje.
+- **Python / DAM:** introduce Python hasta lectura y escritura de archivos para
+  preparar Sistemas de gestión empresarial y el trabajo posterior con Odoo.
+  No ejecuta código ni integra el ERP.
+
+Los catálogos base se precargan de forma idempotente al arrancar `web` con
+`PRELOAD_CATALOGS=1`. Un alumno recibe el catálogo publicado al elegir su
+único ciclo e itinerario en `/admin-ui/users/`; cambiar de ciclo desactiva la
+matrícula anterior y conserva su historial.
 
 El lenguaje y los datos de gamificación forman parte de la versión de actividad.
 Una versión asignada no cambia de lenguaje, pruebas o recompensa a posteriori.

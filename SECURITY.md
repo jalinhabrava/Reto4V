@@ -1,6 +1,6 @@
-# Seguridad de Reto4V
+# Seguridad de Programmy4V
 
-Reto4V es una aplicación docente local. Estar en una LAN no sustituye HTTPS,
+Programmy4V es una aplicación docente local. Estar en una LAN no sustituye HTTPS,
 la autenticación, la separación de permisos o las copias de seguridad.
 
 ## Fronteras de confianza
@@ -40,7 +40,20 @@ escriben el sistema del centro.
 
 Las prácticas de ejecución real deben hacerse en una VM de laboratorio
 separada, con datos ficticios y validación docente. No ejecutes entregas en el
-servidor de Reto4V ni en el ordenador del profesor.
+servidor de Programmy4V ni en el ordenador del profesor.
+
+## Catálogo y acceso por itinerario
+
+El arranque puede precargar los catálogos publicados mediante
+`PRELOAD_CATALOGS=1`. Ese bootstrap es idempotente y no crea cuentas de
+alumnado ni contraseñas compartidas. El administrador asigna a cada alumno un
+único ciclo e itinerario desde `/admin-ui/users/`; la matrícula activa y los
+enlaces del grupo limitan en el servidor qué retos puede consultar. Un cambio
+de ciclo desactiva la matrícula anterior y conserva las evidencias.
+
+El filtro de itinerario de la interfaz es solo una ayuda de navegación. No
+debe utilizarse como control de seguridad ni sustituye las comprobaciones de
+matrícula, grupo activo y actividad publicada que realiza el backend.
 
 ## Antes del piloto
 

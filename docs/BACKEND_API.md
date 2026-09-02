@@ -1,10 +1,10 @@
-# Backend Django de Reto4V
+# Backend Django de Programmy4V
 
 ## Desarrollo y despliegue
 
 ```bash
 python manage.py migrate
-python manage.py seed_demo
+python manage.py bootstrap_catalogs
 python manage.py runserver 0.0.0.0:8000
 ```
 
@@ -12,16 +12,39 @@ La configuración local usa SQLite (`data/db.sqlite3`). En WSL/Compose se
 configura PostgreSQL mediante `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` y
 `DB_PORT` (o `DATABASE_URL`).
 
-`seed_demo` es idempotente. Cuando crea cuentas genera contraseñas aleatorias,
+`seed_demo` es un comando opcional para un entorno de desarrollo. Cuando crea cuentas genera contraseñas aleatorias,
 las muestra una sola vez y solo guarda el hash Argon2id. Se pueden proporcionar
 contraseñas explícitas con `--admin-password`, `--teacher-password` y
 `--student-password`; nunca se escriben en exportaciones ni logs.
+
+En una instalación del centro, `bootstrap_catalogs` se ejecuta automáticamente
+al arrancar el servicio `web` cuando `PRELOAD_CATALOGS=1` (predeterminado),
+después de aplicar las migraciones. Es idempotente, no crea alumnos ni
+contraseñas de demostración y precarga los itinerarios Web · SMR, Bash · ASIR
+y Python · DAM. Se puede repetir de forma segura tras una actualización:
+
+```bash
+docker compose --env-file .env exec web python manage.py bootstrap_catalogs
+```
+
+`PRELOAD_CATALOGS=0` desactiva el paso automático para una instalación que
+necesite gestionar su catálogo manualmente. Los seeds de cada itinerario
+siguen disponibles para ampliaciones controladas y no sustituyen versiones ya
+asignadas.
 
 ## Contrato del workspace
 
 Todas las rutas mutables requieren sesión autenticada, rol de alumno y CSRF.
 El servidor comprueba además matrícula, ventana de entrega y versión de la
 actividad; no confía en el cliente para permisos ni para notas oficiales.
+
+`Cohort.track` identifica el itinerario (`web`, `bash` o `python`). El panel
+local `/admin-ui/classrooms/` muestra ciclos activos y `/admin-ui/users/`
+permite elegir el campo `cohort` al crear o editar un alumno. El servicio de
+matrículas garantiza una sola `Enrollment(active=True)` por alumno, desactiva
+la anterior al cambiar de ciclo y conserva las evidencias. Un alumno recién
+creado con ciclo asignado recibe automáticamente todos los retos publicados
+de su grupo y puede abrir el primero en cuanto inicia sesión.
 
 | Método | Ruta | Uso |
 |---|---|---|
@@ -55,12 +78,12 @@ solo aceptan `python` (el editor lo presenta como `main.py`). La respuesta
 `version.files` devuelve exclusivamente las claves del lenguaje de la
 actividad.
 
-El comando opcional `python manage.py seed_bash --owner PROFESOR --cohort 2ASIR`
+El comando `python manage.py seed_bash --owner PROFESOR --cohort 2ASIR`
 crea el itinerario local de doce retos de apoyo transversal para el módulo
 0378. No crea alumnos y no asigna RA/CE. Véase
 [`docs/BASH_TRACK.md`](BASH_TRACK.md) para el catálogo, la DSL y sus límites.
 
-El comando opcional `python manage.py seed_python --owner PROFESOR --cohort 2DAM`
+El comando `python manage.py seed_python --owner PROFESOR --cohort 2DAM`
 crea doce retos progresivos de preparación para `0491 Sistemas de gestión
 empresarial` de segundo de DAM, desde variables hasta lectura y escritura de
 archivos. Es un alineamiento parcial del currículo navarro y no una cobertura
@@ -98,8 +121,13 @@ tres.
 La primera cuenta se crea con `python manage.py createsuperuser`. Después, la
 interfaz `/admin-ui/users/` permite alta, edición, desactivación y reset de
 contraseña temporal. La contraseña temporal obliga a pasar por el cambio de
-contraseña antes de poder usar el resto de la aplicación. Las evidencias de
-entrega, resultados y cálculos de nota son de solo lectura en Django Admin.
+contraseña antes de poder usar el resto de la aplicación. En Django Admin,
+usuarios, matrículas, enlaces entre grupos y retos, evidencias de entrega,
+resultados y cálculos de nota quedan como consulta: las mutaciones académicas
+se realizan desde el panel local o los comandos de catálogo, que sí aplican
+los servicios y sus validaciones.
+Desde el alta o edición, el administrador debe elegir el ciclo e itinerario de
+cada alumno; no se crean matrículas implícitas por pertenecer a la instalación.
 
 ## Evaluador estático
 

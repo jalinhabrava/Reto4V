@@ -1,8 +1,9 @@
 from django.urls import path
 
-from .views import user_create, user_list, user_reset_password, user_update
+from .views import classrooms_overview, user_create, user_list, user_reset_password, user_update
 
 urlpatterns = [
+    path("classrooms/", classrooms_overview, name="classrooms_overview"),
     path("users/", user_list, name="user_list"),
     path("users/new/", user_create, name="user_create"),
     path("users/<int:user_id>/edit/", user_update, name="user_update"),

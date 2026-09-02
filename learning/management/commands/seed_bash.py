@@ -28,6 +28,8 @@ from learning.models import (
     TestCase,
 )
 
+from ._catalog import ensure_cohort_track, get_or_create_catalog_assignment
+
 TRACK_SLUG = "laboratorio-bash-seguridad-asir"
 
 
@@ -318,8 +320,9 @@ class Command(BaseCommand):
         cohort, _ = Cohort.objects.get_or_create(
             name=options["cohort"],
             academic_year=year,
-            defaults={"active": True},
+            defaults={"active": True, "track": Cohort.Track.BASH},
         )
+        ensure_cohort_track(cohort, Cohort.Track.BASH)
         if owner.role == User.Role.TEACHER and not owner.is_superuser:
             TeachingAssignment.objects.get_or_create(cohort=cohort, teacher=owner, defaults={"active": True})
 
@@ -405,9 +408,9 @@ class Command(BaseCommand):
                             "position": position,
                         },
                     )
-            assignment, _ = Assignment.objects.get_or_create(
+            assignment, _ = get_or_create_catalog_assignment(
                 activity=activity,
-                activity_version=version,
+                version=version,
                 defaults={
                     "status": Assignment.Status.PUBLISHED,
                     "created_by": owner,

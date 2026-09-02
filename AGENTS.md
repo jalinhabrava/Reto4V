@@ -1,8 +1,12 @@
-# Reto4V
+# Programmy4V
 
 Plataforma LAN de retos de programación para FP: web para SMR, scripting Bash
 de apoyo a Seguridad y alta disponibilidad de ASIR, y Python introductorio para
 Sistemas de gestión empresarial de DAM.
+
+La marca visible es Programmy4V. Los identificadores históricos del repositorio
+(incluidos el módulo Django `aulaweb`, los nombres Compose y las rutas/scripts)
+se conservan para mantener la compatibilidad de despliegues existentes.
 
 ## Reglas del proyecto
 
@@ -24,6 +28,10 @@ Sistemas de gestión empresarial de DAM.
   No inventes equivalencias con RA/CE ni presentes el análisis estructural
   como ejecución, acceso a Odoo o prueba de lectura/escritura real.
 - No fabriques datos de progreso. Verifica cambios con tests y lectura real.
+- El catálogo inicial se precarga de forma idempotente al arrancar `web` cuando
+  `PRELOAD_CATALOGS=1`; no se crean alumnos ni credenciales de demostración.
+  Un alumno debe tener un único ciclo e itinerario activo asignado desde la
+  administración local para recibir el primer reto.
 - Cambia tanto el contrato backend como la interfaz y su documentación.
 
 ## Mapa

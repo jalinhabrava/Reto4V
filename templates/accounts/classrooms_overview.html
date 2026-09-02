@@ -1,0 +1,57 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'self'; img-src 'self' data:; frame-src 'none'" />
+    <title>Aulas e itinerarios · Programmy4V</title>
+    <link rel="icon" type="image/svg+xml" href="{% static 'brand-mark.svg' %}" />
+    <link rel="stylesheet" href="{% static 'dist/assets/app.css' %}" />
+  </head>
+  <body class="account-body">
+    <main class="account-page classrooms-page">
+      <header class="review-topbar">
+        <a class="brand" href="{% url 'teacher_dashboard' %}"><img src="{% static 'brand-mark.svg' %}" alt="" width="36" height="36" /><span>Programmy4V<span class="brand-dot">.</span></span></a>
+        <nav class="review-nav"><a href="{% url 'user_list' %}">Usuarios</a><a href="{% url 'teacher_dashboard' %}">Volver al panel</a></nav>
+      </header>
+
+      <section class="account-heading classrooms-heading">
+        <div>
+          <p class="kicker">Administración local · Aulas</p>
+          <h1>Ciclos e itinerarios</h1>
+          <p>Los catálogos se precargan al levantar el servidor. Elige el itinerario al crear una cuenta y el alumno tendrá su primer reto listo desde el primer acceso.</p>
+        </div>
+        <a class="button button-dark" href="{% url 'user_create' %}">Crear alumno</a>
+      </section>
+
+      <section class="classrooms-summary" aria-label="Resumen de aulas">
+        <div class="classrooms-summary-card"><span class="classrooms-summary-label">Alumnos activos</span><strong>{{ total_students }}</strong><small>con matrícula vigente</small></div>
+        <div class="classrooms-summary-card"><span class="classrooms-summary-label">Aulas activas</span><strong>{{ total_cohorts }}</strong><small>listas para asignar</small></div>
+        <div class="classrooms-summary-card classrooms-summary-card-dark"><span class="classrooms-summary-label">Retos publicados</span><strong>{{ total_challenges }}</strong><small>por itinerario</small></div>
+      </section>
+
+      <section class="itinerary-grid" aria-label="Itinerarios disponibles">
+        {% for itinerary in itineraries %}
+          <article class="itinerary-card itinerary-card-{{ itinerary.value }}">
+            <div class="itinerary-card-top"><span class="itinerary-index">0{{ forloop.counter }}</span><span class="itinerary-pill">{{ itinerary.eyebrow }}</span></div>
+            <h2>{{ itinerary.label }}</h2>
+            <p>{{ itinerary.description }}</p>
+            <div class="itinerary-metrics"><span><strong>{{ itinerary.challenge_count }}</strong><small>retos publicados</small></span><span><strong>{{ itinerary.student_count }}</strong><small>alumnos</small></span></div>
+            <div class="itinerary-cohorts">
+              <div class="itinerary-cohorts-heading"><span>Aulas disponibles</span><strong>{{ itinerary.cohort_count }}</strong></div>
+              {% for cohort in itinerary.cohorts %}
+                <div class="itinerary-cohort-row"><span><strong>{{ cohort.name }}</strong><small>{{ cohort.academic_year.name }}</small></span><span class="itinerary-cohort-count">{{ cohort.student_count }} alumno{{ cohort.student_count|pluralize:"s" }}</span></div>
+              {% empty %}
+                <p class="itinerary-empty">Todavía no hay un aula activa de este itinerario.</p>
+              {% endfor %}
+            </div>
+            <a class="itinerary-cta" href="{% url 'user_create' %}?track={{ itinerary.value }}">Crear alumno en este itinerario <span aria-hidden="true">→</span></a>
+          </article>
+        {% endfor %}
+      </section>
+
+      <p class="classrooms-note"><span aria-hidden="true">✦</span> La matrícula concede los retos publicados vinculados al aula. Cambiar el itinerario desactiva el anterior y conserva su historial.</p>
+    </main>
+  </body>
+</html>

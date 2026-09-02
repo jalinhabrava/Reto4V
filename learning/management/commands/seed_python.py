@@ -29,6 +29,8 @@ from learning.models import (
     TestCase,
 )
 
+from ._catalog import ensure_cohort_track, get_or_create_catalog_assignment
+
 TRACK_SLUG = "introduccion-python-sge-dam"
 CURRICULUM_SOURCE = (
     "https://www.educacion.navarra.es/documents/27590/558252/DF%2B110_2024%2Bmodificacion%2BGS.pdf/"
@@ -267,7 +269,7 @@ CHALLENGES = [
         "title": "10 · Leer un archivo de texto",
         "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
         "xp": 200,
-        "theory": "with open garantiza un cierre ordenado del recurso en un programa real. El reto comprueba la intención estructural y nunca abre la ruta ni lee datos en el servidor de Reto4V.",
+        "theory": "with open garantiza un cierre ordenado del recurso en un programa real. El reto comprueba la intención estructural y nunca abre la ruta ni lee datos en el servidor de Programmy4V.",
         "task": "Usa with open para leer productos.txt en modo r y con encoding utf-8. Guarda las líneas y muestra el número obtenido.",
         "hints": [
             "La forma base es with open(ruta, \"r\", encoding=\"utf-8\") as archivo:.",
@@ -387,8 +389,9 @@ class Command(BaseCommand):
         cohort, _ = Cohort.objects.get_or_create(
             name=options["cohort"],
             academic_year=year,
-            defaults={"active": True},
+            defaults={"active": True, "track": Cohort.Track.PYTHON},
         )
+        ensure_cohort_track(cohort, Cohort.Track.PYTHON)
         if owner.role == User.Role.TEACHER and not owner.is_superuser:
             TeachingAssignment.objects.get_or_create(cohort=cohort, teacher=owner, defaults={"active": True})
 
@@ -478,9 +481,9 @@ class Command(BaseCommand):
                             "position": position,
                         },
                     )
-            assignment, _ = Assignment.objects.get_or_create(
+            assignment, _ = get_or_create_catalog_assignment(
                 activity=activity,
-                activity_version=version,
+                version=version,
                 defaults={
                     "status": Assignment.Status.PUBLISHED,
                     "created_by": owner,

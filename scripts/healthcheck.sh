@@ -45,5 +45,5 @@ else
   exit 2
 fi
 
-echo "Reto4V responde en $url"
+echo "Programmy4V responde en $url"
 docker compose --project-directory "${PROJECT_DIR}" --env-file "${PROJECT_DIR}/.env" ps

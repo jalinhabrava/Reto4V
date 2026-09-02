@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instala o actualiza una instancia Reto4V en Docker Compose.
+# Instala o actualiza una instancia Programmy4V en Docker Compose.
 #
 # El script no instala paquetes del sistema, no necesita sudo y nunca muestra
 # el contenido de .env. Es deliberadamente apto para repetirlo después de un
@@ -35,8 +35,8 @@ Opciones:
   --proxy           Publica Caddy en lugar de exponer web directamente.
   --tls             Usa Caddyfile.internal-tls con TLS interno (implica --proxy).
   --direct          Vuelve explícitamente al modo web directo HTTP.
-  --seed-bash       Carga la ruta de retos Bash de demostración, si está disponible.
-  --seed-python     Carga la ruta Python de demostración para 2.º DAM, si está disponible.
+  --seed-bash       Carga el itinerario de retos Bash, si está disponible.
+  --seed-python     Carga el itinerario Python para 2.º DAM, si está disponible.
   --owner USERNAME  Usuario propietario de los retos solicitados (requiere un --seed-*).
   --cohort NAME     Grupo Bash (alias legado; por defecto: 2ASIR).
   --bash-cohort NAME
@@ -318,7 +318,7 @@ wait_and_check() {
   else
     die "Necesito curl o wget para verificar la instalación."
   fi
-  echo "Reto4V responde correctamente."
+  echo "Programmy4V responde correctamente."
 }
 
 first_admin() {
@@ -434,13 +434,13 @@ configure_requested_values
 preflight
 
 if (( NO_BUILD == 0 )); then
-  echo "Construyendo la imagen de Reto4V (la primera vez necesita Internet) …"
+  echo "Construyendo la imagen de Programmy4V (la primera vez necesita Internet) …"
   compose_run build --pull
 else
   echo "Se omite la reconstrucción; se usará la imagen existente."
 fi
 
-echo "Arrancando PostgreSQL y Reto4V …"
+echo "Arrancando PostgreSQL y Programmy4V …"
 if compose_run up --help 2>&1 | grep -q -- '--wait'; then
   compose_run up -d --wait
 else

@@ -1,4 +1,4 @@
-"""Create a small, safe-to-repeat AulaWeb demonstration dataset."""
+"""Create a small, safe-to-repeat Programmy4V demonstration dataset."""
 
 from __future__ import annotations
 
@@ -18,20 +18,22 @@ from learning.models import (
     AssignmentCohort,
     Cohort,
     Course,
-    Enrollment,
     Module,
     TeachingAssignment,
     TestCase,
 )
+from learning.services import set_student_cohort
 
-CURRICULUM_SOURCE = "https://www.educacion.navarra.es/documents/27590/558252/DF%2B109_2024%2Bmodificacion%2BGM.pdf/6641c899-fd0f-89e3-83f4-aa30c8224707"
+from ._catalog import ensure_cohort_track, get_or_create_catalog_assignment
+
+CURRICULUM_SOURCE = "https://www.lexnavarra.navarra.es/detalle.asp?r=9129"
 # This vertical slice demonstrates only the criteria evidenced by its files;
 # the full Navarra RA1 remains outside the Fase 0 activity.
 RA1_CRITERIA = ["RA1.b", "RA1.d", "RA1.g"]
 
 
 class Command(BaseCommand):
-    help = "Crea datos ficticios para probar AulaWeb (las contraseñas generadas solo se muestran una vez)."
+    help = "Crea datos ficticios para probar Programmy4V (las contraseñas generadas solo se muestran una vez)."
 
     def add_arguments(self, parser):
         parser.add_argument("--academic-year", default=None)
@@ -89,10 +91,13 @@ class Command(BaseCommand):
                 credentials.append((student.username, password))
 
         year, _ = AcademicYear.objects.get_or_create(name=academic_year, defaults={"active": True})
-        cohort, _ = Cohort.objects.get_or_create(name="1SMR-Demo", academic_year=year, defaults={"active": True})
+        cohort, _ = Cohort.objects.get_or_create(
+            name="1SMR-Demo",
+            academic_year=year,
+            defaults={"active": True, "track": Cohort.Track.WEB},
+        )
+        ensure_cohort_track(cohort, Cohort.Track.WEB)
         TeachingAssignment.objects.get_or_create(cohort=cohort, teacher=teacher, defaults={"active": True})
-        for student in students:
-            Enrollment.objects.get_or_create(cohort=cohort, student=student, defaults={"active": True})
 
         course, _ = Course.objects.get_or_create(slug="fundamentos-web-smr", defaults={"title": "Fundamentos web para SMR", "description": "Actividad de demostración de HTML, CSS y JavaScript.", "created_by": teacher})
         module, _ = Module.objects.get_or_create(course=course, position=1, defaults={"title": "Lenguajes de marcas web"})
@@ -126,8 +131,21 @@ class Command(BaseCommand):
         ]
         for position, (name, test_type, definition, points, feedback) in enumerate(tests):
             TestCase.objects.get_or_create(activity_version=version, name=name, defaults={"type": test_type, "definition": definition, "points": points, "feedback": feedback, "position": position, "visibility": TestCase.Visibility.PUBLIC})
-        assignment, _ = Assignment.objects.get_or_create(activity=activity, activity_version=version, defaults={"status": Assignment.Status.PUBLISHED, "created_by": teacher, "attempt_policy": Assignment.AttemptPolicy.BEST, "max_attempts": 3, "weight": 100, "published_at": timezone.now()})
+        assignment, _ = get_or_create_catalog_assignment(
+            activity=activity,
+            version=version,
+            defaults={
+                "status": Assignment.Status.PUBLISHED,
+                "created_by": teacher,
+                "attempt_policy": Assignment.AttemptPolicy.BEST,
+                "max_attempts": 3,
+                "weight": 100,
+                "published_at": timezone.now(),
+            },
+        )
         AssignmentCohort.objects.get_or_create(assignment=assignment, cohort=cohort)
+        for student in students:
+            set_student_cohort(student, cohort)
 
         self.stdout.write(self.style.SUCCESS(f"Demo creada: {course.title}, grupo {cohort.name}, {len(students)} alumnos."))
         if credentials:
