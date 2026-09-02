@@ -2,12 +2,12 @@
 
 ## Propósito
 
-Este itinerario ofrece una introducción progresiva a Python para 2.º de DAM y
-el módulo `0491 Sistemas de gestión empresarial`. Llega desde salida,
-variables y tipos hasta funciones, excepciones, `pathlib` y lectura/escritura
-de archivos. Los ejemplos usan registros, catálogos y exportaciones para
-preparar el trabajo posterior con Odoo, sin conectarse a un servidor Odoo ni
-simular su ORM.
+Este itinerario ofrece una transición guiada a Python para 2.º de DAM y el
+módulo `0491 Sistemas de gestión empresarial`. Parte de un primer programa y
+avanza, paso a paso, por variables, decisiones, listas, registros,
+funciones, errores, módulos, rutas y lectura/escritura de archivos. Los
+ejemplos usan catálogos y exportaciones para preparar el trabajo posterior con
+Odoo, sin conectarse a un servidor Odoo ni simular su ORM.
 
 Es una **preparación didáctica y un alineamiento parcial**, no una acreditación
 completa del módulo ni una equivalencia automática con RA/CE. La referencia
@@ -41,9 +41,15 @@ Opciones disponibles:
 El comando crea el curso `Introducción a Python para SGE · DAM`, un módulo de
 apoyo y doce actividades publicadas con sus asignaciones al grupo. El grupo
 queda marcado con `track=python`, que permite mostrarlo como **Python · DAM**
-en el panel local. No crea alumnos, contraseñas ni datos personales. Es
-idempotente: reutiliza actividades, versiones, tests y asignaciones que ya
-existan; nunca reemplaza una versión asignada ni modifica su evidencia.
+en el panel local. No crea alumnos, contraseñas ni datos personales.
+
+El catálogo actual es la revisión **v2**. En una instalación que todavía usa
+la revisión v1, el comando crea v2, mueve a ella los grupos del itinerario y
+archiva la asignación anterior sin borrar borradores, entregas ni
+calificaciones. La versión asignada queda bloqueada; si una instalación ya
+tiene una revisión posterior creada por el centro, el arranque conserva esa
+versión y no rebaja `activity.current_version`. Repetir el comando es seguro:
+reutiliza lo que ya existe y no modifica evidencias.
 
 Al crear o editar un alumno en `/admin-ui/users/`, selecciona su ciclo e
 itinerario. Esa selección activa su única matrícula y habilita el primer reto
@@ -60,18 +66,18 @@ nueva versión y tests privados directamente en la instalación del centro.
 
 | # | Tema | Contexto de SGE/Odoo | Dificultad |
 |---:|---|---|---|
-| 01 | Salida y variables | Mensaje de bienvenida | Inicial |
-| 02 | Tipos y cadenas | Etiqueta de producto | Inicial |
-| 03 | Condicionales | Regla de disponibilidad de stock | Inicial |
+| 01 | Primer programa y sintaxis | Mensaje de bienvenida | Inicial |
+| 02 | Variables y tipos | Etiqueta de producto | Inicial |
+| 03 | Decisiones `if/else` | Disponibilidad de stock | Inicial |
 | 04 | Listas y bucles | Recorrido de productos | Inicial |
 | 05 | Diccionarios | Registro de producto en memoria | Inicial |
-| 06 | Funciones | Normalización de nombres | Intermedia |
-| 07 | Excepciones | Conversión de datos importados | Intermedia |
-| 08 | Imports y fechas | Preparar datos de intercambio | Intermedia |
-| 09 | `pathlib` | Rutas portables | Intermedia |
-| 10 | Lectura de texto | Importar líneas con `with open` | Intermedia |
-| 11 | Escritura JSON | Exportar registros | Avanzada |
-| 12 | Integración | Leer, transformar y escribir | Avanzada |
+| 06 | Funciones | Limpiar nombres de productos | Intermedia |
+| 07 | Errores `try/except` | Conversión de datos importados | Intermedia |
+| 08 | Módulos y fechas | Preparar datos de intercambio | Intermedia |
+| 09 | `pathlib` | Preparar rutas portables | Intermedia |
+| 10 | Lectura de texto | Leer líneas con `with open` | Intermedia |
+| 11 | Escritura JSON | Guardar un catálogo | Intermedia |
+| 12 | Flujo completo | Leer, transformar y escribir | Intermedia |
 
 ## DSL de tests Python
 

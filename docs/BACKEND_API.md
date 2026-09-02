@@ -29,8 +29,13 @@ docker compose --env-file .env exec web python manage.py bootstrap_catalogs
 
 `PRELOAD_CATALOGS=0` desactiva el paso automático para una instalación que
 necesite gestionar su catálogo manualmente. Los seeds de cada itinerario
-siguen disponibles para ampliaciones controladas y no sustituyen versiones ya
-asignadas.
+siguen disponibles para ampliaciones controladas. Los tres catálogos
+incorporados se sirven en revisión v2: si el grupo tiene enlaces a v1, el
+bootstrap crea la versión v2, migra los enlaces del grupo a una asignación v2
+y archiva la asignación v1. Los borradores, entregas, calificaciones y demás
+evidencias v1 se conservan internamente ligadas a su asignación/version para
+mantener la integridad histórica; no se trasladan XP ni progreso a v2.
+Una revisión posterior creada por el centro no se degrada ni se reemplaza.
 
 ## Contrato del workspace
 
@@ -70,21 +75,32 @@ crear la entrega con el evaluador estático del servidor.
 ## Rutas de lenguaje y gamificación
 
 Una `ActivityVersion` puede declarar `language: "web"`, `language: "bash"` o
-`language: "python"`,
+`language: "python"`. Los puntos de partida son diferentes: Web corresponde
+a 1.º de SMR y parte de cero informático; Bash corresponde a 2.º de ASIR,
+parte de una base de Linux y empieza desde cero en Bash; Python corresponde a
+2.º de DAM y enlaza la base de programación con datos y archivos para preparar
+el trabajo posterior con Odoo.
 `difficulty: "beginner" | "intermediate" | "advanced"`, `xp_reward` (0–1000)
 y una lista de `hints`. Las versiones web solo aceptan `html`, `css` y
 `javascript`; las versiones Bash solo aceptan `bash`; las versiones Python
 solo aceptan `python` (el editor lo presenta como `main.py`). La respuesta
 `version.files` devuelve exclusivamente las claves del lenguaje de la
-actividad.
+actividad. `version.editor_files` indica qué pestañas debe enseñar el editor;
+en Web permite introducir primero solo HTML, después CSS y finalmente
+JavaScript sin mostrar archivos que aún no se han explicado. El frontend las
+presenta como `index.html`, `styles.css` y `script.js`; en el recorrido Web las
+pestañas del workspace son **Pasos**, **Editor** y **Resultado**, y los paneles
+inferiores se llaman **Comprobaciones** y **Entregas**.
 
-El comando `python manage.py seed_bash --owner PROFESOR --cohort 2ASIR`
-crea el itinerario local de doce retos de apoyo transversal para el módulo
+El comando `python manage.py seed_web --owner PROFESOR --cohort 1SMR`
+crea el itinerario local v2 de doce retos de entrada para `0228 Aplicaciones
+web`. El comando `python manage.py seed_bash --owner PROFESOR --cohort 2ASIR`
+crea el itinerario local v2 de doce retos de apoyo transversal para el módulo
 0378. No crea alumnos y no asigna RA/CE. Véase
 [`docs/BASH_TRACK.md`](BASH_TRACK.md) para el catálogo, la DSL y sus límites.
 
 El comando `python manage.py seed_python --owner PROFESOR --cohort 2DAM`
-crea doce retos progresivos de preparación para `0491 Sistemas de gestión
+crea el itinerario local v2 de doce retos progresivos de preparación para `0491 Sistemas de gestión
 empresarial` de segundo de DAM, desde variables hasta lectura y escritura de
 archivos. Es un alineamiento parcial del currículo navarro y no una cobertura
 completa de RA/CE ni una integración con Odoo. Véase
@@ -109,8 +125,8 @@ en cada asignación `language`, `difficulty`, `xp_reward`, `earned_xp`,
 ```
 
 El XP lo calcula el servidor con el mejor resultado automático válido de cada
-asignación (`floor(xp_reward * score / 10)`), por lo que repetir entregas no
-lo aumenta. Un reto se considera completado desde 8/10. Esta métrica es
+asignación (`floor(xp_reward * score / 10)`), por lo que repetir entregas en
+esa asignación no lo aumenta. Un reto se considera completado desde 8/10. Esta métrica es
 independiente de las calificaciones oficiales publicadas y no genera rankings.
 Las insignias `web-path`, `bash-path` y `python-path` indican itinerarios
 completados; `cross-path` se obtiene con al menos dos y `triple-path` con los

@@ -10,10 +10,11 @@ from __future__ import annotations
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils import timezone
 
 from accounts.models import User
 
-from .models import Assignment, Cohort, Enrollment
+from .models import Assignment, AssignmentCohort, Cohort, Enrollment
 
 
 def _locked_student(student):
@@ -102,3 +103,83 @@ def clear_student_enrollment(student) -> int:
 
     locked_student = _locked_student(student)
     return Enrollment.objects.filter(student=locked_student, active=True).update(active=False)
+
+
+@transaction.atomic
+def supersede_catalog_assignments(current_assignment: Assignment) -> dict[str, int]:
+    """Publish a new catalogue version without rewriting academic evidence.
+
+    Built-in catalogue content can improve after a centre has already used an
+    older version.  An ``Assignment`` pins its version permanently, so an
+    upgrade must create a new assignment.  This service copies the matching cohort
+    links to that new assignment and archives only older visible assignments
+    for the same activity and language.  Drafts, submissions and grades remain
+    attached to the archived assignment for audit and teacher review.
+
+    The caller still owns the explicit link to a newly requested cohort.  The
+    returned counters are useful for deterministic command output and tests.
+    """
+
+    if not getattr(current_assignment, "pk", None):
+        raise ValidationError("La nueva asignación de catálogo debe estar guardada.")
+
+    try:
+        current = (
+            Assignment.objects.select_for_update()
+            .select_related("activity_version")
+            .get(pk=current_assignment.pk)
+        )
+    except Assignment.DoesNotExist as exc:
+        raise ValidationError("La nueva asignación de catálogo ya no existe.") from exc
+
+    # Bootstrap runs on every container start. A teacher may deliberately
+    # leave the current revision as a draft; do not fail the restart or hide
+    # the previously published revision in that case.
+    if current.status == Assignment.Status.DRAFT:
+        return {"migrated_links": 0, "archived_assignments": 0}
+
+    version = current.activity_version
+    older = list(
+        Assignment.objects.select_for_update()
+        .filter(
+            activity_id=current.activity_id,
+            activity_version__language=version.language,
+            activity_version__version_number__lt=version.version_number,
+            status__in=(
+                Assignment.Status.PUBLISHED,
+                Assignment.Status.CLOSED,
+                Assignment.Status.ARCHIVED,
+            ),
+            cohort_links__cohort__track=version.language,
+        )
+        .distinct()
+        .order_by("created_at", "id")
+    )
+
+    migrated_links = 0
+    archived_assignments = 0
+    now = timezone.now()
+    for previous in older:
+        cohort_ids = previous.cohort_links.filter(
+            cohort__track=version.language,
+        ).values_list("cohort_id", flat=True)
+        for cohort_id in cohort_ids:
+            _, created = AssignmentCohort.objects.get_or_create(
+                assignment=current,
+                cohort_id=cohort_id,
+            )
+            migrated_links += int(created)
+
+        if previous.status != Assignment.Status.ARCHIVED:
+            previous.status = Assignment.Status.ARCHIVED
+            update_fields = ["status"]
+            if previous.closed_at is None:
+                previous.closed_at = now
+                update_fields.append("closed_at")
+            previous.save(update_fields=update_fields)
+            archived_assignments += 1
+
+    return {
+        "migrated_links": migrated_links,
+        "archived_assignments": archived_assignments,
+    }

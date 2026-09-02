@@ -8,6 +8,8 @@ from django.utils import timezone
 from accounts.models import User
 from grading.services import DraftConflict, create_submission, get_or_create_draft, save_draft
 from learning.management.commands.seed_web import CHALLENGES as WEB_CHALLENGES
+from learning.management.commands.seed_web import CURRICULUM_SOURCE as WEB_CURRICULUM_SOURCE
+from learning.management.commands.seed_web import WEB_CATALOG_VERSION
 from learning.services import clear_student_enrollment, set_student_cohort
 
 from .models import (
@@ -60,18 +62,28 @@ class DraftTests(LearningFactoryMixin, TestCase):
         )
         self.assertEqual(len(versions), 12)
         self.assertTrue(all(version.language == ActivityVersion.Language.WEB for version in versions))
+        self.assertTrue(all(version.version_number == WEB_CATALOG_VERSION for version in versions))
+        self.assertEqual(Assignment.objects.filter(activity_version__in=versions).count(), 12)
+        self.assertEqual(
+            [version.activity.title for version in versions],
+            [item["title"] for item in WEB_CHALLENGES],
+        )
         self.assertEqual(
             sum(version.test_cases.count() for version in versions),
             sum(len(item["tests"]) for item in WEB_CHALLENGES),
         )
-        for index, version in enumerate(versions, start=1):
+        expected_file_sets = [{"html"}] * 5 + [{"html", "css"}] * 4 + [{"html", "css", "javascript"}] * 3
+        self.assertEqual([set(item["starter"]) for item in WEB_CHALLENGES], expected_file_sets)
+        for version in versions:
+            item = next(item for item in WEB_CHALLENGES if item["slug"] == version.activity.slug)
             self.assertNotEqual(version.starter_files, version.reference_solution)
-            if index <= 6:
-                self.assertNotIn("<main", version.starter_files["html"])
-            elif index <= 9:
-                self.assertEqual(version.starter_files["css"], "")
-            else:
-                self.assertEqual(version.starter_files["javascript"], "")
+            self.assertEqual(version.starter_files, item["starter"])
+            self.assertEqual(set(version.reference_solution), set(item["starter"]))
+            self.assertEqual(version.hints, item["hints"])
+            self.assertEqual(version.objectives, item["objectives"])
+            self.assertEqual(version.professional_module_code, "0228")
+            self.assertEqual(version.curriculum_source, WEB_CURRICULUM_SOURCE)
+            self.assertEqual(version.activity.current_version_id, version.id)
         reports = [
             evaluate_tests(version.reference_solution, list(version.test_cases.all()), language="web")
             for version in versions
@@ -82,6 +94,63 @@ class DraftTests(LearningFactoryMixin, TestCase):
             ActivityVersion.objects.filter(activity__module__course=course).count(),
             12,
         )
+
+    def test_seed_web_publishes_v2_without_overwriting_an_assigned_v1(self):
+        """The catalogue refresh keeps old evidence attached to its v1."""
+
+        item = WEB_CHALLENGES[0]
+        course = Course.objects.create(
+            title="Aplicaciones web · SMR",
+            slug="fundamentos-web-smr",
+            created_by=self.teacher,
+        )
+        module = Module.objects.create(course=course, title="Fundamentos", position=1)
+        activity = Activity.objects.create(
+            module=module,
+            title="01 · Estructura semántica",
+            slug=item["slug"],
+            status=Activity.Status.PUBLISHED,
+            created_by=self.teacher,
+        )
+        legacy_files = {"html": "<h1>Entrega antigua</h1>", "css": "", "javascript": ""}
+        legacy = ActivityVersion.objects.create(
+            activity=activity,
+            version_number=1,
+            language=ActivityVersion.Language.WEB,
+            starter_files=legacy_files,
+            reference_solution=legacy_files,
+            created_by=self.teacher,
+            published_at=timezone.now(),
+        )
+        legacy_assignment = Assignment.objects.create(
+            activity=activity,
+            activity_version=legacy,
+            created_by=self.teacher,
+            status=Assignment.Status.PUBLISHED,
+            published_at=timezone.now(),
+        )
+        legacy_cohort = Cohort.objects.create(
+            name="1SMR",
+            academic_year=self.year,
+            track=Cohort.Track.WEB,
+        )
+        AssignmentCohort.objects.create(assignment=legacy_assignment, cohort=legacy_cohort)
+        activity.current_version = legacy
+        activity.save(update_fields=["current_version", "updated_at"])
+
+        call_command("seed_web", owner=self.teacher.username, cohort="1SMR", academic_year=self.year.name, stdout=None)
+
+        activity.refresh_from_db()
+        legacy.refresh_from_db()
+        refreshed = ActivityVersion.objects.get(activity=activity, version_number=WEB_CATALOG_VERSION)
+        self.assertEqual(Activity.objects.filter(module=module).count(), 12)
+        self.assertEqual(activity.current_version_id, refreshed.id)
+        self.assertEqual(activity.title, "01 · Estructura semántica")
+        self.assertEqual(legacy.starter_files, legacy_files)
+        self.assertEqual(legacy.reference_solution, legacy_files)
+        self.assertTrue(Assignment.objects.filter(pk=legacy_assignment.pk).exists())
+        new_assignment = Assignment.objects.get(activity_version=refreshed, cohort_links__cohort=legacy_cohort)
+        self.assertEqual(new_assignment.title, item["title"])
 
     def test_bootstrap_catalogs_is_idempotent_and_creates_all_tracks_without_students(self):
         from accounts.models import CATALOG_SERVICE_USERNAME
@@ -167,7 +236,7 @@ class DraftTests(LearningFactoryMixin, TestCase):
         dashboard = self.client.get(reverse("student_dashboard"), HTTP_ACCEPT="application/json")
         self.assertEqual(dashboard.status_code, 200)
         self.assertEqual(len(dashboard.json()["assignments"]), 12)
-        self.assertEqual(dashboard.json()["assignments"][0]["title"], "01 · Estructura semántica")
+        self.assertEqual(dashboard.json()["assignments"][0]["title"], "01 · Mi primera página")
 
         foreign_cohort = Cohort.objects.create(
             name="2ASIR-C",

@@ -7,6 +7,13 @@ especialmente útil como apoyo a scripting, automatización, comprobación de
 registros y planificación de copias de seguridad. Está pensado para una
 instalación LAN y no necesita Internet para que el alumnado trabaje.
 
+El nivel de entrada previsto es alumnado de 2.º de ASIR que parte de cero en
+Bash, aunque ya tenga una base de informática. La progresión comienza con un
+primer archivo de texto y mensajes sencillos, y añade una sola idea principal
+en cada reto antes de llegar a las rutinas de copias. Las instrucciones son
+directas, incluyen pasos numerados, pistas progresivas y un archivo inicial
+preparado para completar.
+
 El contenido se marca con el código de módulo profesional `0378` (Seguridad y
 alta disponibilidad), pero es **apoyo transversal sin acreditación de RA/CE**:
 no declara una cobertura completa de resultados de aprendizaje ni inventa
@@ -37,13 +44,14 @@ Opciones disponibles:
 - `--cohort NOMBRE`: grupo destinatario; por defecto `2ASIR`.
 - `--academic-year AAAA-AAAA`: curso académico; si se omite se calcula según la fecha del servidor.
 
-El comando crea el curso `Laboratorio Bash para Seguridad · ASIR`, un módulo
-de apoyo `/laboratorio`, doce actividades publicadas y sus asignaciones al
+El comando crea el curso `Laboratorio Bash para Seguridad · ASIR`, el módulo
+`De cero a tus primeras automatizaciones`, doce actividades publicadas y sus asignaciones al
 grupo indicado. El grupo queda marcado con `track=bash`, que permite que el
 panel admin lo muestre como **Bash · ASIR** y que las cuentas de alumno lo
 seleccionen. No crea alumnos, contraseñas ni datos personales. Es idempotente:
-reutiliza actividades, versiones, tests y asignaciones que ya existan; nunca
-reemplaza una versión asignada.
+reutiliza actividades y registros compatibles; si encuentra el catálogo v1,
+añade la revisión v2 y una asignación nueva sin mutar ninguna versión ya
+asignada.
 
 Al crear o editar un alumno en `/admin-ui/users/`, selecciona su ciclo e
 itinerario. Esa selección activa su única matrícula; no hay que asignar cada
@@ -57,6 +65,48 @@ usarse como banco de exámenes. Para una evaluación con secreto real, crea una
 nueva versión/actividad y tests privados directamente en la base de datos del
 centro; la API oculta los tests privados al alumno, pero ningún secreto
 commiteado en un repositorio público puede permanecer secreto.
+
+## Progresión del catálogo Bash v2
+
+La revisión incorporada por `seed_bash` es la v2. Conserva los slugs de las
+instalaciones anteriores para que cada actividad siga siendo identificable,
+pero reordena la dificultad y simplifica el lenguaje para acompañar a quien
+está empezando:
+
+| Orden | Reto | Idea principal |
+|---:|---|---|
+| 1 | Mi primer script | Shebang, `echo` y `printf` para mostrar mensajes. |
+| 2 | Guardar un dato en una variable | Crear `NOMBRE` y usar su contenido. |
+| 3 | Guardar una carpeta y un archivo | Preparar `CARPETA` y `ARCHIVO` para formar una ruta. |
+| 4 | Recibir un dato | Leer `$1` y usar `alumno` como valor de reserva. |
+| 5 | Tomar una decisión con `if` | Comprobar si existe un archivo. |
+| 6 | Repetir una tarea con `for` | Recorrer nombres de archivos. |
+| 7 | Repetir hasta terminar con `while` | Avanzar con un contador y detener el bucle. |
+| 8 | Crear una función sencilla | Agrupar y llamar una tarea reutilizable. |
+| 9 | Filtrar información con un pipeline | Pasar resultados de `grep` a `sort` mediante `|`. |
+| 10 | Preparar una carpeta de copias | Comprobar y crear una ruta con `mkdir -p`. |
+| 11 | Preparar una copia con `tar` | Revisar la fuente y expresar una copia comprimida. |
+| 12 | Crear y verificar una copia | Combinar función, condición, `tar` y `sha256sum`. |
+
+Las doce soluciones de referencia pasan las cuatro comprobaciones estáticas
+de su reto. Esto acredita que la estructura escrita contiene los elementos
+que se practican; no significa que el script se haya ejecutado ni que se haya
+leído, creado o verificado un archivo real.
+
+### Actualización segura desde v1
+
+Al arrancar una instalación existente con el catálogo precargado, o al volver
+a ejecutar `seed_bash`, la actividad conserva su slug y recibe una versión v2
+inmutable. La asignación nueva se vincula al grupo y las asignaciones
+anteriores se archivan solo para ese mismo itinerario. Las entregas,
+borradores, cálculos de nota y demás evidencias siguen ligados a su asignación
+y a su versión originales; no se borran ni se recalculan por la actualización.
+
+El proceso es idempotente: repetirlo no crea un segundo conjunto de doce
+retos ni sustituye una solución personalizada por el centro. Si una actividad
+ya tiene una versión posterior creada por el centro, el catálogo incorporado
+no la degrada ni la reemplaza. Los slugs históricos se mantienen precisamente
+para que esta actualización sea reconocible en instalaciones ya utilizadas.
 
 ## DSL de tests Bash
 

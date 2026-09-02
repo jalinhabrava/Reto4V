@@ -6,7 +6,7 @@ from django.core.management.base import CommandError
 from django.db import IntegrityError, transaction
 from django.db.models import Case, IntegerField, Value, When
 
-from learning.models import Assignment, AssignmentCohort, Cohort
+from learning.models import Activity, Assignment, AssignmentCohort, Cohort
 
 
 def ensure_cohort_track(cohort: Cohort, expected_track: str) -> None:
@@ -60,33 +60,90 @@ def get_or_create_catalog_assignment(*, activity, version, defaults):
         default=Value(4),
         output_field=IntegerField(),
     )
-    existing = (
-        Assignment.objects.filter(activity=activity, activity_version=version)
-        .order_by(status_order, "created_at", "id")
-        .first()
-    )
-    if existing is not None:
-        return existing, False
-
-    try:
-        # Isolate a possible race in a savepoint.  Catching IntegrityError
-        # directly inside the command's outer atomic block would otherwise
-        # leave that transaction unusable for the deterministic re-query.
-        with transaction.atomic():
-            assignment = Assignment.objects.create(
-                activity=activity,
-                activity_version=version,
-                **defaults,
-            )
-        return assignment, True
-    except IntegrityError:
-        # This is mostly defensive for deployments where a future migration
-        # adds an identity constraint or two bootstrap workers race each other.
+    # Bootstrap normally runs in one container, but locking the activity also
+    # makes two concurrent starts deterministic on PostgreSQL even though the
+    # legacy schema does not yet enforce assignment identity as a constraint.
+    with transaction.atomic():
+        Activity.objects.select_for_update().only("pk").get(pk=activity.pk)
         existing = (
             Assignment.objects.filter(activity=activity, activity_version=version)
             .order_by(status_order, "created_at", "id")
             .first()
         )
-        if existing is None:
-            raise
-        return existing, False
+        if existing is not None:
+            return existing, False
+
+        try:
+            # Keep a savepoint for deployments where a future migration adds
+            # an identity constraint independently of this compatibility code.
+            with transaction.atomic():
+                assignment = Assignment.objects.create(
+                    activity=activity,
+                    activity_version=version,
+                    **defaults,
+                )
+            return assignment, True
+        except IntegrityError:
+            existing = (
+                Assignment.objects.filter(activity=activity, activity_version=version)
+                .order_by(status_order, "created_at", "id")
+                .first()
+            )
+            if existing is None:
+                raise
+            return existing, False
+
+
+def get_or_create_catalog_revision_assignment(*, activity, version, cohort, defaults):
+    """Create the active assignment for a newer built-in catalogue revision.
+
+    A revision is a new immutable ``ActivityVersion`` and therefore needs a
+    new assignment.  Relevant teacher settings from the latest older
+    assignment are retained, all matching cohort links are migrated by
+    the domain service, and old assignments are archived without touching
+    their drafts, submissions or grades.
+    """
+
+    if version.activity_id != activity.pk:
+        raise CommandError("La versión del catálogo no pertenece a la actividad indicada.")
+    if not cohort.track or cohort.track != version.language:
+        raise CommandError("El itinerario del grupo no coincide con la revisión del catálogo.")
+
+    previous = (
+        Assignment.objects.filter(
+            activity=activity,
+            activity_version__language=version.language,
+            activity_version__version_number__lt=version.version_number,
+            cohort_links__cohort__track=version.language,
+        )
+        .order_by("-activity_version__version_number", "-created_at", "-id")
+        .first()
+    )
+    create_defaults = dict(defaults)
+    if previous is not None:
+        # Keep a title explicitly customised by a teacher.  A blank legacy
+        # override must not erase the clearer title supplied by the new
+        # catalogue revision.
+        if previous.title_override:
+            create_defaults["title_override"] = previous.title_override
+        for field in (
+            "opens_at",
+            "due_at",
+            "max_attempts",
+            "attempt_policy",
+            "weight",
+            "allow_late",
+        ):
+            create_defaults[field] = getattr(previous, field)
+
+    assignment, created = get_or_create_catalog_assignment(
+        activity=activity,
+        version=version,
+        defaults=create_defaults,
+    )
+    AssignmentCohort.objects.get_or_create(assignment=assignment, cohort=cohort)
+
+    from learning.services import supersede_catalog_assignments
+
+    upgrade = supersede_catalog_assignments(assignment)
+    return assignment, created, upgrade

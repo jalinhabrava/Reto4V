@@ -30,7 +30,7 @@ from grading.services import (
     student_assignment_or_404,
 )
 
-from .models import Assignment, Cohort, Draft
+from .models import ActivityVersion, Assignment, Cohort, Draft
 
 MAX_JSON_BODY = 2 * 1024 * 1024
 
@@ -142,6 +142,23 @@ def _report_payload(report: EvaluationReport | None, *, visible_results: list[bo
 
 def _activity_public_payload(assignment: Assignment, draft: Draft | None = None, submissions=None, *, student=None):
     version = assignment.activity_version
+    starter_keys = {
+        "javascript" if key == "js" else key
+        for key in version.starter_files
+    }
+    editor_files = [
+        key
+        for key in ("html", "css", "javascript", "bash", "python")
+        if key in starter_keys
+    ]
+    if not editor_files:
+        editor_files = [
+            "bash"
+            if version.language == ActivityVersion.Language.BASH
+            else "python"
+            if version.language == ActivityVersion.Language.PYTHON
+            else "html"
+        ]
     public_tests = [
         {
             "id": str(test.id),
@@ -185,6 +202,7 @@ def _activity_public_payload(assignment: Assignment, draft: Draft | None = None,
             "curriculum_unit": version.curriculum_unit,
             "curriculum_source": version.curriculum_source,
             "files": version.files,
+            "editor_files": editor_files,
             "grading_mode": version.grading_mode,
             "auto_weight": _decimal(version.auto_weight),
             "manual_weight": _decimal(version.manual_weight),
@@ -415,8 +433,10 @@ def student_submission(request, submission_id):
     return render(request, "grading/submission.html", {"submission": submission})
 
 
-def teacher_assignments_for(user):
+def teacher_assignments_for(user, *, include_archived=True):
     queryset = Assignment.objects.select_related("activity", "activity__module", "activity_version").prefetch_related("cohort_links__cohort").order_by("activity__module__position", "activity__title", "id")
+    if not include_archived:
+        queryset = queryset.exclude(status=Assignment.Status.ARCHIVED)
     if user.is_superuser or user.role == User.Role.ADMIN:
         return queryset
     return queryset.filter(cohort_links__cohort__teaching_assignments__teacher=user, cohort_links__cohort__teaching_assignments__active=True).distinct()
@@ -498,7 +518,7 @@ def _select_attempt(assignment, submissions):
 @role_required("teacher", "admin")
 @ensure_csrf_cookie
 def teacher_dashboard(request):
-    assignments = list(teacher_assignments_for(request.user))
+    assignments = list(teacher_assignments_for(request.user, include_archived=False))
     rows = []
     reviews = []
     for assignment in assignments:
@@ -623,7 +643,9 @@ def _csv_safe(value):
 
 @role_required("teacher", "admin")
 def teacher_export(request):
-    assignments = list(teacher_assignments_for(request.user))
+    # Superseded revisions remain reviewable through their submissions, while
+    # the normal grade export contains only the active teaching set.
+    assignments = list(teacher_assignments_for(request.user, include_archived=False))
     assignment_ids = {str(item.id) for item in assignments}
     selected = request.GET.get("assignment")
     if selected and selected in assignment_ids:

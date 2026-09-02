@@ -7,14 +7,18 @@ tiempo de uso.
 
 Incluye tres itinerarios que pueden convivir en la misma instalación:
 
-- **Web · FP SMR**: HTML, CSS y JavaScript para el módulo navarro `0228 ·
-  Aplicaciones web`.
-- **Bash · 2.º ASIR**: scripting de Linux para la asignatura de Seguridad,
-  con sintaxis, variables, condiciones, bucles, funciones, filtros y copias
-  de seguridad.
-- **Python · 2.º DAM**: fundamentos hasta lectura y escritura de archivos,
-  orientados al módulo `0491 · Sistemas de gestión empresarial` y como base
-  para trabajar posteriormente con Odoo.
+- **Web · 1.º SMR**: una entrada desde cero informático a HTML, CSS y
+  JavaScript para el módulo navarro `0228 · Aplicaciones web`. Los primeros
+  ejercicios parten de una página ya preparada y piden cambios de una sola
+  línea.
+- **Bash · 2.º ASIR**: scripting de Linux para la asignatura de Seguridad.
+  Se presupone base de Linux, pero no experiencia previa con Bash; la ruta
+  avanza por sintaxis, variables, condiciones, bucles, funciones, filtros y
+  copias de seguridad.
+- **Python · 2.º DAM**: transición desde la base de programación del alumnado
+  hacia datos y lectura/escritura de archivos, orientada al módulo `0491 ·
+  Sistemas de gestión empresarial` y como preparación para trabajar
+  posteriormente con Odoo.
 
 La evaluación de Bash es estática: analiza el código con un parser y nunca
 ejecuta comandos del alumnado ni abre una shell dentro del servidor. Python se
@@ -65,6 +69,19 @@ puede repetirse al actualizar la instalación. La opción está controlada por
 `PRELOAD_CATALOGS=1` (valor predeterminado); para una instalación que deba
 arrancar sin tocar el catálogo, establece `PRELOAD_CATALOGS=0` en `.env`.
 
+Los tres catálogos incorporados se sirven en revisión **v2**. Si una instalación
+ya tiene una revisión v1, el bootstrap crea la v2, mueve a ella los enlaces del
+grupo y archiva las asignaciones v1. Los borradores, entregas, calificaciones y
+demás evidencias antiguas se conservan internamente ligadas a su versión para
+mantener la integridad; no se trasladan XP ni progreso de v1 a v2.
+
+El itinerario Web está secuenciado para alumnado que llega de ESO sin
+experiencia informática: primero solo aparece `index.html` y se cambia texto
+entre etiquetas ya escritas; después se introducen enlaces, imágenes y listas;
+CSS aparece cuando esas bases están asentadas y JavaScript queda para los
+últimos retos. El editor guarda automáticamente, por lo que no hace falta
+crear carpetas ni manejar archivos del equipo para comenzar.
+
 Después de iniciar sesión como administrador, crea cada alumno desde
 `/admin-ui/users/` y selecciona su ciclo e itinerario en el campo **Ciclo e
 itinerario**. Esa acción crea la matrícula activa automáticamente; el alumno
@@ -90,7 +107,10 @@ bash scripts/install.sh --skip-admin
 ```
 
 El último paso conserva `.env` y los volúmenes, reconstruye la aplicación,
-aplica las migraciones y precarga de forma idempotente los 36 retos. No uses
+aplica las migraciones y precarga de forma idempotente los 36 retos de la
+revisión v2. Si existía v1, el proceso deja sus asignaciones archivadas y sus
+evidencias internas intactas, sin trasladar XP ni progreso a la nueva revisión.
+No uses
 `docker compose down -v`: ese modificador sí elimina los datos persistentes.
 
 También puedes cargar un itinerario concreto, manteniendo el propietario y el
@@ -146,11 +166,12 @@ modo mirrored, funcionamiento sin Internet y copias de seguridad:
 
 ## Estado curricular
 
-El catálogo inicial trae doce retos por itinerario (36 en total): Web para
-Aplicaciones web de SMR, Bash para los fundamentos prácticos de Seguridad de
-2.º ASIR y Python para preparar el trabajo posterior con Odoo en Sistemas de
-gestión empresarial de 2.º DAM. El banco completo de actividades y la
-cobertura de todos los resultados de aprendizaje se ampliarán por fases.
+El catálogo inicial v2 trae doce retos por itinerario (36 en total): Web para
+1.º SMR, empezando por reconocer texto y etiquetas sin experiencia informática;
+Bash para 2.º ASIR, con base Linux pero comenzando desde cero en Bash; y Python
+para 2.º DAM, enlazando su base de programación con datos y archivos antes de
+dar el salto posterior a Odoo. El banco completo de actividades y la cobertura
+de todos los resultados de aprendizaje se ampliarán por fases.
 
 La ruta Python es una preparación parcial, no una implementación de Odoo ni
 una acreditación del módulo. El currículo navarro vigente sitúa `0491 ·

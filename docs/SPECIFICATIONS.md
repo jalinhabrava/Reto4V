@@ -4,8 +4,12 @@
 
 Programmy4V es una herramienta de gamificación para aprender programación en la LAN del centro.
 Tres recorridos comparten cuentas, grupos, editor, entregas y revisión docente:
-HTML/CSS/JavaScript para SMR, Bash para Seguridad de 2.º ASIR y Python
-introductorio para Sistemas de gestión empresarial de 2.º DAM.
+HTML/CSS/JavaScript para 1.º de SMR, Bash para Seguridad de 2.º de ASIR y
+Python introductorio para Sistemas de gestión empresarial de 2.º de DAM.
+Cada uno parte de un punto distinto: Web presupone cero experiencia
+informática; Bash presupone una base de Linux, pero empieza desde cero en el
+lenguaje; Python parte de la base de programación del alumnado y la lleva a
+datos y archivos como preparación para Odoo.
 
 El repositorio público contiene el software y actividades formativas de
 ejemplo. Cuentas, borradores, entregas, notas y copias se almacenan únicamente
@@ -23,7 +27,9 @@ en la instalación del centro. No se requiere OAuth, IA ni un servicio SaaS.
   catálogo publicado de su grupo.
 - Actividades versionadas, asignaciones, plazos y política de intentos.
   Los cambios de un reto ya asignado necesitan una nueva versión.
-- Editor web con HTML, CSS, JavaScript y preview aislada en el navegador.
+- Editor web con HTML, CSS, JavaScript y preview aislada en el navegador. En
+  los retos iniciales solo muestra el archivo que el alumno necesita; las
+  pestañas de CSS y JavaScript aparecen cuando se introducen esos conceptos.
 - Editor Bash de un solo `script.sh`, explicación, objetivos y pistas.
   Análisis sintáctico y estructural en el servidor, **sin ejecución**.
 - Editor Python de un solo `main.py`, explicación, objetivos y pistas. El
@@ -56,21 +62,43 @@ El catálogo inicial incluye **doce retos web**, **doce retos de Bash** y
 grupos base Web · SMR, Bash · ASIR y Python · DAM durante el bootstrap. No
 representa la programación completa de ninguno de los módulos.
 
+Los tres catálogos incorporados corresponden a la revisión **v2**. En una
+instalación que ya tenga v1, `bootstrap_catalogs` crea las versiones v2,
+migra a ellas los enlaces de los grupos y archiva las asignaciones v1. Los
+borradores, entregas, calificaciones y cálculos antiguos permanecen ligados
+internamente a su asignación y versión para conservar la evidencia y la
+integridad histórica; no se trasladan XP ni progreso de v1 a v2.
+
 En SMR se mantiene la referencia navarra de `0228 · Aplicaciones web`, con
 trazabilidad curricular por versión. El banco completo debe desarrollarse
 conforme a la programación didáctica y al
 [Decreto Foral 49/2010 consolidado, currículo navarro de SMR](https://www.lexnavarra.navarra.es/detalle.asp?r=9129),
 con sus modificaciones vigentes.
 
-Bash apoya de forma transversal `0378 · Seguridad y alta disponibilidad`:
-variables, condiciones, bucles, funciones, argumentos, códigos de salida,
-filtros, permisos y planificación de copias. No se asignan RA/CE artificiales.
+La revisión Web v2 está pensada para 1.º de SMR y presupone cero experiencia
+informática. Empieza por reconocer texto dentro de una etiqueta en una página
+ya preparada, avanza con una única novedad por reto y reserva JavaScript para
+el final. Los enunciados indican qué línea localizar, qué parte no borrar y
+qué botón pulsar; no exigen conocer carpetas, rutas locales, terminales ni
+herramientas externas. En la interfaz, la primera etapa muestra solo
+`index.html`; después aparecen las pestañas `styles.css` y `script.js` cuando
+el itinerario introduce CSS y JavaScript. El alumno encuentra las acciones
+**Ver mi página**, **Comprobar mi trabajo** y **Entregar actividad** en ese
+orden.
+
+Bash v2 está dirigido a 2.º de ASIR: se da por conocida una base de Linux,
+pero no Bash. Comienza con mensajes, variables y rutas sencillas y llega
+gradualmente a copias de seguridad. Apoya de forma transversal `0378 ·
+Seguridad y alta disponibilidad`: mensajes, variables, rutas, argumentos,
+condiciones, bucles, funciones, filtros, preparación de carpetas y copias con
+`tar` y `sha256sum`. No se asignan RA/CE artificiales.
 Las referencias navarras y el alcance están en [BASH_TRACK.md](BASH_TRACK.md).
 Saber escribir una estructura no demuestra haber restaurado una copia real:
 esa evidencia debe recogerse en la VM de prácticas y con revisión docente.
 
-Python ofrece una introducción progresiva hasta lectura y escritura de
-archivos: sintaxis, variables, control de flujo, colecciones, funciones,
+Python v2 está dirigido a 2.º de DAM y parte de la base de programación que el
+alumnado ya trae para llevarla a datos y lectura/escritura de archivos. Ofrece
+una introducción progresiva con sintaxis, variables, control de flujo, colecciones, funciones,
 errores y excepciones, módulos, rutas y operaciones estructurales con archivos.
 Los ejercicios usan contextos de datos empresariales para preparar el trabajo
 posterior con Odoo, pero no incluyen el framework, el ORM ni una conexión a un

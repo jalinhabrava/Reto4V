@@ -21,12 +21,25 @@ se conservan para mantener la compatibilidad de despliegues existentes.
 - No publiques secretos, bases de datos, entregas, capturas con datos reales o
   credenciales en código, ejemplos, historial Git o informes.
 - Conserva migrations aditivas y compatibilidad de las actividades web.
-- Los contenidos Bash son apoyo transversal a 0378; no inventes equivalencias
-  con RA/CE ni presentes los tests estructurales como pruebas de ejecución.
-- Los contenidos Python son una preparación parcial para 0491; lee
-  `docs/PYTHON_TRACK.md` antes de modificar el corrector o los retos Python.
-  No inventes equivalencias con RA/CE ni presentes el análisis estructural
-  como ejecución, acceso a Odoo o prueba de lectura/escritura real.
+- El itinerario Web de 1.º de SMR parte de cero informático: los primeros
+  retos deben introducir una sola idea, entregar casi todo el código preparado
+  y evitar jerga no explicada. No muestres CSS o JavaScript antes de que el
+  reto los introduzca. En la UI usa los nombres **Pasos**, **Editor**,
+  **Resultado**, **Comprobaciones** y **Entregas**.
+- Bash es para 2.º de ASIR: presupone base de Linux, pero debe empezar desde
+  cero en Bash y avanzar gradualmente hacia scripting, seguridad y copias. Es
+  apoyo transversal a 0378; no inventes equivalencias con RA/CE ni presentes
+  los tests estructurales como pruebas de ejecución.
+- Python es para 2.º de DAM: parte de la base de programación y progresa hacia
+  datos y archivos como preparación para Odoo. Es una preparación parcial para
+  0491; lee `docs/PYTHON_TRACK.md` antes de modificar el corrector o los retos
+  Python. No inventes equivalencias con RA/CE ni presentes el análisis
+  estructural como ejecución, acceso a Odoo o prueba de lectura/escritura real.
+- Los tres catálogos incorporados se mantienen en revisión v2. El bootstrap
+  crea v2, migra los enlaces de grupo y archiva las asignaciones v1; conserva
+  borradores, entregas, calificaciones y demás evidencias antiguas ligadas a
+  su asignación/version por integridad, pero no traslada XP ni progreso entre
+  revisiones. Una revisión posterior del centro nunca se degrada.
 - No fabriques datos de progreso. Verifica cambios con tests y lectura real.
 - El catálogo inicial se precarga de forma idempotente al arrancar `web` cuando
   `PRELOAD_CATALOGS=1`; no se crean alumnos ni credenciales de demostración.

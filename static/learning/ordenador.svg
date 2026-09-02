@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-labelledby="title description">
+  <title id="title">Un ordenador sobre una mesa</title>
+  <desc id="description">Ilustración de un monitor, un teclado y una planta sobre una mesa.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef7f3"/>
+      <stop offset="1" stop-color="#dcebea"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#173b57"/>
+      <stop offset="1" stop-color="#0e263b"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="420" rx="28" fill="url(#background)"/>
+  <circle cx="605" cy="88" r="44" fill="#f1c96b" opacity=".72"/>
+  <rect x="82" y="318" width="556" height="28" rx="14" fill="#b67d50"/>
+  <rect x="120" y="342" width="22" height="58" rx="8" fill="#865838"/>
+  <rect x="578" y="342" width="22" height="58" rx="8" fill="#865838"/>
+  <rect x="198" y="78" width="330" height="218" rx="18" fill="#17354d"/>
+  <rect x="216" y="96" width="294" height="178" rx="10" fill="url(#screen)"/>
+  <path d="M250 142h94M250 171h186M250 200h132" stroke="#79d4b2" stroke-width="12" stroke-linecap="round"/>
+  <path d="M365 296v28M310 324h110" stroke="#17354d" stroke-width="18" stroke-linecap="round"/>
+  <path d="M231 310h268l35 34H196z" fill="#f7fbfa" stroke="#8aa4a5" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M252 322h220" stroke="#bdcdcd" stroke-width="6" stroke-linecap="round" stroke-dasharray="10 9"/>
+  <path d="M574 199c-31-36-20-75 13-90 7 39 2 65-13 90Z" fill="#55a98a"/>
+  <path d="M581 201c11-43 42-59 70-45-18 31-41 46-70 45Z" fill="#79c6a8"/>
+  <path d="M577 202c-20-22-49-22-66-1 25 15 47 15 66 1Z" fill="#40886f"/>
+  <path d="M576 191v94" stroke="#356c5b" stroke-width="7" stroke-linecap="round"/>
+  <path d="M535 255h88l-11 63h-66z" fill="#d17759"/>
+</svg>

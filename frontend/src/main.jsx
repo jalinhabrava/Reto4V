@@ -106,9 +106,9 @@ const DEMO_USER_TEACHER = {
 const DEMO_ACTIVITIES = [
   {
     id: 'box-model',
-    title: 'Modelo de caja con CSS',
-    module: 'CSS · Unidad 02',
-    summary: 'Da forma, espacio y jerarquía a una tarjeta de perfil.',
+    title: 'Mi primera página',
+    module: 'HTML · Unidad 01',
+    summary: 'Crea una página sencilla y aprende dónde va cada parte.',
     status: 'in_progress',
     progress: 62,
     due: 'Hoy, 23:59',
@@ -125,9 +125,9 @@ const DEMO_ACTIVITIES = [
   },
   {
     id: 'semantic-html',
-    title: 'Estructura semántica',
-    module: 'HTML · Unidad 01',
-    summary: 'Ordena una página con landmarks y contenido accesible.',
+    title: 'Ordena tu página',
+    module: 'HTML · Unidad 02',
+    summary: 'Coloca el contenido en un orden claro para que se entienda mejor.',
     status: 'graded',
     progress: 100,
     due: 'Entregada ayer',
@@ -183,7 +183,7 @@ const DEMO_ACTIVITIES = [
   },
   {
     id: 'bash-permissions',
-    title: 'Permisos y evidencias',
+    title: 'Permisos y entregas',
     module: 'Seguridad · Unidad 03',
     summary: 'Detecta permisos inseguros y deja un registro útil para auditoría.',
     status: 'not_started',
@@ -252,7 +252,7 @@ const DEMO_TESTS = [
   { id: 'html-main', title: 'Existe un elemento <main>', description: 'La página contiene un único landmark principal.', points: 2, status: 'passed', feedback: 'Buen punto de entrada semántico.' },
   { id: 'css-radius', title: 'La tarjeta tiene esquinas suaves', description: 'Usa border-radius para separar la tarjeta del fondo.', points: 2, status: 'passed', feedback: 'La propiedad está presente.' },
   { id: 'css-spacing', title: 'La tarjeta respira', description: 'El contenido tiene padding suficiente.', points: 3, status: 'failed', feedback: 'Prueba con un padding de 24px o más.' },
-  { id: 'js-console', title: 'El botón responde', description: 'Al hacer clic se registra un mensaje en la consola.', points: 3, status: 'pending', feedback: 'Ejecuta la preview y prueba el botón.' },
+  { id: 'js-console', title: 'El botón responde', description: 'Al hacer clic se muestra un mensaje.', points: 3, status: 'pending', feedback: 'Pulsa «Ver mi página» y prueba el botón.' },
 ]
 
 const DEMO_BASH_TESTS = [
@@ -569,7 +569,7 @@ function LoginScreen({ onLogin }) {
           <div className="visual-copy">
             <p className="kicker kicker-light">Laboratorio de retos · 4 Vientos</p>
             <h1>Aprender haciendo<br /><em>se queda.</em></h1>
-            <p className="visual-lede">Retos de programación para practicar web en SMR, scripting de Linux en ASIR y Python aplicado a SGE en DAM, con feedback y progreso visible.</p>
+            <p className="visual-lede">Retos de programación para practicar web en SMR, scripting de Linux en ASIR y Python aplicado a SGE en DAM, con comentarios y progreso visible.</p>
           </div>
           <div className="visual-footer">
             <span className="pulse-dot" />
@@ -917,11 +917,11 @@ function TeacherDashboard({ user, data, onOpenActivity }) {
           <a className="panel-footer-link" href="/teacher/exports/?format=wide">Ver matriz completa <Icon icon={IconArrowRight} size={15} /></a>
         </div>
         <aside className="teacher-side-column">
-          <div className="panel due-panel"><div className="panel-heading"><div><p className="kicker">Atención</p><h2>Para revisar</h2></div><span className="count-badge">{DEMO_MODE ? 8 : pendingReviews}</span></div>{DEMO_MODE ? <div className="review-list"><ReviewItem initials="LG" name="Lucía García" activity="Modelo de caja con CSS" time="hace 12 min" tone="mint" onClick={() => onOpenActivity(DEMO_ACTIVITIES[0])} /><ReviewItem initials="AN" name="Álvaro Nieto" activity="Modelo de caja con CSS" time="hace 31 min" tone="amber" onClick={() => onOpenActivity(DEMO_ACTIVITIES[0])} /><ReviewItem initials="IC" name="Irene Castro" activity="Estructura semántica" time="ayer" tone="peach" onClick={() => onOpenActivity(DEMO_ACTIVITIES[1])} /></div> : reviews.length ? <div className="review-list">{reviews.slice(0, 3).map((review, index) => <ReviewItem key={review.id} initials={getInitials(review.student)} name={review.student} activity={`${review.assignment} · intento ${review.attempt_number}`} time={formatDate(review.submitted_at)} tone={['mint', 'amber', 'blue'][index % 3]} onClick={() => window.location.assign(review.url)} />)}</div> : <div className="empty-reviews">No hay entregas pendientes de publicación.</div>}{reviews[0] && <button className="panel-footer-link" type="button" onClick={() => window.location.assign(reviews[0].url)}>Abrir revisión <Icon icon={IconArrowRight} size={15} /></button>}</div>
+          <div className="panel due-panel"><div className="panel-heading"><div><p className="kicker">Atención</p><h2>Para revisar</h2></div><span className="count-badge">{DEMO_MODE ? 8 : pendingReviews}</span></div>{DEMO_MODE ? <div className="review-list"><ReviewItem initials="LG" name="Lucía García" activity="Mi primera página" time="hace 12 min" tone="mint" onClick={() => onOpenActivity(DEMO_ACTIVITIES[0])} /><ReviewItem initials="AN" name="Álvaro Nieto" activity="Mi primera página" time="hace 31 min" tone="amber" onClick={() => onOpenActivity(DEMO_ACTIVITIES[0])} /><ReviewItem initials="IC" name="Irene Castro" activity="Ordena tu página" time="ayer" tone="peach" onClick={() => onOpenActivity(DEMO_ACTIVITIES[1])} /></div> : reviews.length ? <div className="review-list">{reviews.slice(0, 3).map((review, index) => <ReviewItem key={review.id} initials={getInitials(review.student)} name={review.student} activity={`${review.assignment} · intento ${review.attempt_number}`} time={formatDate(review.submitted_at)} tone={['mint', 'amber', 'blue'][index % 3]} onClick={() => window.location.assign(review.url)} />)}</div> : <div className="empty-reviews">No hay entregas pendientes de publicación.</div>}{reviews[0] && <button className="panel-footer-link" type="button" onClick={() => window.location.assign(reviews[0].url)}>Abrir revisión <Icon icon={IconArrowRight} size={15} /></button>}</div>
           <div className="panel rhythm-panel"><div className="panel-heading"><div><p className="kicker">Ritmo del grupo</p><h2>Esta semana</h2></div><Icon icon={IconChartBar} size={19} /></div>{DEMO_MODE ? <><div className="rhythm-chart" aria-label="Gráfico de actividad de lunes a domingo">{[42, 55, 48, 78, 66, 31, 17].map((height, index) => <div className={`chart-column ${index === 3 ? 'is-current' : ''}`} key={index}><span style={{ height: `${height}%` }} /><small>{['L', 'M', 'X', 'J', 'V', 'S', 'D'][index]}</small></div>)}</div><p className="rhythm-caption"><strong>+18%</strong> de actividad frente a la semana pasada.</p></> : <p className="empty-reviews">El ritmo se mostrará cuando haya actividad registrada.</p>}</div>
         </aside>
       </section>
-      <section className="teacher-bottom-grid">{reviews.length && !DEMO_MODE ? <div className="announce-card"><span className="announce-icon"><Icon icon={IconSchool} size={20} /></span><div><p className="card-overline">Siguiente revisión</p><h3>{reviews[0].student} · {reviews[0].assignment}</h3><p>Comprueba la evidencia y publica la calificación cuando esté lista.</p></div><button className="button button-dark button-small" onClick={() => window.location.assign(reviews[0].url)}>Revisar <Icon icon={IconArrowRight} size={15} /></button></div> : (assignments.length || DEMO_MODE) ? <div className="announce-card"><span className="announce-icon"><Icon icon={IconSchool} size={20} /></span><div><p className="card-overline">Estado del aula</p><h3>{DEMO_MODE ? 'Publicar «Eventos y DOM»' : 'Sin revisiones pendientes'}</h3><p>{DEMO_MODE ? 'La actividad está lista para el grupo. Revisa los tests antes de abrirla.' : 'Las entregas publicadas están disponibles en el CSV de calificaciones.'}</p></div></div> : <div className="announce-card announce-empty"><Icon icon={IconInfoCircle} size={20} /><p>No hay actividades disponibles para mostrar.</p></div>}<div className="teacher-note"><Icon icon={IconInfoCircle} size={18} /><p><strong>Consejo de aula</strong> · Los tests públicos funcionan mejor cuando explican el porqué.</p></div></section>
+          <section className="teacher-bottom-grid">{reviews.length && !DEMO_MODE ? <div className="announce-card"><span className="announce-icon"><Icon icon={IconSchool} size={20} /></span><div><p className="card-overline">Siguiente revisión</p><h3>{reviews[0].student} · {reviews[0].assignment}</h3><p>Revisa la entrega y publica la calificación cuando esté lista.</p></div><button className="button button-dark button-small" onClick={() => window.location.assign(reviews[0].url)}>Revisar <Icon icon={IconArrowRight} size={15} /></button></div> : (assignments.length || DEMO_MODE) ? <div className="announce-card"><span className="announce-icon"><Icon icon={IconSchool} size={20} /></span><div><p className="card-overline">Estado del aula</p><h3>{DEMO_MODE ? 'Publicar «Eventos y DOM»' : 'Sin revisiones pendientes'}</h3><p>{DEMO_MODE ? 'La actividad está lista para el grupo. Revisa las comprobaciones antes de abrirla.' : 'Las entregas publicadas están disponibles en el CSV de calificaciones.'}</p></div></div> : <div className="announce-card announce-empty"><Icon icon={IconInfoCircle} size={20} /><p>No hay actividades disponibles para mostrar.</p></div>}<div className="teacher-note"><Icon icon={IconInfoCircle} size={18} /><p><strong>Consejo de aula</strong> · Las comprobaciones visibles funcionan mejor cuando explican el porqué.</p></div></section>
     </div>
   )
 }
@@ -946,9 +946,9 @@ function ReviewItem({ initials, name, activity, time, tone, onClick }) {
 }
 
 function SecondaryView({ view, isTeacher, data, onOpenActivity }) {
-  const labels = { activities: ['Actividades', 'Todo el trabajo del aula, en un solo sitio.'], grades: [isTeacher ? 'Libro de calificaciones' : 'Mis notas', isTeacher ? 'Consulta, ajusta y exporta las evidencias del grupo.' : 'Tu progreso y las notas que ya has conseguido.'], group: ['Mi grupo', 'Las personas y el ritmo de tu aula.'], library: ['Biblioteca', 'Lecciones y recursos disponibles sin salir de la red del centro.'], history: ['Historial', 'Un registro sencillo de tus entregas y cambios.'], settings: ['Preferencias', 'Ajustes locales de tu experiencia de aprendizaje.'] }
+  const labels = { activities: ['Actividades', 'Todo el trabajo del aula, en un solo sitio.'], grades: [isTeacher ? 'Libro de calificaciones' : 'Mis notas', isTeacher ? 'Consulta, ajusta y exporta las entregas del grupo.' : 'Tu progreso y las notas que ya has conseguido.'], group: ['Mi grupo', 'Las personas y el ritmo de tu aula.'], library: ['Biblioteca', 'Lecciones y recursos disponibles sin salir de la red del centro.'], history: ['Historial', 'Un registro sencillo de tus entregas y cambios.'], settings: ['Preferencias', 'Ajustes locales de tu experiencia de aprendizaje.'] }
   const [title, subtitle] = labels[view] || labels.activities
-  return <div className="secondary-page"><div className="secondary-topline"><button className="back-link" type="button" onClick={() => window.history.back()}><Icon icon={IconArrowLeft} size={16} />Resumen</button></div><DashboardHeader eyebrow={isTeacher ? 'Espacio docente' : 'Mi espacio'} title={title} subtitle={subtitle} action={null} onAction={() => onOpenActivity(null)} />{view === 'activities' && !isTeacher ? <ActivityCatalog data={data} onOpenActivity={onOpenActivity} /> : <div className="secondary-placeholder"><span className="placeholder-mark"><Icon icon={view === 'grades' ? IconChartBar : view === 'group' ? IconUsers : IconCode} size={25} /></span><h2>Esta vista está lista para crecer contigo.</h2><p>La Fase 0 concentra el flujo completo de práctica: elegir un reto, escribir código, probarlo y entregar una evidencia.</p></div>}</div>
+  return <div className="secondary-page"><div className="secondary-topline"><button className="back-link" type="button" onClick={() => window.history.back()}><Icon icon={IconArrowLeft} size={16} />Resumen</button></div><DashboardHeader eyebrow={isTeacher ? 'Espacio docente' : 'Mi espacio'} title={title} subtitle={subtitle} action={null} onAction={() => onOpenActivity(null)} />{view === 'activities' && !isTeacher ? <ActivityCatalog data={data} onOpenActivity={onOpenActivity} /> : <div className="secondary-placeholder"><span className="placeholder-mark"><Icon icon={view === 'grades' ? IconChartBar : view === 'group' ? IconUsers : IconCode} size={25} /></span><h2>Esta vista está lista para crecer contigo.</h2><p>La Fase 0 concentra el flujo completo de práctica: elegir un reto, escribir código, probarlo y entregar el trabajo.</p></div>}</div>
 }
 
 function ActivityCatalog({ data, onOpenActivity }) {
@@ -1006,6 +1006,173 @@ function parseInstructionBlocks(value) {
 
 function renderInlineText(value) {
   return String(value || '').split(/(`[^`]+`)/g).map((part, index) => part.startsWith('`') && part.endsWith('`') ? <code key={index}>{part.slice(1, -1)}</code> : <React.Fragment key={index}>{part}</React.Fragment>)
+}
+
+// Cada itinerario tiene un vocabulario propio para no mezclar una página Web,
+// un script Bash y un archivo Python. Las acciones compartidas usan siempre
+// palabras que el alumnado puede reconocer: comprobar, guardar y entregar.
+const WEB_WORKSPACE_COPY = {
+  mobileInstructionsTab: 'Pasos',
+  instructionPanelLabel: '01 · Pasos',
+  instructionFallback: 'Empieza por leer la explicación y avanza poco a poco. Puedes probar cada cambio antes de entregarlo.',
+  startGuideTitle: 'Empieza por aquí',
+  startGuideText: 'No hace falta saberlo todo ni preparar carpetas en tu ordenador. Escribe aquí, mira cómo queda y avanza paso a paso.',
+  objectivesTitle: 'Qué vas a practicar',
+  stepsTitle: 'Sigue estos pasos',
+  stepOne: 'Lee la explicación y localiza qué parte de la página vas a cambiar.',
+  stepTwo: 'Cambia una cosa cada vez y pulsa «Ver mi página» para mirar cómo queda.',
+  stepThree: 'Pulsa «Comprobar mi trabajo» y usa los mensajes para seguir mejorando.',
+  beforeSubmitTitle: 'Antes de entregarlo',
+  beforeSubmit: [
+    'Mira el resultado y comprueba que la página hace lo que esperabas.',
+    'Pulsa «Comprobar mi trabajo» y corrige lo que quede pendiente.',
+    'Cuando estés listo, pulsa «Entregar actividad». Tu trabajo ya está guardado.',
+  ],
+  previewPanelLabel: '02 · Cómo queda',
+  previewHeading: 'Así queda tu página',
+  previewIsolation: 'Vista segura',
+  previewButton: 'Ver mi página',
+  previewTab: 'Resultado',
+  consoleHeading: 'Mensajes',
+  consoleClear: 'Borrar mensajes',
+  consoleEmpty: 'Aquí aparecerán los mensajes de tu página.',
+  testPanelLabel: '03 · Comprobación',
+  testHeading: 'Comprobaciones',
+  testSummarySuffix: 'correctas',
+  testCountLabel: 'comprobaciones',
+  testEmpty: 'Todavía no hay comprobaciones para este ejercicio.',
+  testsLoading: 'Comprobando…',
+  runTests: 'Comprobar mi trabajo',
+  testNotice: 'Comprobando tu trabajo…',
+  testFinished: 'Comprobaciones terminadas',
+  testError: 'No se pudieron hacer las comprobaciones. Inténtalo de nuevo.',
+  editorRestore: 'Volver al ejemplo inicial',
+  editorRestoreNotice: 'Ejemplo inicial recuperado',
+  editorSaved: 'Se guarda automáticamente',
+  editorHint: 'Pulsa «Comprobar mi trabajo» cuando quieras ver qué funciona.',
+  attemptsPanelLabel: '04 · Tu trabajo',
+  attemptsHeading: 'Entregas',
+  emptyAttempts: 'Todavía no has entregado este trabajo.',
+  submittedTitle: 'Entrega',
+  currentTitle: 'Trabajo guardado',
+  currentDetail: 'Se guarda automáticamente',
+  currentStatus: 'Sin entregar',
+  historyButton: 'Ver entregas anteriores',
+  historyLabel: 'Entregas',
+  historyTitle: 'Historial de entregas',
+  historyLede: 'Aquí puedes ver las versiones que has entregado y cuándo las enviaste.',
+  historyEmpty: 'Aún no has entregado este trabajo.',
+  historySubmittedTitle: 'Entrega',
+  historyDraftTitle: 'Trabajo actual',
+  historyDraftDetail: 'Todavía puedes cambiarlo',
+  historyDraftStatus: 'Sin entregar',
+  historyNote: 'Una entrega enviada ya no se puede cambiar.',
+  submitKicker: 'Entrega de actividad',
+  submitTitle: '¿Quieres entregar tu trabajo?',
+  submitErrorTitle: 'No hemos podido guardar tu entrega',
+  submitBody: 'Guardaremos una copia de tu trabajo como la entrega',
+  submitBodyAfter: 'Después podrás verla, pero no editarla.',
+  submitFiles: 'Archivos de esta actividad',
+  submitChecks: 'Comprobaciones disponibles',
+  submitChecksEmpty: 'No hay comprobaciones para este ejercicio.',
+  submitDate: 'Fecha de entrega',
+  submitError: 'No hemos podido guardar tu entrega. Revisa el aviso y vuelve a intentarlo.',
+  submitBack: 'Seguir trabajando',
+  submitButton: 'Entregar actividad',
+  loading: 'Cargando tu actividad…',
+  conflictTitle: 'Este trabajo cambió en otra pestaña.',
+  conflictBody: 'Elige qué copia quieres conservar. No hemos borrado tu trabajo.',
+  restoreServer: 'Traer la versión guardada',
+  useLocal: 'Usar mi copia',
+}
+
+const STATIC_WORKSPACE_COPY = {
+  mobileInstructionsTab: 'Reto',
+  instructionPanelLabel: '01 · Reto',
+  instructionFallback: 'Empieza leyendo el objetivo y escribe tu solución paso a paso.',
+  objectivesTitle: 'Qué vas a practicar',
+  stepsTitle: 'Sigue estos pasos',
+  beforeSubmitTitle: 'Antes de entregar',
+  previewTab: 'Análisis',
+  testPanelLabel: '03 · Comprobación',
+  testHeading: 'Comprobaciones',
+  testSummarySuffix: 'correctas',
+  testCountLabel: 'comprobaciones',
+  testEmpty: 'Todavía no hay comprobaciones para este ejercicio.',
+  testsLoading: 'Comprobando…',
+  testError: 'No se pudieron hacer las comprobaciones. Inténtalo de nuevo.',
+  editorRestore: 'Volver al ejemplo inicial',
+  editorRestoreNotice: 'Ejemplo inicial recuperado',
+  editorSaved: 'Se guarda automáticamente',
+  editorHint: 'Este código se guarda aquí, pero no se ejecuta en la plataforma.',
+  attemptsPanelLabel: '04 · Tu trabajo',
+  attemptsHeading: 'Entregas',
+  emptyAttempts: 'Todavía no has entregado este trabajo.',
+  submittedTitle: 'Entrega',
+  currentTitle: 'Trabajo guardado',
+  currentDetail: 'Se guarda automáticamente',
+  currentStatus: 'Sin entregar',
+  historyButton: 'Ver entregas anteriores',
+  historyLabel: 'Entregas',
+  historyTitle: 'Historial de entregas',
+  historyLede: 'Aquí puedes ver las entregas que has enviado y cuándo las enviaste.',
+  historyEmpty: 'Aún no has entregado este trabajo.',
+  historySubmittedTitle: 'Entrega',
+  historyDraftTitle: 'Trabajo actual',
+  historyDraftDetail: 'Todavía puedes cambiarlo',
+  historyDraftStatus: 'Sin entregar',
+  historyNote: 'Una entrega enviada ya no se puede cambiar.',
+  submitKicker: 'Entrega de actividad',
+  submitTitle: '¿Quieres entregar tu trabajo?',
+  submitErrorTitle: 'No hemos podido guardar tu entrega',
+  submitBody: 'Guardaremos una copia de tu código como la entrega',
+  submitBodyAfter: 'Después podrás verla, pero no editarla.',
+  submitFiles: '1 archivo incluido',
+  submitChecks: 'Comprobaciones disponibles',
+  submitChecksEmpty: 'No hay comprobaciones para este ejercicio.',
+  submitDate: 'Fecha de entrega',
+  submitError: 'No hemos podido guardar tu entrega. Revisa el aviso y vuelve a intentarlo.',
+  submitBack: 'Seguir trabajando',
+  submitButton: 'Entregar actividad',
+  loading: 'Cargando tu actividad…',
+  conflictTitle: 'Este trabajo cambió en otra pestaña.',
+  conflictBody: 'Elige qué copia quieres conservar. No hemos borrado tu trabajo.',
+  restoreServer: 'Traer la versión guardada',
+  useLocal: 'Usar mi copia',
+}
+
+function getWorkspaceCopy(language) {
+  const normalizedLanguage = normalizeLanguage(language)
+  if (normalizedLanguage === 'web') return WEB_WORKSPACE_COPY
+  const isBash = normalizedLanguage === 'bash'
+  const actionLabel = isBash ? 'Comprobar mi script' : 'Comprobar mi archivo'
+  return {
+    ...STATIC_WORKSPACE_COPY,
+    instructionFallback: isBash
+      ? 'Empieza con un script sencillo y sigue el objetivo paso a paso. Aquí solo revisamos el texto: no se ejecuta.'
+      : 'Empieza con un programa pequeño y sigue el objetivo paso a paso. Aquí solo revisamos el texto: no se ejecuta.',
+    stepOne: isBash
+      ? 'Lee el objetivo y localiza qué parte debe hacer el script.'
+      : 'Lee el objetivo y localiza qué debe hacer el programa.',
+    stepTwo: isBash
+      ? 'Añade una cosa cada vez: una orden, una variable o una comprobación. Aquí no se ejecuta el script.'
+      : 'Añade una cosa cada vez: una variable, una función o una operación con archivos. Aquí no se ejecuta Python.',
+    stepThree: `Pulsa «${actionLabel}» y lee los mensajes para ver qué puedes mejorar.`,
+    beforeSubmit: [
+      'Lee el objetivo y comprueba que has cubierto cada parte.',
+      `Pulsa «${actionLabel}» y revisa los mensajes.`,
+      'Cuando estés listo, pulsa «Entregar actividad». Tu trabajo ya está guardado.',
+    ],
+    runTests: actionLabel,
+    testNotice: isBash ? 'Comprobando tu script…' : 'Comprobando tu archivo…',
+    testFinished: 'Comprobaciones terminadas',
+    editorHint: isBash
+      ? 'El script se guarda aquí, pero no se ejecuta en la plataforma.'
+      : 'El archivo Python se guarda aquí, pero no se ejecuta en la plataforma.',
+    submitBody: isBash
+      ? 'Guardaremos una copia de tu script como la entrega'
+      : 'Guardaremos una copia de tu archivo Python como la entrega',
+  }
 }
 
 function Workspace({ activity, user }) {
@@ -1123,25 +1290,26 @@ function Workspace({ activity, user }) {
     if (language !== 'web') return
     setConsoleEntries([])
     setPreviewHtml(buildPreview(files))
-    setNotice('Preview actualizada')
+    setNotice('Página actualizada')
   }
 
   const runTests = async () => {
+    const copy = getWorkspaceCopy(language)
     setTestsState('running')
-    setNotice(language === 'web' ? 'Ejecutando tests públicos…' : `Analizando ${language === 'python' ? 'el archivo Python' : 'el script'} con las validaciones públicas…`)
+    setNotice(copy.testNotice)
     try {
       const data = await apiFetch(`${API_PREFIX}/assignments/${activity.id}/tests/`, { method: 'POST', body: JSON.stringify(filesPayload(files, language)) })
       setTests(data?.results || [])
       setTestsState('done')
-      setNotice(`${language === 'web' ? 'Tests' : 'Validaciones'} finalizados · ${formatScore(data?.score)}/10`)
+      setNotice(`${copy.testFinished} · ${formatScore(data?.score)}/10`)
     } catch (error) {
       if (DEMO_MODE) {
         setTests(language === 'bash' ? DEMO_BASH_TESTS : language === 'python' ? DEMO_PYTHON_TESTS : DEMO_TESTS)
         setTestsState('done')
-        setNotice(language === 'web' ? 'Tests de demostración finalizados · 7/10' : 'Validaciones de demostración finalizadas · revisa el detalle')
+        setNotice(language === 'web' ? 'Comprobaciones de ejemplo terminadas · 7/10' : 'Comprobaciones de ejemplo terminadas · revisa el detalle')
       } else {
         setTestsState('error')
-        setNotice(error.message || 'No se pudieron ejecutar las validaciones.')
+        setNotice(error.message || copy.testError)
       }
     }
   }
@@ -1182,6 +1350,8 @@ function Workspace({ activity, user }) {
 
   const activityVersion = workspaceData?.version || {}
   const effectiveLanguage = normalizeLanguage(activityVersion.language || language)
+  const workspaceCopy = getWorkspaceCopy(effectiveLanguage)
+  const isWeb = effectiveLanguage === 'web'
   const effectiveIsBash = effectiveLanguage === 'bash'
   const effectiveIsPython = effectiveLanguage === 'python'
   const publicTests = activityVersion.public_tests || activityVersion.publicTests || []
@@ -1192,32 +1362,78 @@ function Workspace({ activity, user }) {
   const currentAttempt = Math.max(1, submissions.length + 1)
   const activeTestCount = visibleTests.length
   const passedTestCount = visibleTests.filter((test) => test.status === 'passed' || test.passed === true).length
-  const instructions = activityVersion.instructions || activity.instructions || (effectiveIsBash ? 'Escribe un script Bash legible y seguro, y justifica las decisiones que tomes.' : effectiveIsPython ? 'Escribe un programa Python legible para trabajar con datos de gestión. Programmy4V analiza su estructura sin ejecutarlo.' : 'Completa el reto siguiendo las indicaciones y prueba tu resultado antes de entregar.')
+  const hasRealInstructions = Boolean(activityVersion.instructions || activity.instructions)
+  const instructions = activityVersion.instructions || activity.instructions || workspaceCopy.instructionFallback
   const objectives = asList(activityVersion.objectives || activity.objectives)
   const hints = Array.isArray(activityVersion.hints || activity.hints) ? (activityVersion.hints || activity.hints) : []
   const challengeGamification = normalizeChallengeGamification(workspaceData || (DEMO_MODE ? { gamification: { xp_reward: activity.xp_reward, earned_xp: activity.earned_xp, completed: activity.completed, progress: activity.progress, language: effectiveLanguage, difficulty: activity.difficulty } } : null), activity)
   const xpReward = challengeGamification.xp_reward
   const earnedXp = challengeGamification.earned_xp
-  const editorKeys = effectiveIsBash ? ['bash'] : effectiveIsPython ? ['python'] : Object.keys(FILE_META)
+  const configuredEditorFiles = Array.isArray(activityVersion.editor_files)
+    ? activityVersion.editor_files.filter((key) => Object.hasOwn(FILE_META, key))
+    : []
+  const editorKeys = effectiveIsBash
+    ? ['bash']
+    : effectiveIsPython
+      ? ['python']
+      : configuredEditorFiles.length
+        ? configuredEditorFiles
+        : ['html']
   const safeFiles = effectiveIsBash ? { bash: files.bash || '' } : effectiveIsPython ? { python: files.python || '' } : files
   const trackLabel = getTrackLabel(effectiveLanguage)
+  const beforeSubmitItems = workspaceCopy.beforeSubmit
 
   return (
     <main className="workspace-main">
-      <div className="workspace-titlebar"><div><p className="kicker">{activity.module || activity.activity?.module || (effectiveIsBash ? 'Seguridad · ASIR' : effectiveIsPython ? 'SGE · 2DAM' : 'Aplicaciones web · SMR')}</p><h1>{activity.title}</h1><p className="workspace-subtitle">{activity.summary || activity.description || (effectiveIsBash ? 'Resuelve el reto de scripting y deja una evidencia revisable.' : effectiveIsPython ? 'Practica Python con datos de gestión y prepara tu base para trabajar con Odoo.' : 'Completa el reto en el editor y comprueba el resultado antes de entregar.')}</p><div className="workspace-context-tags"><span className={`context-tag context-tag-${effectiveLanguage}`}><Icon icon={getTrackIcon(effectiveLanguage)} size={14} />{trackLabel}</span>{effectiveIsPython && <span className="context-tag context-tag-curriculum">0491 · SGE</span>}<span className="context-tag">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span>{xpReward > 0 && <span className="context-tag context-tag-xp"><Icon icon={IconRocket} size={13} />{formatXp(earnedXp)} / {formatXp(xpReward)} XP</span>}<span className={`context-tag ${challengeGamification.completed ? 'context-tag-complete' : ''}`}>{challengeGamification.completed ? 'Reto completado' : `${challengeGamification.progress}% de progreso`}</span></div></div><div className="workspace-title-actions"><span className={`save-status save-${saveState}`}><span className="save-status-icon">{saveState === 'saving' ? <span className="mini-spinner" /> : saveState === 'error' || saveState === 'conflict' ? <Icon icon={IconAlertTriangle} size={15} /> : <Icon icon={IconDeviceFloppy} size={15} />}</span>{saveMessage}</span><button className="button button-outline" type="button" onClick={() => setShowHistory((current) => !current)}><Icon icon={IconHistory} size={16} />Historial</button></div></div>
-      <div className="workspace-challenge-progress" aria-label={`Progreso del reto: ${challengeGamification.progress}%`}><div className="workspace-challenge-progress-copy"><span>Progreso del reto</span><strong>{challengeGamification.progress}%</strong></div><div className="progress-track"><span style={{ width: `${challengeGamification.progress}%` }} /></div>{challengeGamification.best_score != null && <small>Mejor nota: {formatScore(challengeGamification.best_score)}/10</small>}</div>
+      <div className="workspace-titlebar"><div><p className="kicker">{activity.module || activity.activity?.module || (effectiveIsBash ? 'Seguridad · ASIR' : effectiveIsPython ? 'SGE · 2DAM' : 'Aplicaciones web · SMR')}</p><h1>{activity.title}</h1><p className="workspace-subtitle">{activity.summary || activity.description || (effectiveIsBash ? 'Resuelve el reto de scripting y deja una entrega revisable.' : effectiveIsPython ? 'Practica Python con datos de gestión y prepara tu base para trabajar con Odoo.' : 'Hazlo poco a poco: cambia una cosa, mira cómo queda y sigue avanzando.')}</p><div className="workspace-context-tags"><span className={`context-tag context-tag-${effectiveLanguage}`}><Icon icon={getTrackIcon(effectiveLanguage)} size={14} />{trackLabel}</span>{effectiveIsPython && <span className="context-tag context-tag-curriculum">0491 · SGE</span>}<span className="context-tag">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span>{xpReward > 0 && <span className="context-tag context-tag-xp"><Icon icon={IconRocket} size={13} />{formatXp(earnedXp)} / {formatXp(xpReward)} XP</span>}<span className={`context-tag ${challengeGamification.completed ? 'context-tag-complete' : ''}`}>{challengeGamification.completed ? 'Reto completado' : `${challengeGamification.progress}% ${isWeb ? 'de avance' : 'de progreso'}`}</span></div></div><div className="workspace-title-actions"><span className={`save-status save-${saveState}`}><span className="save-status-icon">{saveState === 'saving' ? <span className="mini-spinner" /> : saveState === 'error' || saveState === 'conflict' ? <Icon icon={IconAlertTriangle} size={15} /> : <Icon icon={IconDeviceFloppy} size={15} />}</span>{saveMessage}</span><button className="button button-outline" type="button" onClick={() => setShowHistory((current) => !current)}><Icon icon={IconHistory} size={16} />{isWeb ? 'Entregas' : 'Historial'}</button></div></div>
+      <div className="workspace-challenge-progress" aria-label={`${isWeb ? 'Avance' : 'Progreso'} del reto: ${challengeGamification.progress}%`}><div className="workspace-challenge-progress-copy"><span>{isWeb ? 'Tu avance' : 'Progreso del reto'}</span><strong>{challengeGamification.progress}%</strong></div><div className="progress-track"><span style={{ width: `${challengeGamification.progress}%` }} /></div>{challengeGamification.best_score != null && <small>Mejor nota: {formatScore(challengeGamification.best_score)}/10</small>}</div>
       {notice && <div className="workspace-notice" role="status"><Icon icon={IconInfoCircle} size={16} /><span>{notice}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setNotice('')}><Icon icon={IconX} size={15} /></button></div>}
-      {!hydrated && <div className="workspace-loading" role="status"><span className="mini-spinner" />Cargando reto y borrador…</div>}
-      {conflict && <div className="conflict-banner" role="alert"><span className="conflict-icon"><Icon icon={IconAlertTriangle} size={18} /></span><div><strong>Este borrador cambió en otra pestaña.</strong><p>Elige qué versión quieres conservar. No hemos sobrescrito tu trabajo.</p></div><div className="conflict-actions"><button className="button button-light button-small" onClick={restoreServerDraft}>Recargar servidor</button><button className="button button-dark button-small" onClick={useLocalCopy}>Conservar mi copia</button></div></div>}
-      <div className={`workspace-mobile-tabs ${effectiveLanguage !== 'web' ? 'workspace-mobile-tabs-static' : ''}`} role="tablist" aria-label="Panel del reto"><button className={mobilePanel === 'instructions' ? 'is-active' : ''} onClick={() => setMobilePanel('instructions')} role="tab">Reto</button><button className={mobilePanel === 'editor' ? 'is-active' : ''} onClick={() => setMobilePanel('editor')} role="tab">Editor</button><button className={mobilePanel === 'preview' ? 'is-active' : ''} onClick={() => setMobilePanel('preview')} role="tab">{effectiveLanguage !== 'web' ? 'Análisis' : 'Preview'}</button></div>
+      {!hydrated && <div className="workspace-loading" role="status"><span className="mini-spinner" />{workspaceCopy.loading}</div>}
+      {conflict && <div className="conflict-banner" role="alert"><span className="conflict-icon"><Icon icon={IconAlertTriangle} size={18} /></span><div><strong>{workspaceCopy.conflictTitle}</strong><p>{workspaceCopy.conflictBody}</p></div><div className="conflict-actions"><button className="button button-light button-small" onClick={restoreServerDraft}>{workspaceCopy.restoreServer}</button><button className="button button-dark button-small" onClick={useLocalCopy}>{workspaceCopy.useLocal}</button></div></div>}
+      <div className={`workspace-mobile-tabs ${effectiveLanguage !== 'web' ? 'workspace-mobile-tabs-static' : ''}`} role="tablist" aria-label="Panel del reto"><button className={mobilePanel === 'instructions' ? 'is-active' : ''} onClick={() => setMobilePanel('instructions')} role="tab">{workspaceCopy.mobileInstructionsTab}</button><button className={mobilePanel === 'editor' ? 'is-active' : ''} onClick={() => setMobilePanel('editor')} role="tab">Editor</button><button className={mobilePanel === 'preview' ? 'is-active' : ''} onClick={() => setMobilePanel('preview')} role="tab">{workspaceCopy.previewTab}</button></div>
       <section className="workspace-grid">
-        <aside className={`instructions-panel workspace-panel ${mobilePanel === 'instructions' ? 'mobile-panel-visible' : ''}`}><div className="panel-label-row"><span className="panel-label">01 · Reto</span><span className="soft-pill pill-dark">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span></div><h2>{activity.title || 'Tu reto de código'}</h2><InstructionText value={instructions} className="instruction-lede instruction-rich-text" />{objectives.length > 0 && <div className="instruction-section"><h3>Objetivos</h3><ul className="objective-list">{objectives.map((objective, index) => <li key={`${objective}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><InstructionText value={objective} compact /></li>)}</ul></div>}<div className="instruction-section"><h3>Qué tienes que conseguir</h3><ol className="challenge-list"><li><span>01</span><p>Lee el objetivo y tradúcelo a pequeñas decisiones de {effectiveIsBash ? 'scripting' : effectiveIsPython ? 'Python' : 'código'}.</p></li><li><span>02</span><p>{effectiveIsBash ? 'Revisa rutas, permisos y códigos de salida sin ejecutar el archivo desde la plataforma.' : effectiveIsPython ? 'Revisa la estructura del programa y las operaciones de archivo sin ejecutarlo desde la plataforma.' : 'Prueba cada cambio en la preview antes de pasar al siguiente.'}</p></li><li><span>03</span><p>{effectiveLanguage === 'web' ? 'Ejecuta los tests públicos y revisa el feedback.' : 'Analiza el archivo con las validaciones públicas y revisa el feedback.'}</p></li></ol></div><div className="instruction-section"><h3>Antes de entregar</h3><ul className="check-list"><li><Icon icon={IconCheck} size={15} />Tu resultado se entiende sin explicarlo.</li><li><Icon icon={IconCheck} size={15} />Has probado las validaciones públicas.</li><li><Icon icon={IconCheck} size={15} />El código está guardado.</li></ul></div>{hints.length > 0 ? <div className="hint-list">{hints.map((hint, index) => <details className="hint-block" key={`${hint}-${index}`}><summary><span className="hint-icon">?</span><strong>Pista {index + 1}</strong></summary><p>{typeof hint === 'string' ? hint : hint.text || hint.description || JSON.stringify(hint)}</p></details>)}</div> : <div className="hint-empty"><Icon icon={IconInfoCircle} size={15} /><span>Este reto no tiene pistas publicadas.</span></div>}<div className="instruction-footer"><span><Icon icon={IconClock} size={14} />{activity.duration || activity.estimated_minutes ? `${activity.duration || activity.estimated_minutes} min` : 'A tu ritmo'}</span><span><Icon icon={IconTestPipe} size={14} />{activeTestCount} validaciones</span></div></aside>
-        <section className={`editor-panel workspace-panel ${mobilePanel === 'editor' ? 'mobile-panel-visible' : ''}`}><div className="editor-toolbar"><div className="file-tabs" role="tablist" aria-label="Archivos del reto">{editorKeys.map((key) => { const meta = effectiveIsBash ? BASH_FILE_META : effectiveIsPython ? PYTHON_FILE_META : FILE_META; const item = meta[key]; return <button key={key} className={`file-tab ${activeFile === key ? 'is-active' : ''} ${item.className}`} type="button" role="tab" aria-selected={activeFile === key} onClick={() => setActiveFile(key)}><Icon icon={item.icon} size={16} /><span>{item.label}</span></button> })}</div><button className="icon-button" type="button" title="Restaurar archivo inicial" aria-label="Restaurar archivo inicial" onClick={() => { setFiles(starterFiles); if (effectiveLanguage === 'web') setPreviewHtml(buildPreview(starterFiles)); setNotice('Archivo inicial restaurado') }}><Icon icon={IconRefresh} size={17} /></button></div><div className="editor-stage"><CodeEditor file={activeFile} value={safeFiles[activeFile] || ''} language={effectiveLanguage} onChange={(value) => changeFile(activeFile, value)} /></div><div className="editor-footer"><span><Icon icon={IconInfoCircle} size={14} />Los cambios se guardan automáticamente</span><span className="editor-shortcuts">{effectiveLanguage !== 'web' ? <><Icon icon={effectiveIsPython ? IconBrandPython : IconTerminal2} size={13} />Nunca se ejecuta desde la plataforma</> : <><kbd>Ctrl</kbd><span>+</span><kbd>Enter</kbd> ejecutar</>}</span></div></section>
-        {effectiveIsBash ? <BashValidationPanel source={safeFiles.bash || ''} mobileVisible={mobilePanel === 'preview'} /> : effectiveIsPython ? <PythonAnalysisPanel source={safeFiles.python || ''} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Resultado</span><h2>Tu preview</h2></div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Aislada</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />Ejecutar preview</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa del código del alumno" sandbox="allow-scripts" srcDoc={previewHtml} /></div><div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />Consola</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>Limpiar</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">Los mensajes de tu código aparecerán aquí.</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div></aside>}
+        <aside className={`instructions-panel workspace-panel ${isWeb ? 'instructions-panel-web' : ''} ${mobilePanel === 'instructions' ? 'mobile-panel-visible' : ''}`}>
+          <div className="panel-label-row"><span className="panel-label">{workspaceCopy.instructionPanelLabel}</span><span className="soft-pill pill-dark">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span></div>
+          <h2>{activity.title || (isWeb ? 'Tu primera página' : 'Tu reto de código')}</h2>
+          {isWeb && <div className="web-start-guide" role="note"><Icon icon={IconInfoCircle} size={17} /><div><strong>{WEB_WORKSPACE_COPY.startGuideTitle}</strong><p>{WEB_WORKSPACE_COPY.startGuideText}</p></div></div>}
+          <InstructionText value={instructions} className="instruction-lede instruction-rich-text" />
+          {objectives.length > 0 && <div className="instruction-section"><h3>{workspaceCopy.objectivesTitle}</h3><ul className="objective-list">{objectives.map((objective, index) => <li key={`${objective}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><InstructionText value={objective} compact /></li>)}</ul></div>}
+          {!hasRealInstructions && <div className="instruction-section"><h3>{workspaceCopy.stepsTitle}</h3><ol className="challenge-list"><li><span>01</span><p>{workspaceCopy.stepOne}</p></li><li><span>02</span><p>{workspaceCopy.stepTwo}</p></li><li><span>03</span><p>{workspaceCopy.stepThree}</p></li></ol></div>}
+          {(!isWeb || !hasRealInstructions) && <div className="instruction-section"><h3>{workspaceCopy.beforeSubmitTitle}</h3><ul className="check-list">{beforeSubmitItems.map((item, index) => <li key={`${item}-${index}`}><Icon icon={IconCheck} size={15} />{item}</li>)}</ul></div>}
+          {hints.length > 0 ? <div className="hint-list">{hints.map((hint, index) => <details className="hint-block" key={`${hint}-${index}`}><summary><span className="hint-icon">?</span><strong>Pista {index + 1}</strong></summary><p>{typeof hint === 'string' ? hint : hint.text || hint.description || JSON.stringify(hint)}</p></details>)}</div> : <div className="hint-empty"><Icon icon={IconInfoCircle} size={15} /><span>Este reto no tiene pistas publicadas.</span></div>}
+          <div className="instruction-footer"><span><Icon icon={IconClock} size={14} />{activity.duration || activity.estimated_minutes ? `${activity.duration || activity.estimated_minutes} min` : 'A tu ritmo'}</span><span><Icon icon={IconTestPipe} size={14} />{activeTestCount} {workspaceCopy.testCountLabel}</span></div>
+        </aside>
+        <section className={`editor-panel workspace-panel ${mobilePanel === 'editor' ? 'mobile-panel-visible' : ''}`}>
+          <div className="editor-toolbar"><div className="file-tabs" role="tablist" aria-label={isWeb ? 'Archivos de tu página' : 'Archivo del reto'}>{editorKeys.map((key) => { const meta = effectiveIsBash ? BASH_FILE_META : effectiveIsPython ? PYTHON_FILE_META : FILE_META; const item = meta[key]; return <button key={key} className={`file-tab ${activeFile === key ? 'is-active' : ''} ${item.className}`} type="button" role="tab" aria-selected={activeFile === key} onClick={() => setActiveFile(key)}><Icon icon={item.icon} size={16} /><span>{item.label}</span></button> })}</div><button className="icon-button" type="button" title={workspaceCopy.editorRestore} aria-label={workspaceCopy.editorRestore} onClick={() => { setFiles(starterFiles); if (effectiveLanguage === 'web') setPreviewHtml(buildPreview(starterFiles)); setNotice(workspaceCopy.editorRestoreNotice) }}><Icon icon={IconRefresh} size={17} /></button></div>
+          <div className="editor-stage"><CodeEditor file={activeFile} value={safeFiles[activeFile] || ''} language={effectiveLanguage} onChange={(value) => changeFile(activeFile, value)} /></div>
+          <div className="editor-footer"><span><Icon icon={IconInfoCircle} size={14} />{workspaceCopy.editorSaved}</span><span className="editor-shortcuts">{effectiveLanguage !== 'web' ? <><Icon icon={effectiveIsPython ? IconBrandPython : IconTerminal2} size={13} />Nunca se ejecuta desde la plataforma</> : workspaceCopy.editorHint}</span></div>
+        </section>
+        {effectiveIsBash ? <BashValidationPanel source={safeFiles.bash || ''} mobileVisible={mobilePanel === 'preview'} /> : effectiveIsPython ? <PythonAnalysisPanel source={safeFiles.python || ''} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">{WEB_WORKSPACE_COPY.previewPanelLabel}</span><h2>{WEB_WORKSPACE_COPY.previewHeading}</h2></div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />{WEB_WORKSPACE_COPY.previewIsolation}</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />{WEB_WORKSPACE_COPY.previewButton}</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa de tu página" sandbox="allow-scripts" srcDoc={previewHtml} /></div><div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />{WEB_WORKSPACE_COPY.consoleHeading}</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>{WEB_WORKSPACE_COPY.consoleClear}</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">{WEB_WORKSPACE_COPY.consoleEmpty}</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div></aside>}
       </section>
-      <section className="workspace-bottom"><div className="test-dock"><div className="test-dock-heading"><div><span className="panel-label">03 · Feedback</span><h2>{effectiveLanguage === 'web' ? 'Tests públicos' : 'Validaciones públicas'}</h2></div><div className="test-summary">{testsState === 'running' ? <span className="running-test"><span className="mini-spinner" />Analizando…</span> : <><strong>{passedTestCount}/{activeTestCount}</strong> superadas</>}</div></div><div className="test-list">{visibleTests.length ? visibleTests.map((test, index) => <TestRow key={test.id || test.name || index} test={test} />) : <p className="empty-tests">{hydrated ? `Todavía no hay validaciones públicas para este reto.` : 'Cargando validaciones públicas…'}</p>}</div><div className="test-dock-actions"><button className="button button-outline" type="button" onClick={runTests} disabled={!hydrated || testsState === 'running'}><Icon icon={IconTestPipe} size={17} />{testsState === 'running' ? 'Analizando…' : effectiveLanguage === 'web' ? 'Ejecutar tests' : effectiveIsPython ? 'Analizar Python' : 'Analizar script'}</button><button className="button button-dark" type="button" onClick={() => setSubmitOpen(true)} disabled={!hydrated}><Icon icon={IconRocket} size={17} />Entregar reto</button></div></div><div className="attempts-panel"><div className="attempts-heading"><div><span className="panel-label">04 · Evidencia</span><h2>Tus intentos</h2></div><span className="attempts-count">{submissions.length} / {maxAttemptsLabel}</span></div>{submissions.length ? submissions.map((submission) => <div className="attempt-row" key={submission.id || submission.attempt_number}><span className="attempt-number">{String(submission.attempt_number).padStart(2, '0')}</span><span className="attempt-copy"><strong>Entrega formal</strong><small>{formatDate(submission.submitted_at)}{submission.published_score != null ? ` · ${formatScore(submission.published_score)}/10` : ''}</small></span><span className="attempt-status attempt-good"><Icon icon={IconCircleCheck} size={15} />{submission.published_score != null ? formatScore(submission.published_score) : 'Enviada'}</span></div>) : <div className="empty-attempts"><Icon icon={IconHistory} size={18} /><span>Aún no hay entregas formales.</span></div>}<div className="attempt-row attempt-current"><span className="attempt-number">{String(currentAttempt).padStart(2, '0')}</span><span className="attempt-copy"><strong>Borrador actual</strong><small>Guardado en el servidor</small></span><span className="attempt-status"><span className="status-dot status-dot-gold" />En curso</span></div><button className="panel-footer-link" type="button" onClick={() => setShowHistory(true)}>Ver historial completo <Icon icon={IconArrowRight} size={15} /></button></div></section>
-      {showHistory && <HistoryDrawer submissions={submissions} onClose={() => setShowHistory(false)} />}
-      {submitOpen && <SubmitDialog activity={activity} attemptNumber={currentAttempt} maxAttempts={maxAttempts} isBash={effectiveIsBash} isPython={effectiveIsPython} onCancel={() => setSubmitOpen(false)} onSubmit={submit} state={submitState} />}
+      <section className="workspace-bottom">
+        <div className="test-dock">
+          <div className="test-dock-heading">
+            <div><span className="panel-label">{workspaceCopy.testPanelLabel}</span><h2>{workspaceCopy.testHeading}</h2></div>
+            <div className="test-summary">{testsState === 'running' ? <span className="running-test"><span className="mini-spinner" />{workspaceCopy.testsLoading}</span> : <><strong>{passedTestCount}/{activeTestCount}</strong> {workspaceCopy.testSummarySuffix}</>}</div>
+          </div>
+          <div className="test-list">{visibleTests.length ? visibleTests.map((test, index) => <TestRow key={test.id || test.name || index} test={test} />) : <p className="empty-tests">{hydrated ? workspaceCopy.testEmpty : workspaceCopy.loading}</p>}</div>
+          <div className="test-dock-actions">
+            <button className="button button-outline" type="button" onClick={runTests} disabled={!hydrated || testsState === 'running'}><Icon icon={IconTestPipe} size={17} />{testsState === 'running' ? workspaceCopy.testsLoading : workspaceCopy.runTests}</button>
+            <button className="button button-dark" type="button" onClick={() => setSubmitOpen(true)} disabled={!hydrated}><Icon icon={IconRocket} size={17} />{workspaceCopy.submitButton}</button>
+          </div>
+        </div>
+        <div className="attempts-panel">
+          <div className="attempts-heading">
+            <div><span className="panel-label">{workspaceCopy.attemptsPanelLabel}</span><h2>{workspaceCopy.attemptsHeading}</h2></div>
+            <span className="attempts-count">{submissions.length} / {maxAttemptsLabel}</span>
+          </div>
+          {submissions.length ? submissions.map((submission) => <div className="attempt-row" key={submission.id || submission.attempt_number}><span className="attempt-number">{String(submission.attempt_number).padStart(2, '0')}</span><span className="attempt-copy"><strong>{workspaceCopy.submittedTitle}</strong><small>{formatDate(submission.submitted_at)}{submission.published_score != null ? <> · {formatScore(submission.published_score)}/10</> : null}</small></span><span className="attempt-status attempt-good"><Icon icon={IconCircleCheck} size={15} />{submission.published_score != null ? formatScore(submission.published_score) : 'Enviada'}</span></div>) : <div className="empty-attempts"><Icon icon={IconHistory} size={18} /><span>{workspaceCopy.emptyAttempts}</span></div>}
+          <div className="attempt-row attempt-current"><span className="attempt-number">{String(currentAttempt).padStart(2, '0')}</span><span className="attempt-copy"><strong>{workspaceCopy.currentTitle}</strong><small>{workspaceCopy.currentDetail}</small></span><span className="attempt-status"><span className="status-dot status-dot-gold" />{workspaceCopy.currentStatus}</span></div>
+          <button className="panel-footer-link" type="button" onClick={() => setShowHistory(true)}>{workspaceCopy.historyButton} <Icon icon={IconArrowRight} size={15} /></button>
+        </div>
+      </section>
+      {showHistory && <HistoryDrawer submissions={submissions} isWeb={isWeb} onClose={() => setShowHistory(false)} />}
+      {submitOpen && <SubmitDialog activity={activity} attemptNumber={currentAttempt} maxAttempts={maxAttempts} isBash={effectiveIsBash} isPython={effectiveIsPython} isWeb={isWeb} editorFileCount={editorKeys.length} testCount={activeTestCount} onCancel={() => setSubmitOpen(false)} onSubmit={submit} state={submitState} />}
     </main>
   )
 }
@@ -1226,12 +1442,12 @@ const BASH_FILE_META = { bash: { label: 'script.sh', short: 'Bash', icon: IconTe
 
 function BashValidationPanel({ source, mobileVisible }) {
   const checks = inspectBash(source)
-  return <aside className={`preview-panel workspace-panel bash-validation-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Lectura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="bash-validation-body"><div className="bash-safety-note"><Icon icon={IconTerminal2} size={18} /><div><strong>El script no se ejecuta aquí</strong><p>Programmy4V solo guarda y valida el texto. No hay terminal real ni salida simulada.</p></div></div><div className="bash-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.commands}</strong><small>comandos</small></span><span><strong>{checks.variables}</strong><small>variables</small></span></div><div className="bash-check-list" aria-label="Indicadores de lectura estática">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />La validación oficial y la nota se calculan en el servidor al analizar o entregar.</p></div></aside>
+  return <aside className={`preview-panel workspace-panel bash-validation-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Revisión del script</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="bash-validation-body"><div className="bash-safety-note"><Icon icon={IconTerminal2} size={18} /><div><strong>El script no se ejecuta aquí</strong><p>Programmy4V solo guarda y comprueba el texto. No hay terminal real ni salida simulada.</p></div></div><div className="bash-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.commands}</strong><small>comandos</small></span><span><strong>{checks.variables}</strong><small>variables</small></span></div><div className="bash-check-list" aria-label="Indicadores de lectura estática">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />La comprobación oficial y la nota se calculan en el servidor al analizar o entregar.</p></div></aside>
 }
 
 function PythonAnalysisPanel({ source, mobileVisible }) {
   const checks = inspectPython(source)
-  return <aside className={`preview-panel workspace-panel python-analysis-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Análisis</span><h2>Estructura estática</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="python-analysis-body"><div className="python-safety-note"><Icon icon={IconBrandPython} size={18} /><div><strong>El código Python no se ejecuta aquí</strong><p>Programmy4V solo analiza el texto y guarda tu evidencia. No hay intérprete, archivos reales ni salida simulada.</p></div></div><div className="python-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.functions}</strong><small>funciones</small></span><span><strong>{checks.imports}</strong><small>imports</small></span><span><strong>{checks.operations}</strong><small>operaciones</small></span></div><div className="bash-check-list python-check-list" aria-label="Indicadores orientativos de estructura Python">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />Estos indicadores son orientativos. La validación oficial y la calificación proceden del servidor.</p></div></aside>
+  return <aside className={`preview-panel workspace-panel python-analysis-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Revisión del archivo</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="python-analysis-body"><div className="python-safety-note"><Icon icon={IconBrandPython} size={18} /><div><strong>El código Python no se ejecuta aquí</strong><p>Programmy4V solo analiza el texto y guarda tu trabajo. No hay intérprete, archivos reales ni salida simulada.</p></div></div><div className="python-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.functions}</strong><small>funciones</small></span><span><strong>{checks.imports}</strong><small>imports</small></span><span><strong>{checks.operations}</strong><small>operaciones</small></span></div><div className="bash-check-list python-check-list" aria-label="Indicadores orientativos de estructura Python">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />Estos indicadores son orientativos. La comprobación oficial y la calificación proceden del servidor.</p></div></aside>
 }
 
 function inspectPython(source = '') {
@@ -1336,23 +1552,26 @@ function bashLanguage() {
 
 function TestRow({ test }) {
   const status = test.status || (typeof test.passed === 'boolean' ? (test.passed ? 'passed' : 'failed') : 'pending')
-  return <div className={`test-row test-${status}`}><span className="test-icon">{status === 'passed' ? <Icon icon={IconCircleCheck} size={18} /> : status === 'failed' ? <Icon icon={IconCircleX} size={18} /> : <Icon icon={IconClock} size={17} />}</span><span className="test-copy"><strong>{test.title || test.name}</strong><small>{test.description || test.feedback || 'Sin detalles adicionales.'}</small></span><span className="test-points">{test.points ?? test.max_points ?? 0} pt</span></div>
+  return <div className={`test-row test-${status}`}><span className="test-icon">{status === 'passed' ? <Icon icon={IconCircleCheck} size={18} /> : status === 'failed' ? <Icon icon={IconCircleX} size={18} /> : <Icon icon={IconClock} size={17} />}</span><span className="test-copy"><strong>{test.title || test.name}</strong><small>{test.description || test.feedback || 'Sin detalles adicionales.'}</small></span><span className="test-points">{test.points ?? test.max_points ?? 0} puntos</span></div>
 }
 
-function HistoryDrawer({ submissions = [], onClose }) {
-  return <div className="drawer-backdrop" role="presentation" onClick={onClose}><aside className="history-drawer" role="dialog" aria-modal="true" aria-labelledby="history-title" onClick={(event) => event.stopPropagation()}><div className="drawer-heading"><div><span className="panel-label">Evidencias</span><h2 id="history-title">Historial de intentos</h2></div><button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar historial"><Icon icon={IconX} /></button></div><p className="drawer-lede">Cada entrega conserva el código exacto, los tests y el momento en que se guardó.</p><div className="history-timeline">{submissions.length ? submissions.map((submission) => <HistoryItem key={submission.id || submission.attempt_number} number={String(submission.attempt_number).padStart(2, '0')} title="Entrega registrada" detail={formatDate(submission.submitted_at)} score={submission.published_score != null ? `${formatScore(submission.published_score)} / 10` : 'Enviada'} />) : <p className="empty-history">Aún no hay entregas formales para mostrar.</p>}<HistoryItem number={String(Math.max(1, submissions.length + 1)).padStart(2, '0')} title="Borrador actual" detail="Todavía editable" score="En curso" current /></div><div className="drawer-note"><Icon icon={IconInfoCircle} size={17} /><span>Las entregas no se pueden editar después de enviarlas.</span></div></aside></div>
+function HistoryDrawer({ submissions = [], isWeb = false, onClose }) {
+  const copy = getWorkspaceCopy(isWeb ? 'web' : 'bash')
+  return <div className="drawer-backdrop" role="presentation" onClick={onClose}><aside className="history-drawer" role="dialog" aria-modal="true" aria-labelledby="history-title" onClick={(event) => event.stopPropagation()}><div className="drawer-heading"><div><span className="panel-label">{copy.historyLabel}</span><h2 id="history-title">{copy.historyTitle}</h2></div><button className="icon-button" type="button" onClick={onClose} aria-label="Cerrar historial"><Icon icon={IconX} /></button></div><p className="drawer-lede">{copy.historyLede}</p><div className="history-timeline">{submissions.length ? submissions.map((submission) => <HistoryItem key={submission.id || submission.attempt_number} number={String(submission.attempt_number).padStart(2, '0')} title={copy.historySubmittedTitle} detail={formatDate(submission.submitted_at)} score={submission.published_score != null ? `${formatScore(submission.published_score)} / 10` : 'Enviada'} />) : <p className="empty-history">{copy.historyEmpty}</p>}<HistoryItem number={String(Math.max(1, submissions.length + 1)).padStart(2, '0')} title={copy.historyDraftTitle} detail={copy.historyDraftDetail} score={copy.historyDraftStatus} current /></div><div className="drawer-note"><Icon icon={IconInfoCircle} size={17} /><span>{copy.historyNote}</span></div></aside></div>
 }
 
 function HistoryItem({ number, title, detail, score, current }) {
   return <div className={`history-item ${current ? 'is-current' : ''}`}><span className="history-line" /><span className="history-number">{number}</span><div className="history-copy"><strong>{title}</strong><small>{detail}</small></div><span className={current ? 'history-status' : 'history-score'}>{score}</span></div>
 }
 
-function SubmitDialog({ activity, attemptNumber, maxAttempts, isBash = false, isPython = false, onCancel, onSubmit, state }) {
+function SubmitDialog({ activity, attemptNumber, maxAttempts, isBash = false, isPython = false, isWeb = false, editorFileCount = 3, testCount = 0, onCancel, onSubmit, state }) {
   const maxAttemptsLabel = maxAttempts > 0 ? maxAttempts : 'sin límite'
   const isError = state === 'error'
-  const isStatic = isBash || isPython
   const trackIcon = isPython ? IconBrandPython : isBash ? IconTerminal2 : IconRocket
-  return <div className="dialog-backdrop"><div className="submit-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-title"><button className="icon-button dialog-close" onClick={onCancel} aria-label="Cancelar entrega"><Icon icon={IconX} /></button><span className={`dialog-icon ${isError ? 'dialog-icon-error' : ''}`}>{isError ? <Icon icon={IconAlertTriangle} size={24} /> : <Icon icon={trackIcon} size={24} />}</span><p className="kicker">Entrega formal</p><h2 id="submit-title">{isError ? 'No se pudo entregar' : '¿Listo para entregar?'}</h2><p>{isError ? 'Revisa el mensaje del reto y vuelve a intentarlo cuando el servidor esté disponible.' : <>Se guardará {isBash ? 'el script actual' : isPython ? 'el archivo Python actual' : 'el código actual'} como el <strong>intento {String(attemptNumber).padStart(2, '0')} de {maxAttemptsLabel}</strong>. Después podrás ver esta evidencia, pero no editarla.</>}</p><div className="submit-checks"><span><Icon icon={IconCheck} size={15} />{isStatic ? '1 archivo incluido' : '3 archivos incluidos'}</span><span><Icon icon={IconTestPipe} size={15} />Validaciones públicas disponibles</span><span><Icon icon={IconClock} size={15} />Fecha del servidor</span></div><div className="dialog-actions"><button className="button button-outline" onClick={onCancel}>Volver al editor</button>{!isError && <button className="button button-dark" onClick={onSubmit} disabled={state === 'sending'}>{state === 'sending' ? <span className="button-loader" /> : <Icon icon={trackIcon} size={17} />}{state === 'sending' ? 'Enviando…' : `Entregar ${activity.title}`}</button>}</div></div></div>
+  const copy = getWorkspaceCopy(isWeb ? 'web' : isBash ? 'bash' : 'python')
+  const filesLabel = isWeb ? String(editorFileCount) + (editorFileCount === 1 ? ' archivo de tu página' : ' archivos de tu página') : copy.submitFiles
+  const checksLabel = testCount === 0 ? copy.submitChecksEmpty : copy.submitChecks
+  return <div className="dialog-backdrop"><div className="submit-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-title"><button className="icon-button dialog-close" onClick={onCancel} aria-label="Cancelar entrega"><Icon icon={IconX} /></button><span className={`dialog-icon ${isError ? 'dialog-icon-error' : ''}`}>{isError ? <Icon icon={IconAlertTriangle} size={24} /> : <Icon icon={trackIcon} size={24} />}</span><p className="kicker">{copy.submitKicker}</p><h2 id="submit-title">{isError ? copy.submitErrorTitle : copy.submitTitle}</h2><p>{isError ? copy.submitError : <>{copy.submitBody} <strong>{String(attemptNumber).padStart(2, '0')} de {maxAttemptsLabel}</strong>. {copy.submitBodyAfter}</>}</p><div className="submit-checks"><span><Icon icon={IconCheck} size={15} />{filesLabel}</span><span><Icon icon={IconTestPipe} size={15} />{checksLabel}</span><span><Icon icon={IconClock} size={15} />{copy.submitDate}</span></div><div className="dialog-actions"><button className="button button-outline" onClick={onCancel}>{copy.submitBack}</button>{!isError && <button className="button button-dark" onClick={onSubmit} disabled={state === 'sending'}>{state === 'sending' ? <span className="button-loader" /> : <Icon icon={trackIcon} size={17} />}{state === 'sending' ? 'Enviando…' : copy.submitButton}</button>}</div></div></div>
 }
 
 function normalizeFiles(data, language = 'web') {

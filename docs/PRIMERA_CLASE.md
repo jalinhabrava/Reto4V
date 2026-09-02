@@ -4,11 +4,12 @@
 
 1. Completa la instalación y accede con la primera cuenta administrativa. El
    arranque de `web` aplica las migraciones y precarga automáticamente los
-   catálogos Web · SMR, Bash · ASIR y Python · DAM cuando
+   catálogos v2 Web · SMR, Bash · ASIR y Python · DAM cuando
    `PRELOAD_CATALOGS=1` (valor predeterminado).
 2. Abre **Aulas e itinerarios** (`/admin-ui/classrooms/`) y comprueba que los
    ciclos activos muestran sus retos publicados. Si la instalación se ha
-   actualizado desde una versión anterior, puedes repetir el bootstrap:
+   actualizado desde una versión anterior, puedes repetir el bootstrap para
+   pasar los tres itinerarios a v2:
 
    ```bash
    docker compose --env-file .env exec web python manage.py bootstrap_catalogs
@@ -55,7 +56,12 @@
 
    Sustituye `admin` por una cuenta administrativa o docente existente. Estos
    comandos cargan actividades, no crean alumnos ni sus contraseñas, y pueden
-   repetirse sin alterar versiones que ya estén asignadas.
+   repetirse sin reescribir versiones que ya estén asignadas. Si existe una
+   revisión v1 de cualquiera de los tres itinerarios, se publica la v2 como
+   una versión nueva, se trasladan los enlaces del grupo y se archiva la
+   asignación v1. Los borradores, entregas, calificaciones y demás evidencias
+   v1 se conservan internamente para integridad, pero no se trasladan XP ni
+   progreso a v2.
 6. Comprueba desde un ordenador del aula una cuenta ficticia de estudiante y
    una cuenta de profesor. Usa TLS antes de introducir datos reales.
 
@@ -67,17 +73,32 @@ está matriculado. Si la cuenta se ha creado con `Bash · ASIR`, el dashboard
 ofrece directamente **Empezar primer reto** y muestra el primer reto publicado
 de ese itinerario; no es necesario abrir una asignación manualmente.
 
+En Web, el recorrido de 1.º de SMR no presupone que el alumno sepa crear
+carpetas o guardar archivos. Solo tiene que abrir `index.html`, localizar dos
+textos ya escritos, cambiarlos siguiendo el ejemplo y pulsar **Ver mi página**
+y **Comprobar mi trabajo**. Programmy4V guarda cada cambio automáticamente.
+Presenta las pestañas de `styles.css` y `script.js` únicamente en los retos que
+ya las necesitan; es preferible completar los retos en orden y explicar una
+sola novedad cada vez.
+
+En el workspace Web las pestañas se llaman **Pasos**, **Editor** y
+**Resultado**. Debajo aparecen **Comprobaciones** y **Entregas**; esos nombres
+son los que debe usar la explicación en clase para que el alumnado reconozca
+qué puede hacer en cada momento.
+
 Si aparece el estado vacío, el administrador debe editar la cuenta y elegir un
 ciclo e itinerario activo. El cambio se aplica en la siguiente carga del
 dashboard y no permite ver actividades de otro itinerario.
 
-En Bash, la dinámica es leer la explicación, editar `script.sh`, consultar
-una pista si hace falta, comprobar y entregar. La validación es estática:
-no abre una terminal ni ejecuta comandos reales. Las prácticas sobre archivos
-se verifican después en la VM de laboratorio indicada por el profesor.
+En Bash, la dinámica de 2.º de ASIR parte de una base de Linux, pero empieza
+desde cero en Bash: leer la explicación, editar `script.sh`, consultar una
+pista si hace falta, comprobar y entregar. La comprobación es estática: no
+abre una terminal ni ejecuta comandos reales. Las prácticas sobre archivos se
+verifican después en la VM de laboratorio indicada por el profesor.
 
-En Python, la dinámica es leer la explicación, editar `main.py`, consultar una
-pista si hace falta, comprobar y entregar. El servidor analiza únicamente el
+En Python, la dinámica de 2.º de DAM parte de la base de programación y la
+lleva paso a paso hacia datos y archivos: leer la explicación, editar
+`main.py`, consultar una pista si hace falta, comprobar y entregar. El servidor analiza únicamente el
 AST en memoria: no ejecuta el programa, no importa módulos y no lee ni escribe
 archivos. Los retos de archivos comprueban construcciones como `with open(...)`
 solo de forma estructural; la práctica real con datos ficticios se hace en la

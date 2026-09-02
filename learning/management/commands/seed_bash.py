@@ -20,7 +20,6 @@ from learning.models import (
     Activity,
     ActivityVersion,
     Assignment,
-    AssignmentCohort,
     Cohort,
     Course,
     Module,
@@ -28,262 +27,327 @@ from learning.models import (
     TestCase,
 )
 
-from ._catalog import ensure_cohort_track, get_or_create_catalog_assignment
+from ._catalog import ensure_cohort_track, get_or_create_catalog_revision_assignment
 
 TRACK_SLUG = "laboratorio-bash-seguridad-asir"
+BASH_CATALOG_VERSION = 2
+
+
+def _test(name, test_type, definition, points=1, visibility=TestCase.Visibility.PUBLIC):
+    return (name, test_type, definition, points, visibility)
 
 
 CHALLENGES = [
     {
         "slug": "01-variables-y-salida",
-        "title": "01 · Variables y salida segura",
+        "title": "01 · Mi primer script",
         "difficulty": ActivityVersion.Difficulty.BEGINNER,
         "xp": 100,
-        "theory": "Las variables permiten separar los datos de la lógica. Usa nombres descriptivos, comillas al interpolar rutas y printf para controlar el formato de salida.",
-        "task": "Prepara un script que defina BACKUP_DIR y muestre su valor con printf. No ejecutes ninguna orden: el laboratorio analiza el texto del script.",
+        "theory": "Bash es una forma de dar instrucciones al ordenador. Un script es un archivo de texto que guarda esas instrucciones para leerlas juntas.",
+        "task": "1. Escribe un saludo con `echo`.\n2. Escribe una despedida con `printf`.",
         "hints": [
-            "Empieza por #!/usr/bin/env bash.",
-            "Una asignación no lleva espacios alrededor del signo igual.",
-            "printf '%s\\n' \"$BACKUP_DIR\" mantiene el valor como un solo argumento.",
+            "Empieza por `#!/usr/bin/env bash`.",
+            "`echo \"Hola\"` muestra un texto sencillo.",
+            "`printf '%s\\n' \"Texto\"` muestra una línea con formato controlado.",
         ],
-        "starter": "#!/usr/bin/env bash\n\n# Define BACKUP_DIR y muestra su valor.\n",
-        "solution": "#!/usr/bin/env bash\nBACKUP_DIR=\"laboratorio/backups\"\nprintf '%s\\n' \"$BACKUP_DIR\"\n",
+        "objectives": [
+            "Reconocer un script Bash",
+            "Mostrar texto en la pantalla",
+            "Distinguir echo y printf",
+        ],
+        "starter": "#!/usr/bin/env bash\n\n# Escribe debajo un saludo con echo y una despedida con printf.\n",
+        "solution": "#!/usr/bin/env bash\necho \"Hola, Bash\"\nprintf '%s\\n' \"Fin del primer script\"\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Shebang Bash", "bash.shebang", {"expected": "/usr/bin/env bash"}, 1, TestCase.Visibility.PUBLIC),
-            ("Variable de destino", "bash.variable_assigned", {"name": "BACKUP_DIR"}, 1, TestCase.Visibility.PUBLIC),
-            ("Salida con printf", "bash.command_used", {"command": "printf"}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Shebang Bash", "bash.shebang", {"expected": "/usr/bin/env bash"}),
+            _test("Saludo con echo", "bash.command_used", {"command": "echo"}),
+            _test("Despedida con printf", "bash.command_used", {"command": "printf"}),
         ],
     },
     {
         "slug": "02-condiciones-y-rutas",
-        "title": "02 · Condiciones y rutas",
+        "title": "02 · Guardar un dato en una variable",
         "difficulty": ActivityVersion.Difficulty.BEGINNER,
         "xp": 110,
-        "theory": "Una condición if permite tomar decisiones sin mezclar comprobaciones y acciones. En scripting de operaciones conviene guardar las rutas en variables y usar -d o -f antes de trabajar con ellas.",
-        "task": "Escribe un script que asigne DEST_DIR, compruebe con if si existe como directorio y prepare una orden mkdir -p dentro de la rama adecuada. El corrector solo inspecciona la estructura.",
+        "theory": "Una variable es una caja con nombre donde guardamos un dato. Después podemos usar ese dato en un mensaje u otra instrucción.",
+        "task": "1. Crea una variable llamada `NOMBRE`.\n2. Guarda dentro un nombre.\n3. Saluda usando el contenido de la variable.",
         "hints": [
-            "El patrón básico es if [ -d \"$DEST_DIR\" ]; then ... fi.",
-            "La opción -p de mkdir evita errores si los directorios padre no existen.",
-            "Usa siempre comillas alrededor de variables que representan rutas.",
+            "Una asignación sencilla es `NOMBRE=\"Aula\"`.",
+            "No pongas espacios alrededor del signo `=`.",
+            "Para usar el contenido escribe `\"$NOMBRE\"`.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nDEST_DIR=\"laboratorio/destino\"\n# Comprueba el directorio y completa la rama de decisión.\n",
-        "solution": "#!/usr/bin/env bash\nDEST_DIR=\"laboratorio/destino\"\nif [ -d \"$DEST_DIR\" ]; then\n  printf 'Existe: %s\\n' \"$DEST_DIR\"\nelse\n  mkdir -p \"$DEST_DIR\"\nfi\n",
+        "objectives": [
+            "Crear una variable Bash",
+            "Guardar texto en una variable",
+            "Usar una variable en printf",
+        ],
+        "starter": "#!/usr/bin/env bash\n\n# Crea NOMBRE y muestra un saludo usando su contenido.\n",
+        "solution": "#!/usr/bin/env bash\nNOMBRE=\"Aula ASIR\"\nprintf 'Hola, %s\\n' \"$NOMBRE\"\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Estructura if", "bash.node_kind", {"kind": "if_statement"}, 1, TestCase.Visibility.PUBLIC),
-            ("Variable de destino", "bash.variable_assigned", {"name": "DEST_DIR"}, 1, TestCase.Visibility.PUBLIC),
-            ("Creación no destructiva", "bash.command_used", {"command": "mkdir", "args": ["-p", "$DEST_DIR"]}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Shebang Bash", "bash.shebang", {"interpreter": "bash"}),
+            _test("Variable NOMBRE", "bash.variable_assigned", {"name": "NOMBRE"}),
+            _test("Saludo con printf", "bash.command_used", {"command": "printf"}),
         ],
     },
     {
         "slug": "03-bucle-de-registros",
-        "title": "03 · Recorrer registros con for",
+        "title": "03 · Guardar una carpeta y un archivo",
         "difficulty": ActivityVersion.Difficulty.BEGINNER,
         "xp": 120,
-        "theory": "Los bucles for automatizan la misma operación sobre una colección. Un patrón de búsqueda puede expresarse como dato y pasar a grep sin concatenar órdenes dinámicas.",
-        "task": "Construye un bucle for que recorra una colección LOG_FILES y utilice grep -c para contar coincidencias de error. Usa una variable LOG para cada elemento.",
+        "theory": "En tareas de sistemas trabajamos continuamente con rutas. Guardarlas en variables hace que el script sea más fácil de cambiar y revisar.",
+        "task": "1. Crea la variable `CARPETA`.\n2. Crea la variable `ARCHIVO`.\n3. Muestra la ruta completa uniendo las dos partes.",
         "hints": [
-            "for LOG in ...; do ... done es suficiente para este reto.",
-            "grep -c devuelve un recuento, pero aquí solo necesitamos que aparezca la orden.",
-            "No uses eval ni construyas una orden completa dentro de una cadena.",
+            "Puedes guardar `laboratorio` en CARPETA y `notas.txt` en ARCHIVO.",
+            "Una variable se escribe sin espacios: `CARPETA=\"laboratorio\"`.",
+            "Usa `printf` para mostrar las dos variables.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nLOG_FILES=(\"laboratorio/app.log\" \"laboratorio/auth.log\")\n# Recorre LOG_FILES y busca la palabra error.\n",
-        "solution": "#!/usr/bin/env bash\nLOG_FILES=(\"laboratorio/app.log\" \"laboratorio/auth.log\")\nfor LOG in \"${LOG_FILES[@]}\"; do\n  grep -c error \"$LOG\"\ndone\n",
+        "objectives": [
+            "Guardar una carpeta en una variable",
+            "Guardar un nombre de archivo en una variable",
+            "Preparar una ruta a partir de sus partes",
+        ],
+        "starter": "#!/usr/bin/env bash\n\n# Guarda una carpeta y un archivo en variables y muestra la ruta.\n",
+        "solution": "#!/usr/bin/env bash\nCARPETA=\"laboratorio\"\nARCHIVO=\"notas.txt\"\nprintf '%s/%s\\n' \"$CARPETA\" \"$ARCHIVO\"\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Bucle for", "bash.node_kind", {"kind": "for_statement"}, 1, TestCase.Visibility.PUBLIC),
-            ("Variable del bucle", "bash.variable_assigned", {"name": "LOG"}, 1, TestCase.Visibility.PUBLIC),
-            ("Recuento de errores", "bash.command_used", {"command": "grep", "args": ["-c", "error", "$LOG"]}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Shebang Bash", "bash.shebang", {"expected": "/usr/bin/env bash"}),
+            _test("Variable de carpeta", "bash.variable_assigned", {"name": "CARPETA"}),
+            _test("Variable de archivo", "bash.variable_assigned", {"name": "ARCHIVO"}),
         ],
     },
     {
         "slug": "04-funciones-reutilizables",
-        "title": "04 · Funciones reutilizables",
+        "title": "04 · Recibir un dato",
         "difficulty": ActivityVersion.Difficulty.BEGINNER,
         "xp": 130,
-        "theory": "Una función nombra una operación repetible y facilita revisar un script. Las funciones de copia deben recibir datos por variables claras y no depender de rutas ocultas.",
-        "task": "Define una función backup_folder que utilice SOURCE_DIR y ARCHIVE para expresar una copia tar -czf. Es un ejercicio de estructura: no se ejecutará la orden.",
+        "theory": "Un script puede recibir datos cuando lo llamamos. El primer dato se conoce como `$1`; así podemos reutilizar el mismo script con nombres diferentes.",
+        "task": "1. Usa el primer dato recibido para saludar.\n2. Si no llega ningún dato, utiliza `alumno` como nombre de reserva.",
         "hints": [
-            "Declara backup_folder() { ... } o function backup_folder { ... }.",
-            "tar -czf recibe primero el archivo destino y después la fuente.",
-            "Conserva las variables entre comillas en la orden de ejemplo.",
+            "Puedes preparar el dato con `NOMBRE=\"${1:-alumno}\"`.",
+            "El símbolo `${1:-alumno}` usa `alumno` cuando no hay primer dato.",
+            "Muestra NOMBRE con `printf`.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/copia.tgz\"\n# Declara backup_folder.\n",
-        "solution": "#!/usr/bin/env bash\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/copia.tgz\"\nbackup_folder() {\n  tar -czf \"$ARCHIVE\" \"$SOURCE_DIR\"\n}\n",
+        "objectives": [
+            "Reconocer el primer argumento de un script",
+            "Usar un valor de reserva",
+            "Reutilizar un script con distintos nombres",
+        ],
+        "starter": "#!/usr/bin/env bash\n\n# $1 es el primer dato que recibe el script.\nNOMBRE=\"${1:-alumno}\"\n# Muestra NOMBRE con un saludo.\n",
+        "solution": "#!/usr/bin/env bash\nNOMBRE=\"${1:-alumno}\"\nprintf 'Hola, %s\\n' \"$NOMBRE\"\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Declaración de función", "bash.node_kind", {"kind": "function_definition"}, 1, TestCase.Visibility.PUBLIC),
-            ("Variable fuente", "bash.variable_assigned", {"name": "SOURCE_DIR"}, 1, TestCase.Visibility.PUBLIC),
-            ("Orden tar de copia", "bash.command_used", {"command": "tar", "args": ["-czf", "$ARCHIVE", "$SOURCE_DIR"]}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Shebang Bash", "bash.shebang", {"interpreter": "bash"}),
+            _test("Variable NOMBRE", "bash.variable_assigned", {"name": "NOMBRE"}),
+            _test("Saludo con printf", "bash.command_used", {"command": "printf"}),
         ],
     },
     {
         "slug": "05-pipelines-de-registros",
-        "title": "05 · Pipelines para filtrar registros",
-        "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
+        "title": "05 · Tomar una decisión con if",
+        "difficulty": ActivityVersion.Difficulty.BEGINNER,
         "xp": 140,
-        "theory": "Un pipeline conecta la salida de una orden con la entrada de la siguiente. Esta composición permite filtrar y ordenar información sin guardar resultados intermedios innecesarios.",
-        "task": "Crea un pipeline que filtre advertencias de LOG_FILE con grep -i warning y pase el resultado a sort. Mantén la ruta en una variable.",
+        "theory": "Una condición permite que el script elija qué hacer. Con `if` podemos comprobar si un archivo existe antes de trabajar con él.",
+        "task": "1. Guarda el nombre `datos.txt` en `ARCHIVO`.\n2. Completa un `if` que compruebe si existe el archivo.\n3. Muestra un mensaje distinto en cada caso.",
         "hints": [
-            "El símbolo | crea el nodo pipeline que observará el corrector.",
-            "grep -i ignora diferencias entre mayúsculas y minúsculas.",
-            "No encadenes comandos mediante eval ni sustituciones de comandos para este reto.",
+            "La comprobación de archivo tiene esta forma: `[ -f \"$ARCHIVO\" ]`.",
+            "La estructura se cierra con `fi`.",
+            "Pon una orden `printf` dentro de cada camino.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nLOG_FILE=\"laboratorio/app.log\"\n# Filtra y ordena las líneas de advertencia.\n",
-        "solution": "#!/usr/bin/env bash\nLOG_FILE=\"laboratorio/app.log\"\ngrep -i warning \"$LOG_FILE\" | sort\n",
+        "objectives": [
+            "Leer una condición if",
+            "Comprobar si existe un archivo",
+            "Separar el caso verdadero del caso falso",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nARCHIVO=\"datos.txt\"\n# Completa el if para informar si existe ARCHIVO.\n",
+        "solution": "#!/usr/bin/env bash\nARCHIVO=\"datos.txt\"\nif [ -f \"$ARCHIVO\" ]; then\n  printf 'Existe: %s\\n' \"$ARCHIVO\"\nelse\n  printf 'No existe: %s\\n' \"$ARCHIVO\"\nfi\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Estructura pipeline", "bash.node_kind", {"kind": "pipeline"}, 1, TestCase.Visibility.PUBLIC),
-            ("Filtro de advertencias", "bash.command_used", {"command": "grep", "args": ["-i", "warning", "$LOG_FILE"]}, 1, TestCase.Visibility.PUBLIC),
-            ("Ordenación del resultado", "bash.command_used", {"command": "sort"}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Variable ARCHIVO", "bash.variable_assigned", {"name": "ARCHIVO"}),
+            _test("Decisión if", "bash.node_kind", {"kind": "if"}),
+            _test("Mensaje de comprobación", "bash.command_used", {"command": "printf"}),
         ],
     },
     {
         "slug": "06-parametros-posicionales",
-        "title": "06 · Parámetros y validación",
-        "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
+        "title": "06 · Repetir una tarea con for",
+        "difficulty": ActivityVersion.Difficulty.BEGINNER,
         "xp": 150,
-        "theory": "Los parámetros posicionales permiten reutilizar un script con distintos datos. Antes de usarlos conviene comprobar que el argumento existe y explicar al usuario el formato esperado.",
-        "task": "Prepara un script que guarde PREFIX, compruebe con if si se ha recibido un valor y muestre un mensaje con printf. No hace falta ejecutar el script.",
+        "theory": "Un bucle repite una tarea sin copiar la misma orden muchas veces. `for` sirve para recorrer varios nombres, archivos o elementos.",
+        "task": "1. Conserva la lista de archivos preparada.\n2. Completa el bucle para mostrar el nombre de cada archivo.\n3. Usa `FICHERO`, que cambia en cada vuelta.",
         "hints": [
-            "Puedes asignar PREFIX=\"${1:-}\" para trabajar con un valor vacío de forma explícita.",
-            "Una rama if permite separar el caso con argumento del caso sin argumento.",
-            "Usa printf para mensajes previsibles, incluso cuando el texto venga de una variable.",
+            "La estructura termina con `done`.",
+            "Escribe `printf` dentro del bucle, antes de `done`.",
+            "`FICHERO` representa el elemento actual de la lista.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nPREFIX=\"${1:-}\"\n# Valida PREFIX y muestra un mensaje.\n",
-        "solution": "#!/usr/bin/env bash\nPREFIX=\"${1:-}\"\nif [ -n \"$PREFIX\" ]; then\n  printf 'Prefijo: %s\\n' \"$PREFIX\"\nelse\n  printf 'Falta un prefijo\\n'\nfi\n",
+        "objectives": [
+            "Reconocer la estructura for",
+            "Recorrer varios elementos",
+            "Usar la variable de control del bucle",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nfor FICHERO in \"uno.txt\" \"dos.txt\"; do\n  # Muestra cada nombre.\ndone\n",
+        "solution": "#!/usr/bin/env bash\nfor FICHERO in \"uno.txt\" \"dos.txt\"; do\n  printf '%s\\n' \"$FICHERO\"\ndone\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Variable de parámetro", "bash.variable_assigned", {"name": "PREFIX"}, 1, TestCase.Visibility.PUBLIC),
-            ("Validación if", "bash.node_kind", {"kind": "if_statement"}, 1, TestCase.Visibility.PUBLIC),
-            ("Mensaje controlado", "bash.command_used", {"command": "printf"}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Bucle for", "bash.node_kind", {"kind": "for"}),
+            _test("Variable del bucle", "bash.variable_assigned", {"name": "FICHERO"}),
+            _test("Salida de cada vuelta", "bash.command_used", {"command": "printf"}),
         ],
     },
     {
         "slug": "07-codigos-de-salida",
-        "title": "07 · Códigos de salida",
+        "title": "07 · Repetir hasta terminar con while",
         "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
         "xp": 160,
-        "theory": "El código de salida comunica si una operación terminó correctamente. Guardarlo en una variable y devolverlo con exit hace que otros scripts puedan encadenar el trabajo.",
-        "task": "Define STATUS, usa una decisión if para informar del resultado y termina con exit \"$STATUS\". El ejercicio solo verifica la intención estructural.",
+        "theory": "`while` repite unas instrucciones mientras se cumple una condición. Es útil cuando queremos avanzar paso a paso hasta llegar a un límite.",
+        "task": "1. Usa `CONTADOR` para mostrar tres números.\n2. Aumenta el contador en cada vuelta.\n3. Haz que el bucle termine al llegar al límite.",
         "hints": [
-            "Los códigos 0 suelen representar éxito y los valores distintos de 0 un problema.",
-            "No confundas el texto mostrado con el estado que devuelves.",
-            "El evaluador busca la orden exit y la variable STATUS como nodos literales.",
+            "La estructura se cierra con `done`.",
+            "La condición puede ser `[ \"$CONTADOR\" -le 3 ]`.",
+            "Aumenta el valor con `CONTADOR=$((CONTADOR + 1))`.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nSTATUS=0\n# Informa del estado y devuelve STATUS.\n",
-        "solution": "#!/usr/bin/env bash\nSTATUS=0\nif [ \"$STATUS\" -eq 0 ]; then\n  printf 'Correcto\\n'\nelse\n  printf 'Revisar\\n'\nfi\nexit \"$STATUS\"\n",
+        "objectives": [
+            "Reconocer la estructura while",
+            "Cambiar una variable dentro de un bucle",
+            "Evitar un bucle que no termina",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nCONTADOR=1\nwhile [ \"$CONTADOR\" -le 3 ]; do\n  # Muestra el contador y aumenta su valor.\ndone\n",
+        "solution": "#!/usr/bin/env bash\nCONTADOR=1\nwhile [ \"$CONTADOR\" -le 3 ]; do\n  printf 'Vuelta %s\\n' \"$CONTADOR\"\n  CONTADOR=$((CONTADOR + 1))\ndone\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Estado asignado", "bash.variable_assigned", {"name": "STATUS"}, 1, TestCase.Visibility.PUBLIC),
-            ("Decisión por estado", "bash.node_kind", {"kind": "if_statement"}, 1, TestCase.Visibility.PUBLIC),
-            ("Retorno del estado", "bash.command_used", {"command": "exit", "args": ["$STATUS"]}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Bucle while", "bash.node_kind", {"kind": "while"}),
+            _test("Variable CONTADOR", "bash.variable_assigned", {"name": "CONTADOR"}),
+            _test("Salida de cada vuelta", "bash.command_used", {"command": "printf"}),
         ],
     },
     {
         "slug": "08-plan-de-copia",
-        "title": "08 · Plan de copia versionado",
+        "title": "08 · Crear una función sencilla",
         "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
         "xp": 180,
-        "theory": "Un plan de copia completo separa origen, destino y nombre de archivo. La función sirve para centralizar la política y dejar preparada una revisión antes de automatizarla.",
-        "task": "Escribe backup_plan con SOURCE_DIR, ARCHIVE y una orden tar -czf. Añade una comprobación if para no continuar si falta la fuente.",
+        "theory": "Una función agrupa varias instrucciones bajo un nombre. Así podemos llamar a la misma tarea cuando la necesitemos sin repetir todo el código.",
+        "task": "1. Crea la función `mostrar_ruta`.\n2. Haz que muestre la variable `RUTA`.\n3. Llama a la función después de declararla.",
         "hints": [
-            "Primero comprueba la fuente con [ -d \"$SOURCE_DIR\" ].",
-            "Guarda el nombre del archivo de copia en ARCHIVE.",
-            "La función debe contener la orden de copia y no una cadena para eval.",
+            "Una función Bash puede escribirse como `mostrar_ruta() { ... }`.",
+            "La orden `printf` debe quedar dentro de las llaves.",
+            "Después de la función puedes escribir `mostrar_ruta` para llamarla.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/copia.tgz\"\n# Implementa backup_plan.\n",
-        "solution": "#!/usr/bin/env bash\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/copia.tgz\"\nbackup_plan() {\n  if [ -d \"$SOURCE_DIR\" ]; then\n    tar -czf \"$ARCHIVE\" \"$SOURCE_DIR\"\n  fi\n}\n",
+        "objectives": [
+            "Declarar una función Bash",
+            "Poner instrucciones dentro de una función",
+            "Llamar a una función por su nombre",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nRUTA=\"laboratorio\"\n# Crea mostrar_ruta y llama a la función.\n",
+        "solution": "#!/usr/bin/env bash\nRUTA=\"laboratorio\"\nmostrar_ruta() {\n  printf 'Ruta: %s\\n' \"$RUTA\"\n}\nmostrar_ruta\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Función de copia", "bash.node_kind", {"kind": "function_definition"}, 1, TestCase.Visibility.PUBLIC),
-            ("Comprobación if", "bash.node_kind", {"kind": "if_statement"}, 1, TestCase.Visibility.PUBLIC),
-            ("Archivo de copia", "bash.command_used", {"command": "tar", "args": ["-czf", "$ARCHIVE", "$SOURCE_DIR"]}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Función Bash", "bash.node_kind", {"kind": "function"}),
+            _test("Variable RUTA", "bash.variable_assigned", {"name": "RUTA"}),
+            _test("Salida de la función", "bash.command_used", {"command": "printf"}),
         ],
     },
     {
         "slug": "09-permisos-del-script",
-        "title": "09 · Permisos y ejecución controlada",
+        "title": "09 · Filtrar información con un pipeline",
         "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
-        "xp": 170,
-        "theory": "Los permisos deben ser explícitos y mínimos. chmod u+x concede ejecución al propietario del script sin abrir permisos innecesarios a todo el sistema.",
-        "task": "Define SCRIPT, comprueba que es un archivo y deja expresada la orden chmod u+x para prepararlo. El laboratorio no cambia permisos reales.",
+        "xp": 190,
+        "theory": "Un pipeline pasa la salida de una orden a la siguiente. Separar cada paso ayuda a leer y revisar un informe de registros.",
+        "task": "1. Guarda la ruta en `LOG_FILE`.\n2. Busca las líneas que contienen `warning`.\n3. Usa `|` para pasar el resultado a `sort`.",
         "hints": [
-            "Usa [ -f \"$SCRIPT\" ] para distinguir un archivo de un directorio.",
-            "La opción u+x modifica solo el permiso del propietario.",
-            "Mantén la ruta en SCRIPT y no la concatenes en una orden creada dinámicamente.",
+            "Guarda la ruta en `LOG_FILE`.",
+            "La primera orden puede ser `grep -i warning \"$LOG_FILE\"`.",
+            "Añade `| sort` al final para ordenar las líneas encontradas.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nSCRIPT=\"laboratorio/backup.sh\"\n# Comprueba el archivo y prepara su permiso.\n",
-        "solution": "#!/usr/bin/env bash\nSCRIPT=\"laboratorio/backup.sh\"\nif [ -f \"$SCRIPT\" ]; then\n  chmod u+x \"$SCRIPT\"\nfi\n",
+        "objectives": [
+            "Reconocer un pipeline",
+            "Filtrar texto con grep",
+            "Ordenar la salida con sort",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nLOG_FILE=\"laboratorio/app.log\"\n# Filtra y ordena las líneas de warning.\n",
+        "solution": "#!/usr/bin/env bash\nLOG_FILE=\"laboratorio/app.log\"\ngrep -i warning \"$LOG_FILE\" | sort\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Variable de script", "bash.variable_assigned", {"name": "SCRIPT"}, 1, TestCase.Visibility.PUBLIC),
-            ("Comprobación de archivo", "bash.node_kind", {"kind": "if_statement"}, 1, TestCase.Visibility.PUBLIC),
-            ("Permiso mínimo", "bash.command_used", {"command": "chmod", "args": ["u+x", "$SCRIPT"]}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Pipeline", "bash.node_kind", {"kind": "pipeline"}),
+            _test("Filtro con grep", "bash.command_used", {"command": "grep"}),
+            _test("Ordenación con sort", "bash.command_used", {"command": "sort"}),
         ],
     },
     {
         "slug": "10-pipeline-awk-y-orden",
-        "title": "10 · Extraer campos con awk",
-        "difficulty": ActivityVersion.Difficulty.ADVANCED,
-        "xp": 190,
-        "theory": "awk puede seleccionar campos de una línea y combinarse con sort. En análisis de registros es útil mantener cada etapa pequeña y visible para poder auditarla.",
-        "task": "Define LOG_FILE y crea un pipeline awk '{print $1}' \"$LOG_FILE\" | sort. El corrector compara los nodos y argumentos literales.",
+        "title": "10 · Preparar una carpeta de copias",
+        "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
+        "xp": 200,
+        "theory": "Antes de guardar una copia necesitamos un lugar para ella. Comprobar y crear una carpeta evita continuar con una ruta que no está preparada.",
+        "task": "1. Comprueba si existe `BACKUP_DIR`.\n2. Si no existe, prepara la carpeta.\n3. Usa `mkdir -p` para crearla.",
         "hints": [
-            "El programa awk puede pasarse como una cadena literal entre comillas simples.",
-            "El primer campo se representa como $1 dentro del programa awk.",
-            "La segunda etapa debe ser exactamente sort para este reto.",
+            "Usa `[ -d \"$BACKUP_DIR\" ]` para comprobar una carpeta.",
+            "La negación se escribe `[ ! -d \"$BACKUP_DIR\" ]`.",
+            "`mkdir -p` prepara también las carpetas intermedias.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nLOG_FILE=\"laboratorio/access.log\"\n# Extrae el primer campo y ordénalo.\n",
-        "solution": "#!/usr/bin/env bash\nLOG_FILE=\"laboratorio/access.log\"\nawk '{print $1}' \"$LOG_FILE\" | sort\n",
+        "objectives": [
+            "Comprobar si existe una carpeta",
+            "Preparar una ruta de copias",
+            "Usar mkdir de forma cuidadosa",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nBACKUP_DIR=\"laboratorio/copias\"\n# Comprueba y prepara la carpeta.\n",
+        "solution": "#!/usr/bin/env bash\nBACKUP_DIR=\"laboratorio/copias\"\nif [ ! -d \"$BACKUP_DIR\" ]; then\n  mkdir -p \"$BACKUP_DIR\"\nfi\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Pipeline de análisis", "bash.node_kind", {"kind": "pipeline"}, 1, TestCase.Visibility.PUBLIC),
-            ("Extracción awk", "bash.command_used", {"command": "awk", "args": ["{print $1}", "$LOG_FILE"]}, 1, TestCase.Visibility.PUBLIC),
-            ("Ordenación final", "bash.command_used", {"command": "sort"}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Variable de copias", "bash.variable_assigned", {"name": "BACKUP_DIR"}),
+            _test("Comprobación de carpeta", "bash.node_kind", {"kind": "if"}),
+            _test("Crear carpeta", "bash.command_used", {"command": "mkdir"}),
         ],
     },
     {
         "slug": "11-case-de-operacion",
-        "title": "11 · Selección de operación con case",
-        "difficulty": ActivityVersion.Difficulty.ADVANCED,
-        "xp": 200,
-        "theory": "case expresa varias opciones de forma legible y evita una cadena de if difíciles de revisar. Es apropiado para seleccionar una operación declarada por el operador.",
-        "task": "Asigna MODE y usa case para distinguir backup, check y cualquier otro valor. Cada rama debe mostrar una indicación con printf; no incluyas órdenes de red ni borrados.",
+        "title": "11 · Preparar una copia con tar",
+        "difficulty": ActivityVersion.Difficulty.INTERMEDIATE,
+        "xp": 220,
+        "theory": "Una copia debe indicar qué carpeta se guarda y qué archivo la contiene. `tar` puede reunir una carpeta en un archivo comprimido.",
+        "task": "1. Declara `SOURCE_DIR` y `ARCHIVE`.\n2. Crea la función `preparar_copia`.\n3. Si existe `SOURCE_DIR`, prepara `ARCHIVE` con `tar -czf`.",
         "hints": [
-            "La estructura termina con esac.",
-            "Usa patrones literales como backup) y check).",
-            "El patrón *) cubre el caso desconocido y debe informar del problema.",
+            "Declara primero `SOURCE_DIR` y `ARCHIVE`.",
+            "La orden es `tar -czf \"$ARCHIVE\" \"$SOURCE_DIR\"`.",
+            "Coloca `tar` dentro del `if` para revisar la fuente antes de copiar.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nMODE=\"check\"\n# Selecciona la operación con case.\n",
-        "solution": "#!/usr/bin/env bash\nMODE=\"check\"\ncase \"$MODE\" in\n  backup) printf 'Preparar copia\\n' ;;\n  check) printf 'Comprobar estado\\n' ;;\n  *) printf 'Operación no reconocida\\n' ;;\nesac\n",
+        "objectives": [
+            "Separar origen y destino de una copia",
+            "Usar una función para una tarea concreta",
+            "Comprobar la fuente antes de preparar tar",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/copia.tgz\"\n# Crea preparar_copia con una comprobación.\n",
+        "solution": "#!/usr/bin/env bash\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/copia.tgz\"\npreparar_copia() {\n  if [ -d \"$SOURCE_DIR\" ]; then\n    tar -czf \"$ARCHIVE\" \"$SOURCE_DIR\"\n  fi\n}\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Variable de operación", "bash.variable_assigned", {"name": "MODE"}, 1, TestCase.Visibility.PUBLIC),
-            ("Estructura case", "bash.node_kind", {"kind": "case_statement"}, 1, TestCase.Visibility.PUBLIC),
-            ("Mensajes por rama", "bash.command_used", {"command": "printf"}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Función de copia", "bash.node_kind", {"kind": "function"}),
+            _test("Comprobación de fuente", "bash.node_kind", {"kind": "if"}),
+            _test("Orden tar", "bash.command_used", {"command": "tar", "args": ["-czf", "$ARCHIVE", "$SOURCE_DIR"]}),
         ],
     },
     {
         "slug": "12-rutina-integrada",
-        "title": "12 · Rutina integrada de backup",
+        "title": "12 · Crear y verificar una copia",
         "difficulty": ActivityVersion.Difficulty.ADVANCED,
         "xp": 240,
-        "theory": "Una rutina operativa combina validación, función y salida clara. Antes de ejecutarla en un entorno real hay que revisar rutas, permisos, retención y recuperación; este reto solo trabaja la estructura.",
-        "task": "Integra una función make_backup con SOURCE_DIR y ARCHIVE, comprueba la fuente con if, usa tar -czf y devuelve un mensaje. No uses red, sudo ni borrados.",
+        "theory": "Una rutina de copia debe revisar la fuente, preparar el archivo y dejar una forma de comprobarlo. Este reto reúne lo aprendido; el corrector solo analiza el texto.",
+        "task": "1. Comprueba `SOURCE_DIR` dentro de `crear_copia`.\n2. Prepara `ARCHIVE` con `tar`.\n3. Calcula su huella con `sha256sum`.\n4. No uses red, `sudo` ni borrados.",
         "hints": [
-            "Conserva el shebang y separa configuración de lógica.",
-            "El if debe envolver la orden tar para no intentar copiar una fuente inexistente.",
-            "La función se puede invocar al final, una vez declarada.",
+            "Conserva las dos variables de ruta que ya están preparadas.",
+            "El `if` debe envolver `tar` para no copiar una fuente inexistente.",
+            "`sha256sum \"$ARCHIVE\"` deja una huella que se puede revisar después.",
         ],
-        "starter": "#!/usr/bin/env bash\n\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/backup-final.tgz\"\n# Completa make_backup y su llamada.\n",
-        "solution": "#!/usr/bin/env bash\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/backup-final.tgz\"\nmake_backup() {\n  if [ -d \"$SOURCE_DIR\" ]; then\n    tar -czf \"$ARCHIVE\" \"$SOURCE_DIR\"\n    printf 'Copia preparada: %s\\n' \"$ARCHIVE\"\n  else\n    printf 'No existe la fuente: %s\\n' \"$SOURCE_DIR\"\n  fi\n}\nmake_backup\n",
+        "objectives": [
+            "Combinar variables, condiciones y funciones",
+            "Preparar una copia comprimida",
+            "Añadir una verificación mediante huella",
+        ],
+        "starter": "#!/usr/bin/env bash\n\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/backup-final.tgz\"\n# Completa crear_copia: comprueba, crea y verifica.\n",
+        "solution": "#!/usr/bin/env bash\nSOURCE_DIR=\"laboratorio/fuente\"\nARCHIVE=\"laboratorio/backup-final.tgz\"\ncrear_copia() {\n  if [ -d \"$SOURCE_DIR\" ]; then\n    tar -czf \"$ARCHIVE\" \"$SOURCE_DIR\"\n    sha256sum \"$ARCHIVE\"\n  else\n    printf 'No existe la fuente: %s\\n' \"$SOURCE_DIR\"\n  fi\n}\ncrear_copia\n",
         "tests": [
-            ("Sintaxis válida", "bash.syntax_valid", {}, 1, TestCase.Visibility.PUBLIC),
-            ("Shebang Bash", "bash.shebang", {"interpreter": "bash"}, 1, TestCase.Visibility.PUBLIC),
-            ("Rutina integrada", "bash.node_kind", {"kind": "function_definition"}, 1, TestCase.Visibility.PUBLIC),
-            ("Copia condicionada", "bash.command_used", {"command": "tar", "args": ["-czf", "$ARCHIVE", "$SOURCE_DIR"]}, 1, TestCase.Visibility.PRIVATE),
+            _test("Sintaxis válida", "bash.syntax_valid", {}),
+            _test("Comprobación de fuente", "bash.node_kind", {"kind": "if"}),
+            _test("Orden tar", "bash.command_used", {"command": "tar", "args": ["-czf", "$ARCHIVE", "$SOURCE_DIR"]}),
+            _test("Verificación sha256sum", "bash.command_used", {"command": "sha256sum"}),
         ],
     },
 ]
@@ -295,7 +359,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--owner", required=True, help="Usuario profesor o administrador propietario del contenido.")
         parser.add_argument("--cohort", default="2ASIR", help="Grupo al que se asignan los retos (por defecto: 2ASIR).")
-        parser.add_argument("--academic-year", default=None, help="Curso académico; si se omite se calcula desde la fecha actual.")
+        parser.add_argument("--academic-year", default=None, help="Curso académico; si se omite se calcula según la fecha del servidor.")
 
     def _academic_year_name(self, value):
         if value:
@@ -326,27 +390,38 @@ class Command(BaseCommand):
         if owner.role == User.Role.TEACHER and not owner.is_superuser:
             TeachingAssignment.objects.get_or_create(cohort=cohort, teacher=owner, defaults={"active": True})
 
-        course, _ = Course.objects.get_or_create(
+        course, course_created = Course.objects.get_or_create(
             slug=TRACK_SLUG,
             defaults={
                 "title": "Laboratorio Bash para Seguridad · ASIR",
-                "description": "Retos de scripting, automatización y copias de seguridad como apoyo transversal al módulo 0378 Seguridad y alta disponibilidad.",
+                "description": "Retos progresivos desde el primer script hasta la preparación y verificación estructural de copias de seguridad, como apoyo transversal al módulo 0378.",
                 "created_by": owner,
                 "active": True,
             },
         )
-        module, _ = Module.objects.get_or_create(
+        if not course_created:
+            course.title = "Laboratorio Bash para Seguridad · ASIR"
+            course.description = "Retos progresivos desde el primer script hasta la preparación y verificación estructural de copias de seguridad, como apoyo transversal al módulo 0378."
+            course.save(update_fields=["title", "description", "updated_at"])
+
+        module, module_created = Module.objects.get_or_create(
             course=course,
             position=1,
             defaults={
-                "title": "Laboratorio Bash · /laboratorio",
-                "description": "Itinerario estático de Bash para prácticas de seguridad y operación; no sustituye los resultados de aprendizaje oficiales.",
+                "title": "De cero a tus primeras automatizaciones",
+                "description": "Una ruta guiada: salida, variables, rutas, argumentos, decisiones, bucles, funciones, filtros y copias.",
                 "weight": 100,
             },
         )
+        if not module_created:
+            module.title = "De cero a tus primeras automatizaciones"
+            module.description = "Una ruta guiada: salida, variables, rutas, argumentos, decisiones, bucles, funciones, filtros y copias."
+            module.save(update_fields=["title", "description"])
 
         created_versions = 0
         existing_versions = 0
+        migrated_links = 0
+        archived_assignments = 0
         for item in CHALLENGES:
             activity, _ = Activity.objects.get_or_create(
                 module=module,
@@ -358,16 +433,24 @@ class Command(BaseCommand):
                     "created_by": owner,
                 },
             )
+            current_version = activity.current_version
+            # A later hand-authored catalogue revision must never be replaced
+            # by this older built-in revision during a restart, even when the
+            # activity pointer is temporarily empty or still points at v1.
+            if activity.versions.filter(version_number__gt=BASH_CATALOG_VERSION).exists():
+                existing_versions += 1
+                continue
+
             version, version_created = ActivityVersion.objects.get_or_create(
                 activity=activity,
-                version_number=1,
+                version_number=BASH_CATALOG_VERSION,
                 defaults={
                     "language": ActivityVersion.Language.BASH,
                     "difficulty": item["difficulty"],
                     "xp_reward": item["xp"],
                     "hints": item["hints"],
-                    "instructions": f"## Teoría\n{item['theory']}\n\n## Reto\n{item['task']}\n\n> El corrector analiza el texto de forma estática; no ejecutes estas órdenes en un sistema real.",
-                    "objectives": ["Leer y escribir scripts Bash mantenibles", "Identificar estructuras de control y comandos de operación", "Relacionar scripting con copias de seguridad y revisión segura"],
+                    "instructions": f"## Antes de empezar\nEl editor ya tiene un archivo `script.sh`; no necesitas crear carpetas ni descargar nada. En esta actividad el corrector analiza el texto y no ejecuta las órdenes.\n\n## La idea\n{item['theory']}\n\n## Pasos\n{item['task']}\n\n> Las órdenes aparecen como práctica de escritura: no se ejecutan en el servidor ni deben probarse sobre un sistema real.",
+                    "objectives": item["objectives"],
                     "learning_outcomes": [],
                     "assessment_criteria": [],
                     "professional_module_code": "0378",
@@ -387,12 +470,13 @@ class Command(BaseCommand):
                 created_versions += 1
             else:
                 existing_versions += 1
-            if activity.current_version_id is None:
+
+            if current_version is None or current_version.version_number < version.version_number:
                 activity.current_version = version
                 activity.status = Activity.Status.PUBLISHED
                 activity.save(update_fields=["current_version", "status", "updated_at"])
 
-            # Assigned versions are immutable.  Complete missing tests only on
+            # Assigned versions are immutable. Complete missing tests only on
             # a new/unassigned version; never alter an existing assigned one.
             if not version.assignments.exists():
                 for position, (name, test_type, definition, points, visibility) in enumerate(item["tests"]):
@@ -408,12 +492,14 @@ class Command(BaseCommand):
                             "position": position,
                         },
                     )
-            assignment, _ = get_or_create_catalog_assignment(
+            assignment, assignment_created, upgrade = get_or_create_catalog_revision_assignment(
                 activity=activity,
                 version=version,
+                cohort=cohort,
                 defaults={
                     "status": Assignment.Status.PUBLISHED,
                     "created_by": owner,
+                    "title_override": item["title"],
                     "attempt_policy": Assignment.AttemptPolicy.BEST,
                     "max_attempts": None,
                     "weight": 100,
@@ -421,12 +507,17 @@ class Command(BaseCommand):
                     "published_at": timezone.now(),
                 },
             )
-            AssignmentCohort.objects.get_or_create(assignment=assignment, cohort=cohort)
+            if assignment_created and not assignment.title_override:
+                assignment.title_override = item["title"]
+                assignment.save(update_fields=["title_override"])
+            migrated_links += upgrade["migrated_links"]
+            archived_assignments += upgrade["archived_assignments"]
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Itinerario Bash listo: {len(CHALLENGES)} retos, grupo {cohort.name}, "
-                f"{created_versions} versiones nuevas y {existing_versions} ya existentes."
+                f"Itinerario Bash v{BASH_CATALOG_VERSION} listo: {len(CHALLENGES)} retos, grupo {cohort.name}, "
+                f"{created_versions} versiones nuevas y {existing_versions} ya existentes. "
+                f"Actualizados {migrated_links} vínculos y archivadas {archived_assignments} asignaciones anteriores."
             )
         )
         self.stdout.write("No se han creado alumnos ni contraseñas; el catálogo es contenido formativo local.")

@@ -6,9 +6,15 @@ El bundle React se sirve desde las plantillas Django y usa únicamente rutas rel
 
 Cada actividad publicada pertenece a un itinerario:
 
-- `language: "web"`: editor de `html`, `css` y `javascript` para el módulo de Aplicaciones web de SMR.
-- `language: "bash"`: editor de un único archivo `bash` (`script.sh`) para scripting y seguridad de ASIR. El navegador no ejecuta este archivo.
-- `language: "python"`: editor de un único archivo `python` (`main.py`) para la introducción a Python de 2.º DAM, Sistemas de Gestión Empresarial (0491), como preparación para trabajar con Odoo. El navegador no ejecuta este archivo.
+- `language: "web"`: editor de `html`, `css` y `javascript` para 1.º de SMR
+  y el módulo de Aplicaciones web. Parte de cero informático.
+- `language: "bash"`: editor de un único archivo `bash` (`script.sh`) para
+  scripting y seguridad de 2.º de ASIR. Se presupone base de Linux, pero no
+  experiencia previa con Bash; el navegador no ejecuta este archivo.
+- `language: "python"`: editor de un único archivo `python` (`main.py`) para
+  la introducción a Python de 2.º DAM, Sistemas de Gestión Empresarial (0491).
+  Enlaza la base de programación con datos y archivos para preparar el trabajo
+  posterior con Odoo; el navegador no ejecuta este archivo.
 
 La versión puede incluir `difficulty` (`beginner`, `intermediate`, `advanced`), `xp_reward` (entero no negativo) y `hints` (lista de textos u objetos). El cliente no inventa puntos, insignias ni progreso en producción: si un dato no llega, muestra un estado vacío o cero.
 
@@ -38,6 +44,14 @@ entregas. Los grupos base son **Web · SMR**, **Bash · ASIR** y **Python · DAM
 la versión actual precarga doce retos publicados por itinerario (36 en total).
 El propietario interno del catálogo no puede iniciar sesión y no se muestra
 en la lista de usuarios.
+
+Los tres catálogos incorporados son la revisión **v2**. Si el bootstrap
+encuentra enlaces a una revisión v1, crea las versiones y asignaciones v2,
+mueve los enlaces del grupo y archiva las asignaciones v1. Los borradores,
+entregas, calificaciones y cálculos v1 siguen guardados internamente junto a
+su asignación/version para conservar la evidencia y la integridad histórica;
+el cliente no recibe ni traslada XP o progreso de v1 a v2. Las revisiones
+posteriores creadas por el centro no se reemplazan.
 
 Para repetir el bootstrap tras una actualización:
 
@@ -109,7 +123,9 @@ La lista ya está limitada al único ciclo activo del alumno y ordenada por
 módulo, posición y título. El primer elemento es el reto que debe comenzar;
 cuando está sin iniciar, el cliente muestra **Empezar primer reto**. Con cero
 asignaciones, no se fabrica ninguna actividad: se muestra una indicación para
-que el administrador seleccione el ciclo e itinerario desde el panel.
+que el administrador seleccione el ciclo e itinerario desde el panel. Las
+asignaciones v1 archivadas durante la actualización de catálogo no aparecen en
+esta lista activa.
 
 `completed` debe significar dominio según la política académica del servidor; una entrega corregida no equivale automáticamente a reto completado. `earned_xp` y `progress` son independientes de la nota publicada.
 
@@ -148,6 +164,7 @@ matrícula del ciclo, no mediante asignaciones manuales alumno por alumno.
     "objectives": ["…"],
     "hints": ["…"],
     "files": {"bash": "#!/usr/bin/env bash\n"},
+    "editor_files": ["bash"],
     "public_tests": [{"id": "uuid", "name": "Declara Bash", "points": "2"}]
   },
   "draft": {"files": {"bash": "…"}, "revision": 4},
@@ -156,7 +173,15 @@ matrícula del ciclo, no mediante asignaciones manuales alumno por alumno.
 }
 ```
 
-Para `language: "web"`, `files` conserva las claves `{html, css, javascript}` y el editor mantiene la preview aislada. Para `language: "python"`, `files` contiene únicamente `{python}` y el editor muestra `main.py` con resaltado Python.
+Para `language: "web"`, `files` conserva las claves normalizadas
+`{html, css, javascript}` y el editor mantiene la preview aislada.
+`editor_files` limita las pestañas visibles a los conceptos ya introducidos:
+empieza con `["html"]`, añade `"css"` y solo incorpora `"javascript"` en la
+última etapa. En la interfaz Web las pestañas se presentan como `index.html`,
+`styles.css` y `script.js`, dentro de los paneles **Pasos**, **Editor** y
+**Resultado**; las acciones inferiores se llaman **Comprobaciones** y
+**Entregas**. Para `language: "python"`, `files` contiene únicamente
+`{python}` y el editor muestra `main.py` con resaltado Python.
 
 En el workspace, `gamification` es el resumen del reto actual (no el total del alumno); el total, nivel e insignias globales solo aparecen en el dashboard.
 
