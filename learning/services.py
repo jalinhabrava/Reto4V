@@ -139,20 +139,22 @@ def supersede_catalog_assignments(current_assignment: Assignment) -> dict[str, i
         return {"migrated_links": 0, "archived_assignments": 0}
 
     version = current.activity_version
+    matching_assignment_ids = AssignmentCohort.objects.filter(
+        cohort__track=version.language,
+    ).values("assignment_id")
     older = list(
         Assignment.objects.select_for_update()
         .filter(
             activity_id=current.activity_id,
             activity_version__language=version.language,
             activity_version__version_number__lt=version.version_number,
+            id__in=matching_assignment_ids,
             status__in=(
                 Assignment.Status.PUBLISHED,
                 Assignment.Status.CLOSED,
                 Assignment.Status.ARCHIVED,
             ),
-            cohort_links__cohort__track=version.language,
         )
-        .distinct()
         .order_by("created_at", "id")
     )
 
