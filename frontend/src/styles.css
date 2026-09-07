@@ -1044,13 +1044,15 @@ kbd { background: #203b52; border: 1px solid #365269; border-radius: 3px; color:
 
 .python-check-list { margin-top: 2px; }
 
-.preview-heading { min-height: 71px; padding: 17px 16px 12px 18px; }
+.preview-heading { flex-wrap: wrap; gap: 12px; min-height: 71px; padding: 17px 16px 12px 18px; }
+
+.preview-heading > div:first-child { flex: 1 1 140px; min-width: 0; }
 
 .preview-heading .panel-label { display: block; margin-bottom: 7px; }
 
 .preview-explanation { color: #84979c; font-size: 9px; line-height: 1.35; margin: 0 0 8px; max-width: 260px; }
 
-.preview-heading-actions { align-items: center; display: flex; gap: 9px; }
+.preview-heading-actions { align-items: center; display: flex; flex-shrink: 0; gap: 9px; }
 
 .preview-heading .icon-button { margin-right: -4px; }
 

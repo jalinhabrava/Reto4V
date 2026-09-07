@@ -2,18 +2,20 @@
 
 ## Qué tomamos de las referencias
 
-Se revisaron el inicio y las primeras lecciones de las tres webs el 7 de
+Se revisaron el inicio y las primeras lecciones de las cuatro webs el 7 de
 septiembre de 2026. Adoptamos su organización didáctica, no sus textos ni una
 traducción de sus ejercicios.
 
 - [Learn HTML: primera página](https://www.learn-html.org/en/Hello,_World!)
-  explica las etiquetas y enseña código antes de pedir completar una página.
+  empieza explicando qué es HTML y mostrando un documento con `html`,
+  `head`, `title` y `body`, antes de pedir completar una página.
   [Elementos básicos](https://www.learn-html.org/en/Basic_Elements) y
   [enlaces](https://www.learn-html.org/en/Links) presentan ejemplos antes de
-  su ejercicio. Nuestra adaptación divide aún más el inicio: primero cambiar
-  el contenido de un párrafo, después escribir etiquetas. No trasladamos las
-  referencias iniciales a IDE ni Bootstrap. CSS se introduce después de los
-  primeros conceptos HTML y se intercala con ellos; JavaScript tiene su propio recorrido.
+  su ejercicio. Seguimos la secuencia documento → elementos básicos → enlaces
+  → listas → imágenes → estilos → clases y selectores. La plantilla del primer
+  reto ya contiene el documento completo; solo se cambia un texto.
+  No trasladamos las referencias iniciales a IDE ni Bootstrap. JavaScript
+  tiene su propio recorrido.
 - [Learn Python: primer programa](https://www.learnpython.org/en/Hello,_World!)
   usa una instrucción de salida como primer ejercicio.
   [Variables y tipos](https://www.learnpython.org/en/Variables_and_Types)
@@ -47,10 +49,11 @@ al alumnado de esta plataforma.
 
 ## HTML y CSS: aprender juntos, no a la vez desde el primer minuto
 
-El inicio sigue siendo página y navegador, párrafos y títulos. Después se
-explica qué aporta CSS y cómo se lee una regla antes de mostrar `styles.css`.
-Se alternan nuevos elementos HTML con selectores, clases, colores, espacios y
-disposición. El archivo inicial incorpora solo los lenguajes ya introducidos.
+El inicio explica página, navegador y documento HTML; después se practican
+párrafos, títulos, enlaces, listas e imágenes. A continuación se explica qué
+aporta CSS y cómo se lee una regla antes de mostrar `styles.css`. La agrupación
+semántica, la caja y la disposición llegan cuando sus elementos básicos ya se
+han practicado. El Editor incorpora solo los lenguajes ya introducidos.
 
 JavaScript no se mezcla en ese catálogo: tiene su curso dentro de Web · SMR,
 con la misma matrícula. Por defecto se abre cuando todos los retos HTML/CSS
@@ -65,10 +68,14 @@ Los ejemplos conservan sus líneas y sangría, y HTML se muestra como texto,
 no se interpreta dentro de las instrucciones. En Web se distingue Editor de
 Resultado. Python y Bash solo tienen comprobación estructural: no se muestra
 una salida como si el código se hubiera ejecutado.
+Sus paneles muestran los objetivos del paso actual; no recomiendan funciones,
+archivos, copias ni opciones de error que el reto todavía no ha presentado.
 
 Las revisiones nuevas crean versiones independientes. El bootstrap archiva asignaciones
 anteriores y conserva borradores, entregas y notas originales; no traslada
-XP. Los títulos incorporados de v2 se actualizan a los nuevos temas, pero
+XP. Los títulos incorporados de revisiones anteriores se actualizan a los nuevos temas, pero
 los títulos personalizados del docente se conservan. Una revisión posterior
-del centro no se degrada. No hace falta modificar el esquema de la API:
-las explicaciones y ejemplos viajan en `version.instructions`.
+del centro no se degrada. `Activity.position` fija el orden didáctico dentro
+del módulo independientemente del título; el dashboard y el workspace lo
+exponen como `position`. Las explicaciones y ejemplos siguen viajando en
+`version.instructions`.

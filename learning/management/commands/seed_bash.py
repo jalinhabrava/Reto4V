@@ -452,7 +452,7 @@ class Command(BaseCommand):
             module.save(update_fields=["title", "description"])
 
         created_versions = existing_versions = migrated_links = archived_assignments = 0
-        for item in CHALLENGES:
+        for position, item in enumerate(CHALLENGES, start=1):
             activity, _ = Activity.objects.get_or_create(
                 module=module,
                 slug=item["slug"],
@@ -462,6 +462,9 @@ class Command(BaseCommand):
             if activity.versions.filter(version_number__gt=BASH_CATALOG_VERSION).exists():
                 existing_versions += 1
                 continue
+            if activity.position != position:
+                activity.position = position
+                activity.save(update_fields=["position", "updated_at"])
 
             instructions = (
                 "## Antes de empezar\nEl editor ya tiene un archivo `script.sh`; no necesitas crear "

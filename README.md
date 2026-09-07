@@ -7,10 +7,11 @@ tiempo de uso.
 
 Incluye cuatro recorridos, agrupados en tres ciclos:
 
-- **HTML y CSS · 1.º SMR**: 20 retos desde cero informático sobre páginas y estilos
+- **HTML y CSS · 1.º SMR**: 21 retos desde cero informático sobre páginas y estilos
   para el módulo navarro `0228 · Aplicaciones web`. Los primeros
   ejercicios parten de una página ya preparada y piden cambios de una sola
-  línea. CSS se intercala después de aprender las primeras etiquetas.
+  línea. El inicio explica el documento HTML, sus etiquetas y el navegador.
+  Enlaces, listas e imágenes preceden a CSS, clases y selectores.
 - **JavaScript · 1.º SMR**: 13 retos en un recorrido separado con explicación, ejemplo y
   práctica pequeña. Se desbloquea al completar HTML/CSS, salvo habilitación
   individual del administrador.
@@ -71,7 +72,7 @@ puede repetirse al actualizar la instalación. La opción está controlada por
 `PRELOAD_CATALOGS=1` (valor predeterminado); para una instalación que deba
 arrancar sin tocar el catálogo, establece `PRELOAD_CATALOGS=0` en `.env`.
 
-Los catálogos son **HTML/CSS v4, JavaScript v1 y Bash/Python v3**. Si una instalación
+Los catálogos son **HTML/CSS v5, JavaScript v2 y Bash/Python v3**. Si una instalación
 ya tiene una revisión anterior, el bootstrap crea la nueva, mueve a ella los enlaces del
 grupo y archiva las asignaciones anteriores. Los borradores, entregas, calificaciones y
 demás evidencias antiguas se conservan internamente ligadas a su versión para

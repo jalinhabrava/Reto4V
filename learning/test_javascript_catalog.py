@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 
 from accounts.models import User
 from grading.evaluator import evaluate_tests
@@ -10,7 +11,16 @@ from learning.management.commands.seed_javascript import (
     JAVASCRIPT_CATALOG_VERSION,
     TRACK_SLUG,
 )
-from learning.models import AcademicYear, ActivityVersion, Assignment, Course
+from learning.models import (
+    AcademicYear,
+    Activity,
+    ActivityVersion,
+    Assignment,
+    AssignmentCohort,
+    Cohort,
+    Course,
+    Module,
+)
 
 
 class JavaScriptCatalogTests(TestCase):
@@ -60,6 +70,9 @@ class JavaScriptCatalogTests(TestCase):
         self.assertTrue(all("document." not in str(item["starter"]) for item in CHALLENGES[:10]))
         self.assertTrue(all("async " not in str(item["solution"]) for item in CHALLENGES))
         self.assertTrue(all("Promise" not in str(item["solution"]) for item in CHALLENGES))
+        self.assertIn("stock > 0", CHALLENGES[5]["theory"])
+        self.assertIn("edad >= 18", CHALLENGES[5]["theory"])
+        self.assertNotIn("=>", CHALLENGES[11]["starter"]["javascript"])
 
         course = Course.objects.get(slug=TRACK_SLUG)
         self.assertEqual(course.web_stage, Course.WebStage.JAVASCRIPT)
@@ -75,6 +88,13 @@ class JavaScriptCatalogTests(TestCase):
         self.assertEqual(Assignment.objects.filter(activity_version__in=versions).count(), 13)
 
         by_slug = {item["slug"]: item for item in CHALLENGES}
+        self.assertEqual(
+            [
+                next(version.activity.position for version in versions if version.activity.slug == item["slug"])
+                for item in CHALLENGES
+            ],
+            list(range(1, len(CHALLENGES) + 1)),
+        )
         for version in versions:
             item = by_slug[version.activity.slug]
             self.assertEqual(version.version_number, JAVASCRIPT_CATALOG_VERSION)
@@ -120,3 +140,61 @@ class JavaScriptCatalogTests(TestCase):
             ]
             weak_report = evaluate_tests({"javascript": source}, cases, language="web")
             self.assertLess(weak_report.score, 8, slug)
+
+    def test_v2_migrates_a_v1_catalogue_title_without_losing_evidence(self):
+        course = Course.objects.create(
+            title="JavaScript antiguo · SMR",
+            slug=TRACK_SLUG,
+            created_by=self.teacher,
+        )
+        module = Module.objects.create(course=course, title="Módulo antiguo", position=1)
+        challenge = CHALLENGES[0]
+        activity = Activity.objects.create(
+            module=module,
+            slug=challenge["slug"],
+            title="Actividad histórica",
+            status=Activity.Status.PUBLISHED,
+            created_by=self.teacher,
+        )
+        old_version = ActivityVersion.objects.create(
+            activity=activity,
+            version_number=1,
+            language=ActivityVersion.Language.WEB,
+            starter_files={"javascript": 'console.log("antes");\n'},
+            reference_solution={"javascript": 'console.log("antes");\n'},
+            created_by=self.teacher,
+            published_at=timezone.now(),
+        )
+        cohort = Cohort.objects.create(
+            name="1SMR",
+            academic_year=self.year,
+            track=Cohort.Track.WEB,
+        )
+        old_assignment = Assignment.objects.create(
+            activity=activity,
+            activity_version=old_version,
+            status=Assignment.Status.PUBLISHED,
+            created_by=self.teacher,
+            published_at=timezone.now(),
+            title_override=challenge["title"],
+        )
+        AssignmentCohort.objects.create(assignment=old_assignment, cohort=cohort)
+        activity.current_version = old_version
+        activity.save(update_fields=["current_version", "updated_at"])
+
+        self.seed()
+
+        activity.refresh_from_db()
+        old_assignment.refresh_from_db()
+        new_version = ActivityVersion.objects.get(
+            activity=activity,
+            version_number=JAVASCRIPT_CATALOG_VERSION,
+        )
+        new_assignment = Assignment.objects.get(
+            activity_version=new_version,
+            cohort_links__cohort=cohort,
+        )
+        self.assertEqual(activity.current_version_id, new_version.id)
+        self.assertEqual(activity.position, 1)
+        self.assertEqual(old_assignment.status, Assignment.Status.ARCHIVED)
+        self.assertEqual(new_assignment.title_override, challenge["title"])

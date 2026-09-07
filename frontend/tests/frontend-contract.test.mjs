@@ -87,15 +87,17 @@ test('Web ofrece un comienzo guiado y un lenguaje cercano', () => {
   assert.match(source, /Nunca se ejecuta desde la plataforma/)
 })
 
-test('Python mantiene el archivo aislado y solo ofrece análisis indicativo', () => {
+test('Python y Bash mantienen el archivo aislado y guían solo el paso actual', () => {
   assert.match(source, /normalizeLanguage\(value\)/)
   assert.match(source, /normalized === 'bash' \|\| normalized === 'python'/)
-  assert.match(source, /function inspectPython\(source = ''\)/)
+  assert.match(source, /Objetivos del paso actual/)
   assert.match(source, /No hay intérprete, archivos reales ni salida simulada/)
   assert.match(source, /Nunca se ejecuta desde la plataforma/)
   assert.match(source, /effectiveIsPython \? <PythonAnalysisPanel/)
-  assert.match(source, /checks\.operations/)
-  assert.doesNotMatch(source, /checks\.files/)
+  assert.match(source, /PythonAnalysisPanel objectives=\{objectives\}/)
+  assert.match(source, /BashValidationPanel objectives=\{objectives\}/)
+  const panels = source.slice(source.indexOf('function BashValidationPanel('), source.indexOf('function CodeEditor('))
+  assert.doesNotMatch(panels, /Prueba una lista o diccionario|usa with open|empieza indicando el intérprete|Revisa qué opciones necesita tu script/)
 })
 
 test('los itinerarios conservan legibilidad móvil y acento visual Python', () => {

@@ -175,6 +175,7 @@ def _activity_public_payload(assignment: Assignment, draft: Draft | None = None,
     payload = {
         "id": str(assignment.id),
         "title": assignment.title,
+        "position": assignment.activity.position,
         "status": assignment.status,
         "opens_at": assignment.opens_at.isoformat() if assignment.opens_at else None,
         "due_at": assignment.due_at.isoformat() if assignment.due_at else None,
@@ -237,6 +238,7 @@ def _dashboard_payload(rows, gamification=None, pathways=None):
             {
                 "id": str(row["assignment"].id),
                 "title": row["assignment"].title,
+                "position": row["assignment"].activity.position,
                 "status": row["status"],
                 "due_at": row["assignment"].due_at.isoformat() if row["assignment"].due_at else None,
                 "module": row["assignment"].activity.module.title,
@@ -340,7 +342,7 @@ def student_dashboard(request):
             cohort_links__cohort__academic_year__active=True,
             cohort_links__cohort__track=F("activity_version__language"),
         )
-        .order_by(_course_stage_order(), "activity__module__position", "activity__title", "id")
+        .order_by(_course_stage_order(), "activity__module__position", "activity__position", "activity__title", "id")
         .distinct()
     )
     rows = []
@@ -502,7 +504,7 @@ def student_submission(request, submission_id):
 
 
 def teacher_assignments_for(user, *, include_archived=True):
-    queryset = Assignment.objects.select_related("activity", "activity__module", "activity__module__course", "activity_version").prefetch_related("cohort_links__cohort").order_by(_course_stage_order(), "activity__module__position", "activity__title", "id")
+    queryset = Assignment.objects.select_related("activity", "activity__module", "activity__module__course", "activity_version").prefetch_related("cohort_links__cohort").order_by(_course_stage_order(), "activity__module__position", "activity__position", "activity__title", "id")
     if not include_archived:
         queryset = queryset.exclude(status=Assignment.Status.ARCHIVED)
     if user.is_superuser or user.role == User.Role.ADMIN:

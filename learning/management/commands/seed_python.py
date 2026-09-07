@@ -369,7 +369,7 @@ class Command(BaseCommand):
         migrated_links = 0
         archived_assignments = 0
         skipped_later_revisions = 0
-        for item in CHALLENGES:
+        for position, item in enumerate(CHALLENGES, start=1):
             activity, _ = Activity.objects.get_or_create(
                 module=module,
                 slug=item["slug"],
@@ -383,6 +383,9 @@ class Command(BaseCommand):
             if activity.versions.filter(version_number__gt=PYTHON_CATALOG_VERSION).exists():
                 skipped_later_revisions += 1
                 continue
+            if activity.position != position:
+                activity.position = position
+                activity.save(update_fields=["position", "updated_at"])
             version, version_created = ActivityVersion.objects.get_or_create(
                 activity=activity,
                 version_number=PYTHON_CATALOG_VERSION,
@@ -462,7 +465,7 @@ class Command(BaseCommand):
                 },
             )
             # The revision helper preserves an explicit teacher title. A
-            # blank legacy title still gets the friendly v2 title.
+            # A blank legacy title still gets the friendly v2 title.
             if assignment_created and not assignment.title_override:
                 assignment.title_override = item["title"]
                 assignment.save(update_fields=["title_override"])

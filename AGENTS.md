@@ -37,12 +37,14 @@ se conservan para mantener la compatibilidad de despliegues existentes.
   estructural como ejecución, acceso a Odoo o prueba de lectura/escritura real.
 - Web · SMR contiene dos cursos: HTML/CSS (`Course.web_stage=html_css`) y
   JavaScript (`javascript`), ambos con `language=web` y una misma matrícula.
-  HTML/CSS alterna etiquetas y estilos tras los primeros pasos solo HTML.
+  HTML/CSS sigue la base de Learn HTML: documento, elementos básicos, enlaces,
+  listas e imágenes antes de estilos, clases y selectores.
   JavaScript requiere completar todos los retos HTML/CSS asignados (mejor
   puntuación automática válida de al menos 8/10 por reto), o que un admin
   active `User.javascript_enabled` en «Editar cuenta». El permiso nunca
   sustituye la matrícula ni habilita actividades de otro grupo.
-- El bloqueo se decide en servicios Django y se aplica también al acceso
+- El orden didáctico se guarda en `Activity.position`; los títulos personalizados
+  no cambian la secuencia. El bloqueo se decide en servicios Django y se aplica también al acceso
   directo, borradores, comprobaciones y entregas. `pathway`, `locked` y
   `lock_reason` son estado de servidor; el cliente no infiere autorización
   a partir de XP. El dashboard expone el resumen `pathways` y refresca su estado.
@@ -50,7 +52,7 @@ se conservan para mantener la compatibilidad de despliegues existentes.
   para ese grupo. `seed_javascript` puede ejecutarse por separado sin
   saltarse la política de desbloqueo. Las mismas operaciones académicas
   siguen pasando por los servicios existentes; no hay otro framework de acciones.
-- Los catálogos son HTML/CSS v4, JavaScript v1 y Bash/Python v3. El bootstrap
+- Los catálogos son HTML/CSS v5, JavaScript v2 y Bash/Python v3. El bootstrap
   crea la revisión correspondiente, migra los enlaces de grupo y archiva las anteriores; conserva
   borradores, entregas, calificaciones y demás evidencias antiguas ligadas a
   su asignación/version por integridad, pero no traslada XP ni progreso entre

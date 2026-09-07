@@ -103,7 +103,7 @@ class DraftTests(LearningFactoryMixin, TestCase):
             len(WEB_CHALLENGES),
         )
 
-    def test_seed_web_publishes_v2_without_overwriting_an_assigned_v1(self):
+    def test_seed_web_updates_the_builtin_title_without_overwriting_an_assigned_v1(self):
         """The catalogue refresh keeps old evidence attached to its v1."""
 
         item = WEB_CHALLENGES[0]
@@ -153,7 +153,8 @@ class DraftTests(LearningFactoryMixin, TestCase):
         refreshed = ActivityVersion.objects.get(activity=activity, version_number=WEB_CATALOG_VERSION)
         self.assertEqual(Activity.objects.filter(module=module).count(), len(WEB_CHALLENGES))
         self.assertEqual(activity.current_version_id, refreshed.id)
-        self.assertEqual(activity.title, "01 · Estructura semántica")
+        self.assertEqual(activity.title, item["title"])
+        self.assertEqual(activity.position, 1)
         self.assertEqual(legacy.starter_files, legacy_files)
         self.assertEqual(legacy.reference_solution, legacy_files)
         self.assertTrue(Assignment.objects.filter(pk=legacy_assignment.pk).exists())

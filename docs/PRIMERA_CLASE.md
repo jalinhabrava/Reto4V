@@ -4,7 +4,7 @@
 
 1. Completa la instalación y accede con la primera cuenta administrativa. El
    arranque de `web` aplica las migraciones y precarga automáticamente los
-   HTML/CSS v4 y JavaScript v1 en Web · SMR, más Bash/Python v3 cuando
+   HTML/CSS v5 y JavaScript v2 en Web · SMR, más Bash/Python v3 cuando
    `PRELOAD_CATALOGS=1` (valor predeterminado).
 2. Abre **Aulas e itinerarios** (`/admin-ui/classrooms/`) y comprueba que los
    ciclos activos muestran sus retos publicados. Si la instalación se ha
@@ -74,12 +74,12 @@ ofrece directamente **Empezar primer reto** y muestra el primer reto publicado
 de ese itinerario; no es necesario abrir una asignación manualmente.
 
 En Web, el recorrido de 1.º de SMR no presupone que el alumno sepa crear
-carpetas o guardar archivos. Primero lee qué es una página y cómo funcionan
-las etiquetas. Después abre `index.html`, cambia el texto de un párrafo
+carpetas o guardar archivos. Primero lee qué es HTML, cómo lo muestra el
+navegador y qué partes tiene el documento preparado. Después abre `index.html`, cambia el texto de un párrafo
 siguiendo el ejemplo y pulsa **Ver mi página**
 y **Comprobar mi trabajo**. Programmy4V guarda cada cambio automáticamente.
-Los primeros pasos trabajan solo HTML. Después aparece `styles.css`, con una
-explicación previa, y se intercalan tareas de HTML y CSS. Completa los retos
+Los primeros pasos trabajan documento, texto, enlaces, listas e imágenes solo
+con HTML. Después aparece `styles.css`, con una explicación previa. Completa los retos
 en orden y explica una sola novedad cada vez.
 
 JavaScript figura como un recorrido separado, inicialmente bloqueado. Para

@@ -119,6 +119,13 @@ class PythonCatalogTests(TestCase):
         )
 
         by_slug = {challenge["slug"]: challenge for challenge in CHALLENGES}
+        self.assertEqual(
+            [
+                next(version.activity.position for version in versions if version.activity.slug == challenge["slug"])
+                for challenge in CHALLENGES
+            ],
+            list(range(1, len(CHALLENGES) + 1)),
+        )
         for version in versions:
             challenge = by_slug[version.activity.slug]
             self.assertEqual(version.version_number, PYTHON_CATALOG_VERSION)
@@ -315,3 +322,4 @@ class PythonCatalogTests(TestCase):
                 version_number=PYTHON_CATALOG_VERSION,
             ).exists()
         )
+        self.assertEqual(activity.position, 0)

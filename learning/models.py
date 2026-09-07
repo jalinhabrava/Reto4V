@@ -172,6 +172,7 @@ class Activity(models.Model):
     module = models.ForeignKey(Module, on_delete=models.PROTECT, related_name="activities")
     title = models.CharField(max_length=180)
     slug = models.SlugField(max_length=180)
+    position = models.PositiveIntegerField(default=0, help_text="Orden didáctico dentro del módulo; 0 para actividades sin orden definido.")
     kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.CODE)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="activities_created")
@@ -180,7 +181,7 @@ class Activity(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("module", "title")
+        ordering = ("module", "position", "title")
         constraints = [models.UniqueConstraint(fields=("module", "slug"), name="uniq_activity_module_slug")]
 
     def __str__(self):

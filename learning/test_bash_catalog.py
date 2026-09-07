@@ -83,6 +83,13 @@ class BashCatalogTests(TestCase):
                 "12-rutina-integrada",
             ],
         )
+        self.assertEqual(
+            [
+                next(version.activity.position for version in versions if version.activity.slug == item["slug"])
+                for item in CHALLENGES
+            ],
+            list(range(1, len(CHALLENGES) + 1)),
+        )
         self.assertNotIn("printf", CHALLENGES[0]["theory"])
         self.assertNotIn("printf", CHALLENGES[0]["example"])
         self.assertNotIn("printf", CHALLENGES[0]["task"])
@@ -278,3 +285,4 @@ class BashCatalogTests(TestCase):
             set(ActivityVersion.objects.filter(activity=activity).values_list("version_number", flat=True)),
             {BASH_CATALOG_VERSION + 1},
         )
+        self.assertEqual(activity.position, 0)

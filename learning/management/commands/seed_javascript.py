@@ -24,7 +24,7 @@ from learning.models import (
 from ._catalog import ensure_cohort_track, get_or_create_catalog_revision_assignment
 
 TRACK_SLUG = "fundamentos-javascript-smr"
-JAVASCRIPT_CATALOG_VERSION = 1
+JAVASCRIPT_CATALOG_VERSION = 2
 CURRICULUM_SOURCE = "https://www.lexnavarra.navarra.es/detalle.asp?r=9129"
 
 
@@ -164,7 +164,7 @@ CHALLENGES = [
     _challenge(
         "06-decision-if",
         "06 · Elegir con if y else",
-        "if elige unas instrucciones cuando una condición es cierta. else contiene el otro camino. Las llaves delimitan las instrucciones de cada camino.",
+        "if elige unas instrucciones cuando una condición es cierta. `stock > 0` pregunta si stock es mayor que cero; `edad >= 18` pregunta si edad es mayor o igual que 18. Si la respuesta es cierta se usa el primer bloque y else contiene el otro camino. Las llaves delimitan las instrucciones de cada camino.",
         'const edad = 18;\nif (edad >= 18) {\n  console.log("Puede entrar");\n} else {\n  console.log("Debe esperar");\n}',
         "1. Cambia stock a 5.\n2. Dentro de if escribe console.log con Disponible.\n3. Dentro de else escribe console.log con Sin existencias.",
         "const stock = 0;\nif (stock > 0) {\n  // Escribe el mensaje disponible.\n} else {\n  // Escribe el otro mensaje.\n}\n",
@@ -269,11 +269,11 @@ CHALLENGES = [
     _challenge(
         "12-evento-clic",
         "12 · Reaccionar a un clic",
-        "Un evento es algo que sucede en la página, por ejemplo un clic. addEventListener indica qué instrucciones preparar para ese evento. Dentro del bloque se puede cambiar un elemento ya buscado.",
-        'const boton = document.getElementById("abrir");\nboton.addEventListener("click", () => {\n  console.log("Se ha pulsado");\n});',
-        "1. Conserva las líneas preparadas y el evento click.\n2. Dentro de las llaves añade una asignación a mensaje.textContent con Has pulsado el botón.\n3. Pulsa «Ver mi página», pulsa el botón del Resultado y comprueba el cambio.",
-        'const boton = document.getElementById("boton");\nconst mensaje = document.getElementById("mensaje");\n\nboton.addEventListener("click", () => {\n  // Cambia el mensaje.\n});\n',
-        'const boton = document.getElementById("boton");\nconst mensaje = document.getElementById("mensaje");\n\nboton.addEventListener("click", () => {\n  mensaje.textContent = "Has pulsado el botón";\n});\n',
+        "Un evento es algo que sucede en la página, por ejemplo un clic. addEventListener prepara una función ya declarada para responder al evento. El segundo dato es el nombre de la función sin paréntesis: el navegador la llamará cuando ocurra el clic.",
+        'const boton = document.getElementById("abrir");\nfunction avisar() {\n  console.log("Se ha pulsado");\n}\nboton.addEventListener("click", avisar);',
+        "1. Conserva las líneas preparadas, la función y el evento click.\n2. Dentro de las llaves de cambiarMensaje añade una asignación a mensaje.textContent con Has pulsado el botón.\n3. Pulsa «Ver mi página», pulsa el botón del Resultado y comprueba el cambio.",
+        'const boton = document.getElementById("boton");\nconst mensaje = document.getElementById("mensaje");\n\nfunction cambiarMensaje() {\n  // Cambia el mensaje.\n}\n\nboton.addEventListener("click", cambiarMensaje);\n',
+        'const boton = document.getElementById("boton");\nconst mensaje = document.getElementById("mensaje");\n\nfunction cambiarMensaje() {\n  mensaje.textContent = "Has pulsado el botón";\n}\n\nboton.addEventListener("click", cambiarMensaje);\n',
         [
             _test("Sintaxis JavaScript", "js.syntax_valid", {}, 1),
             _test("Botón buscado", "js.call_used", {"name": "document.getElementById", "args": ["boton"]}, 1),
@@ -373,7 +373,7 @@ class Command(BaseCommand):
             module.save(update_fields=["title", "description"])
 
         created_versions = existing_versions = migrated_links = archived_assignments = skipped = 0
-        for item in CHALLENGES:
+        for position, item in enumerate(CHALLENGES, start=1):
             activity, _ = Activity.objects.get_or_create(
                 module=module,
                 slug=item["slug"],
@@ -387,6 +387,9 @@ class Command(BaseCommand):
             if activity.versions.filter(version_number__gt=JAVASCRIPT_CATALOG_VERSION).exists():
                 skipped += 1
                 continue
+            if activity.position != position:
+                activity.position = position
+                activity.save(update_fields=["position", "updated_at"])
             version, version_created = ActivityVersion.objects.get_or_create(
                 activity=activity,
                 version_number=JAVASCRIPT_CATALOG_VERSION,
@@ -447,7 +450,7 @@ class Command(BaseCommand):
                 activity=activity,
                 version=version,
                 cohort=cohort,
-                previous_catalog_titles=(),
+                previous_catalog_titles=(item["title"],),
                 defaults={
                     "status": Assignment.Status.PUBLISHED,
                     "created_by": owner,

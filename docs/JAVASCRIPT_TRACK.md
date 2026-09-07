@@ -2,7 +2,7 @@
 
 El catálogo local `fundamentos-javascript-smr` tiene 13 lecciones y usa
 `Course.web_stage = Course.WebStage.JAVASCRIPT`. Cada
-`ActivityVersion` conserva `language = "web"` y versión de catálogo `1`: no se
+`ActivityVersion` conserva `language = "web"` y versión de catálogo `2`: no se
 crea un lenguaje nuevo ni un motor de ejecución.
 
 Se crea de forma idempotente con:
@@ -17,6 +17,13 @@ credenciales. HTML y CSS conservan su propio curso; la integración de
 curso académico, de modo que HTML/CSS y JavaScript quedan asignados al mismo
 grupo. `seed_javascript` no llama a `seed_web`.
 
+La revisión incorporada actual es la **v2**. Al actualizar desde v1, el comando
+publica nuevas versiones y asignaciones, archiva las anteriores y conserva sus
+borradores, entregas y calificaciones vinculados a la evidencia original. Los
+títulos incorporados v1 se sustituyen; un título distinto escrito por el
+docente se conserva. Repetir el comando es idempotente y una revisión posterior
+del centro no se modifica.
+
 ## Secuencia didáctica
 
 1. Qué es JavaScript y una instrucción `console.log`.
@@ -30,7 +37,7 @@ grupo. `seed_javascript` no llama a `seed_web`.
 9. Parámetro y argumento.
 10. `return`.
 11. DOM: buscar un elemento con `id` y cambiar su texto.
-12. DOM: reaccionar a un clic.
+12. DOM: reaccionar a un clic mediante una función ya conocida.
 13. Repaso de lista, función y bucle.
 
 Cada lección presenta concepto, ejemplo con datos distintos y un ejercicio

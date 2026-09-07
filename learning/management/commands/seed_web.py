@@ -1,9 +1,4 @@
-"""Seed the introductory HTML and CSS catalogue for first-year SMR.
-
-The catalogue is a practical, partial introduction to the code-related part
-of the Navarra web applications module (0228). Evaluation is static and
-declarative: neither a preview nor a submission is executed on the server.
-"""
+"""Seed the guided HTML/CSS catalogue for first-year SMR."""
 
 from __future__ import annotations
 
@@ -32,7 +27,7 @@ from ._catalog import ensure_cohort_track, get_or_create_catalog_revision_assign
 
 TRACK_SLUG = "fundamentos-web-smr"
 CURRICULUM_SOURCE = "https://www.lexnavarra.navarra.es/detalle.asp?r=9129"
-WEB_CATALOG_VERSION = 4
+WEB_CATALOG_VERSION = 5
 IMAGE_SRC = (
     "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 100'%3E"
     "%3Crect width='160' height='100' fill='%23e6f0ff'/%3E"
@@ -41,8 +36,22 @@ IMAGE_SRC = (
 )
 
 
-# Titles published by built-in catalogues before this revision.  They let the
-# revision helper keep an educator's title while replacing its own old title.
+# All published built-in titles must be recognised so a catalogue update does
+# not mistake them for a teacher's own title override.
+V1_TITLES = {
+    "01-estructura-semantica": "01 · Estructura semántica",
+    "enlaces-y-atributos": "02 · Enlaces y atributos",
+    "listas-y-tablas": "03 · Listas y tablas de datos",
+    "formularios-accesibles": "04 · Formularios accesibles",
+    "multimedia-responsiva": "05 · Multimedia y alternativas",
+    "html-limpio-y-valido": "06 · HTML limpio y mantenible",
+    "css-selectores-y-color": "07 · Selectores y color",
+    "css-modelo-de-caja": "08 · Modelo de caja y layout",
+    "css-responsive": "09 · Diseño responsive",
+    "javascript-funciones-y-datos": "10 · Variables y funciones JavaScript",
+    "javascript-eventos-dom": "11 · Eventos del DOM",
+    "panel-integrado-web": "12 · Panel web integrado",
+}
 V2_TITLES = {
     "01-estructura-semantica": "01 · Mi primera página",
     "enlaces-y-atributos": "02 · Títulos y párrafos",
@@ -71,36 +80,61 @@ V3_TITLES = {
     "javascript-eventos-dom": "11 · Un formulario con etiqueta",
     "panel-integrado-web": "12 · Repaso: una ficha ordenada",
 }
-
-EXAMPLE_EXPLANATIONS = {
-    "01-estructura-semantica": "El navegador muestra solo la frase; `<p>` le indica que es un párrafo y la barra marca dónde termina.",
-    "enlaces-y-atributos": "Hay dos pares de etiquetas p, por eso el navegador presenta dos párrafos separados y en ese orden.",
-    "listas-y-tablas": "h1 anuncia el tema de toda la página, h2 abre un apartado y p desarrolla ese apartado debajo.",
-    "formularios-accesibles": "El selector p elige el párrafo. La declaración cambia su texto a verde sin tocar el HTML.",
-    "multimedia-responsiva": "La regla empieza por h1, así que el color tomato se aplica al título principal y no al párrafo.",
-    "html-limpio-y-valido": "class da al párrafo el nombre destacado; el punto de `.destacado` permite que CSS encuentre ese mismo elemento.",
-    "css-selectores-y-color": "title queda dentro de head y nombra la pestaña; h1 queda dentro de body y es el texto visible de la página.",
-    "css-modelo-de-caja": "href guarda la dirección y el texto entre las etiquetas a es el enlace que una persona puede leer y pulsar.",
-    "css-responsive": "ul reúne la colección y cada li aporta un elemento, por lo que el navegador dibuja dos puntos sin que los escribamos.",
-    "javascript-funciones-y-datos": "main contiene el contenido principal y section mantiene juntos el título Horario y su explicación.",
-    "javascript-eventos-dom": "src localiza la imagen y alt explica con palabras qué muestra; ambos atributos están dentro de la única etiqueta img.",
-    "panel-integrado-web": "margin deja dieciséis píxeles fuera de `.nota`, separando el párrafo de lo que tenga alrededor.",
-    "13-relleno-interior": "padding reserva doce píxeles dentro de `.mensaje`, entre el texto y el borde que pudiera tener.",
-    "14-borde-visible": "La declaración crea un borde de dos píxeles, continuo y azul alrededor de la caja con clase tarjeta.",
-    "15-display-en-linea": "inline-block permite que la etiqueta siga en la frase y, al mismo tiempo, pueda recibir medidas de caja.",
-    "16-flex-primera-fila": "display: flex coloca los hijos de `.fila` en una fila; gap deja ocho píxeles entre ellos.",
-    "17-formulario-y-campo": "form reúne el control; el input crea un campo de texto y name identifica el dato que representa.",
-    "18-etiqueta-del-campo": "for y id comparten `correo`, de modo que la etiqueta Correo queda asociada a ese campo concreto.",
-    "19-tarjeta-html-css": "section agrupa el contenido del panel y `.panel` aplica a esa caja su relleno y su borde, sin mezclar ambos lenguajes.",
-    "20-repaso-html-css": "HTML conserva un enlace real con su destino; CSS lo convierte visualmente en una ficha en línea mediante display, padding y border.",
+V4_TITLES = {
+    "01-estructura-semantica": "01 · Una página y un párrafo",
+    "enlaces-y-atributos": "02 · Escribir otra etiqueta",
+    "listas-y-tablas": "03 · Título, subtítulo y texto",
+    "formularios-accesibles": "04 · Qué es CSS y aplicar color",
+    "multimedia-responsiva": "05 · Elegir otro elemento con un selector",
+    "html-limpio-y-valido": "06 · Una clase para un grupo",
+    "css-selectores-y-color": "07 · La estructura de un documento",
+    "css-modelo-de-caja": "08 · Enlaces y atributos",
+    "css-responsive": "09 · Una lista sin orden",
+    "javascript-funciones-y-datos": "10 · Un apartado con sentido",
+    "javascript-eventos-dom": "11 · Una imagen y su alternativa",
+    "panel-integrado-web": "12 · Margen: separar por fuera",
+    "13-relleno-interior": "13 · Relleno: espacio por dentro",
+    "14-borde-visible": "14 · Dibujar un borde",
+    "15-display-en-linea": "15 · Display: cómo ocupa sitio",
+    "16-flex-primera-fila": "16 · Flex: una fila de cajas",
+    "17-formulario-y-campo": "17 · Un formulario y un campo",
+    "18-etiqueta-del-campo": "18 · Etiquetar un campo",
+    "19-tarjeta-html-css": "19 · Una tarjeta con HTML y CSS",
+    "20-repaso-html-css": "20 · Repaso: una ficha enlazada",
 }
+PREVIOUS_CATALOGUE_TITLES = (V1_TITLES, V2_TITLES, V3_TITLES, V4_TITLES)
+
+
+def _document(title, body):
+    return (
+        "<!doctype html>\n<html>\n  <head>\n"
+        f"    <title>{title}</title>\n"
+        "  </head>\n  <body>\n"
+        f"{body}"
+        "  </body>\n</html>\n"
+    )
+
+
+def _test(name, test_type, definition, points=1):
+    return (name, test_type, definition, points, TestCase.Visibility.PUBLIC)
 
 
 def _challenge(
-    slug, title, theory, example, task, starter, html, css, tests, objectives, *, example_language="html", xp=100
+    slug,
+    title,
+    theory,
+    example,
+    explanation,
+    task,
+    starter,
+    html,
+    css,
+    tests,
+    objectives,
+    *,
+    example_language="html",
+    xp=100,
 ):
-    """Keep every activity's content contract explicit and uniform."""
-
     return {
         "slug": slug,
         "title": title,
@@ -109,211 +143,407 @@ def _challenge(
         "theory": theory,
         "example": example,
         "example_language": example_language,
-        "example_explanation": EXAMPLE_EXPLANATIONS[slug],
+        "example_explanation": explanation,
         "task": task,
-        "hints": ["Mira primero la forma de la etiqueta o regla en el ejemplo.", "Cambia únicamente la parte que pide el ejercicio."],
+        "hints": [
+            "Mira primero la forma del código del ejemplo.",
+            "Cambia únicamente la parte que pide el ejercicio.",
+        ],
         "objectives": objectives,
         "ra": [],
         "ce": [],
         "starter": starter,
         "html": html,
         "css": css,
-        # Kept for the web file contract. This HTML/CSS course never exposes
-        # JavaScript in a starter and contains no js.* tests.
         "javascript": "",
         "tests": tests,
     }
 
 
-# CSS starts only after step 4 explains what a CSS rule, selector and
-# declaration are.  Each following step reuses only previously explained
-# syntax and leaves a small, meaningful change for the learner.
+# HTML begins with a complete, prepared document. CSS is absent until step 8;
+# semantics comes after the HTML/CSS basics; box, display and forms are last.
 CHALLENGES = [
     _challenge(
-        "01-estructura-semantica", "01 · Una página y un párrafo",
-        "Una página web es un documento que muestra un navegador. HTML indica qué es cada parte del contenido. `<p>` abre un párrafo y `</p>` lo cierra; las palabras entre ambas etiquetas son las que se ven.",
-        "<p>Hoy empieza el curso.</p>",
-        "1. Cambia `Escribe aquí` por `Hola, web.`.\n2. Conserva las dos etiquetas p.\n3. Mira el Resultado antes de comprobar.",
-        {"html": "<p>Escribe aquí</p>\n"}, "<p>Hola, web.</p>\n", "",
-        [("Tu primer párrafo", "html.text_contains", {"selector": "p", "expected": "Hola, web."}, 1, "public")],
-        ["Reconocer una página HTML", "Cambiar el contenido de un párrafo"], xp=100,
+        "01-estructura-semantica",
+        "01 · Un documento y un párrafo",
+        "Un documento HTML es un archivo de texto que describe el contenido de una página web. Un navegador, como Firefox, lo lee y muestra la página. En el Editor ese archivo se llama `index.html`.\n\nHTML significa HyperText Markup Language: es el lenguaje que usamos para marcar qué es cada parte de un documento. Una `etiqueta` se escribe entre los signos `<` y `>`.\n\n`<!doctype html>` avisa de que es HTML. `<html>` rodea todo el documento. `<head>` guarda información; `<title>` nombra la pestaña. `<body>` guarda lo visible. `<p>` abre un párrafo y `</p>` lo cierra.\n\nEl Editor ya prepara esas partes: hoy solo cambias las palabras del párrafo.",
+        "<!doctype html>\n<html>\n  <head>\n    <title>Mi cuaderno</title>\n  </head>\n  <body>\n    <p>Hoy empiezo.</p>\n  </body>\n</html>",
+        "El texto de `<p>` se ve dentro de `<body>`. `<title>` queda en `<head>` y da nombre a la pestaña.",
+        "1. Cambia `Escribe aquí` por `Hola, web.`.\n2. Conserva las demás líneas del documento.\n3. Mira el Resultado antes de Comprobaciones.",
+        {"html": _document("Mi primera página", "    <p>Escribe aquí</p>\n")},
+        _document("Mi primera página", "    <p>Hola, web.</p>\n"),
+        "",
+        [
+            _test("Documento HTML", "html.selector_exists", {"selector": "html"}),
+            _test("Información de la pestaña", "html.selector_exists", {"selector": "head title"}),
+            _test("Contenido visible", "html.selector_exists", {"selector": "body p"}),
+            _test("Tu primer párrafo", "html.text_contains", {"selector": "p", "expected": "Hola, web."}, 3),
+        ],
+        ["Reconocer las partes preparadas de un documento", "Cambiar el texto de un párrafo"],
     ),
     _challenge(
-        "enlaces-y-atributos", "02 · Escribir otra etiqueta",
-        "Un elemento completo tiene apertura, contenido y cierre: `<p>Texto</p>`. Para crear otro párrafo escribimos otro par de etiquetas. Un salto de línea en el Editor no crea por sí solo un párrafo.",
+        "enlaces-y-atributos",
+        "02 · Otro párrafo",
+        "Un párrafo completo tiene apertura, texto y cierre: <p>Texto</p>. Para escribir otra idea usamos otro par de etiquetas p. Un salto de línea en el Editor no crea un párrafo por sí solo.",
         "<p>Me llamo Ana.</p>\n<p>Me gusta dibujar.</p>",
-        "1. Debajo del párrafo preparado, escribe `<p>Estoy aprendiendo HTML.</p>`.\n2. Conserva el primer párrafo.\n3. Comprueba que se ven dos textos separados.",
-        {"html": "<p>Hola, web.</p>\n"}, "<p>Hola, web.</p>\n<p>Estoy aprendiendo HTML.</p>\n", "",
-        [("Dos párrafos", "html.selector_count", {"selector": "p", "expected": 2}, 1, "public"), ("Segundo párrafo", "html.text_contains", {"selector": "p:nth-of-type(2)", "expected": "Estoy aprendiendo HTML."}, 1, "public")],
-        ["Escribir una etiqueta completa", "Ordenar dos párrafos"], xp=105,
+        "Cada par p abre y cierra un párrafo, así que el navegador separa las dos frases.",
+        "1. Debajo del párrafo preparado escribe <p>Estoy aprendiendo HTML.</p>.\n2. Conserva el primer párrafo.\n3. Comprueba que se ven dos frases separadas.",
+        {"html": _document("Dos párrafos", "    <p>Hola, web.</p>\n")},
+        _document("Dos párrafos", "    <p>Hola, web.</p>\n    <p>Estoy aprendiendo HTML.</p>\n"),
+        "",
+        [
+            _test("Dos párrafos", "html.selector_count", {"selector": "body p", "expected": 2}),
+            _test("Segundo párrafo", "html.text_contains", {"selector": "p:nth-of-type(2)", "expected": "Estoy aprendiendo HTML."}, 3),
+        ],
+        ["Escribir una etiqueta completa", "Separar dos ideas en párrafos"],
+        xp=105,
     ),
     _challenge(
-        "listas-y-tablas", "03 · Título, subtítulo y texto",
-        "`<h1>` marca el título principal de la página y `<h2>` un apartado dentro de ella. No se usan solo para hacer letras grandes: organizan la información. Ambos se cierran igual que p.",
+        "listas-y-tablas",
+        "03 · El título principal",
+        "h1 marca el título principal de una página. La h viene de heading, que significa título en inglés; el 1 indica el nivel principal. Se abre con <h1> y se cierra con </h1>. El párrafo conocido queda debajo.",
+        "<h1>Mi barrio</h1>\n<p>Tiene un parque.</p>",
+        "h1 marca el título principal; p conserva el texto que explica ese título.",
+        "1. Cambia las palabras del h1 por Sobre mí.\n2. Conserva el párrafo preparado.\n3. Revisa que el título queda antes del texto.",
+        {"html": _document("Sobre mí", "    <h1>Escribe el título</h1>\n    <p>Me gusta leer.</p>\n")},
+        _document("Sobre mí", "    <h1>Sobre mí</h1>\n    <p>Me gusta leer.</p>\n"),
+        "",
+        [
+            _test("Título principal", "html.text_contains", {"selector": "h1", "expected": "Sobre mí"}, 3),
+            _test("Título antes del texto", "html.element_order", {"first": "h1", "second": "p"}),
+        ],
+        ["Reconocer un título principal", "Escribir texto dentro de h1"],
+        xp=110,
+    ),
+    _challenge(
+        "formularios-accesibles",
+        "04 · Un subtítulo",
+        "h2 marca un título de segundo nivel. Abre una parte dentro del tema que ya presenta h1. Usa <h2> y </h2>; no cambia el título de la pestaña, que sigue en title.",
         "<h1>Mi barrio</h1>\n<h2>El parque</h2>\n<p>Tiene muchos árboles.</p>",
-        "1. Entre el título y el párrafo añade `<h2>Mis aficiones</h2>`.\n2. No cambies los otros textos.\n3. Revisa el orden en el Resultado.",
-        {"html": "<h1>Sobre mí</h1>\n\n<p>Me gusta leer.</p>\n"}, "<h1>Sobre mí</h1>\n<h2>Mis aficiones</h2>\n<p>Me gusta leer.</p>\n", "",
-        [("Subtítulo", "html.text_contains", {"selector": "h2", "expected": "Mis aficiones"}, 1, "public"), ("Después del título", "html.element_order", {"first": "h1", "second": "h2"}, 1, "public"), ("Párrafo después", "html.element_order", {"first": "h2", "second": "p"}, 1, "public")],
-        ["Distinguir h1 y h2", "Organizar contenido"], xp=110,
+        "h2 presenta una parte del tema de h1 y queda antes de su texto.",
+        "1. Entre h1 y el párrafo añade <h2>Mis aficiones</h2>.\n2. No cambies los otros textos.\n3. Comprueba el orden.",
+        {"html": _document("Sobre mí", "    <h1>Sobre mí</h1>\n    <p>Me gusta leer.</p>\n")},
+        _document("Sobre mí", "    <h1>Sobre mí</h1>\n    <h2>Mis aficiones</h2>\n    <p>Me gusta leer.</p>\n"),
+        "",
+        [
+            _test("Subtítulo", "html.text_contains", {"selector": "h2", "expected": "Mis aficiones"}, 3),
+            _test("Después de h1", "html.element_order", {"first": "h1", "second": "h2"}),
+            _test("Antes del texto", "html.element_order", {"first": "h2", "second": "p"}),
+        ],
+        ["Distinguir h1 y h2", "Organizar un texto con un subtítulo"],
+        xp=115,
     ),
     _challenge(
-        "formularios-accesibles", "04 · Qué es CSS y aplicar color",
-        "HTML describe el contenido; CSS decide su aspecto. Una regla CSS tiene selector, llaves y una declaración: `p { color: blue; }`. `p` elige los párrafos, `color` es la propiedad, `blue` es un nombre de color en inglés y `;` termina la declaración. Desde este paso tienes una pestaña CSS.",
-        "p {\n  color: green;\n}",
-        "1. En la pestaña CSS completa el valor de color con `navy`.\n2. No borres el selector p, las llaves ni el punto y coma.\n3. Mira cómo cambia el párrafo en el Resultado.",
-        {"html": "<p>Un mensaje para el aula.</p>\n", "css": "p {\n  color: ;\n}\n"}, "<p>Un mensaje para el aula.</p>\n", "p {\n  color: navy;\n}\n",
-        [("Regla para p", "css.selector_exists", {"selector": "p"}, 1, "public"), ("Color pedido", "css.declaration_equals", {"selector": "p", "property": "color", "expected": "navy"}, 2, "public")],
-        ["Distinguir HTML y CSS", "Escribir una regla CSS"], example_language="css", xp=115,
-    ),
-    _challenge(
-        "multimedia-responsiva", "05 · Elegir otro elemento con un selector",
-        "Un selector no tiene que ser p. Si escribimos `h1`, la regla se aplica a todos los títulos principales. Una propiedad solo cambia el aspecto, no convierte un h1 en otra etiqueta.",
-        "h1 {\n  color: tomato;\n}",
-        "1. Completa la declaración de la regla h1 con `color: teal;`.\n2. Conserva el título preparado en HTML.\n3. Comprueba que solo cambia el título.",
-        {"html": "<h1>Noticias del aula</h1>\n<p>Hoy hay biblioteca.</p>\n", "css": "h1 {\n  color: ;\n}\n"}, "<h1>Noticias del aula</h1>\n<p>Hoy hay biblioteca.</p>\n", "h1 {\n  color: teal;\n}\n",
-        [("Selector h1", "css.selector_exists", {"selector": "h1"}, 1, "public"), ("Color del título", "css.declaration_equals", {"selector": "h1", "property": "color", "expected": "teal"}, 2, "public")],
-        ["Usar un selector de elemento", "Aplicar color a un título"], example_language="css", xp=120,
-    ),
-    _challenge(
-        "html-limpio-y-valido", "06 · Una clase para un grupo",
-        "El atributo HTML `class` pone un nombre reutilizable a un elemento. En CSS una clase se selecciona con un punto: `.aviso { color: purple; }`. Así podemos dar el mismo aspecto a los elementos que lleven `class=\"aviso\"`.",
-        "<p class=\"destacado\">Trae el cuaderno.</p>\n\n.destacado {\n  color: purple;\n}",
-        "1. Añade `class=\"aviso\"` al párrafo.\n2. Completa el color de `.aviso` con `crimson`.\n3. Conserva el punto antes de aviso en CSS.",
-        {"html": "<p>Entrega el viernes.</p>\n", "css": ".aviso {\n  color: ;\n}\n"}, "<p class=\"aviso\">Entrega el viernes.</p>\n", ".aviso {\n  color: crimson;\n}\n",
-        [("Clase en HTML", "html.selector_exists", {"selector": "p.aviso"}, 2, "public"), ("Selector de clase", "css.selector_exists", {"selector": ".aviso"}, 1, "public"), ("Color del aviso", "css.declaration_equals", {"selector": ".aviso", "property": "color", "expected": "crimson"}, 2, "public")],
-        ["Añadir una clase", "Relacionar HTML y CSS"], example_language="css", xp=125,
-    ),
-    _challenge(
-        "css-selectores-y-color", "07 · La estructura de un documento",
-        "Un documento HTML completo empieza con `<!doctype html>`. `head` guarda información que no se ve en el cuerpo y `body` contiene lo visible. `title`, dentro de head, nombra la pestaña; h1 sigue siendo el título que aparece en la página.",
-        "<!doctype html>\n<html>\n  <head><title>Mi diario</title></head>\n  <body><h1>Excursión</h1></body>\n</html>",
-        "1. Cambia el contenido de title por `Mi primera web`.\n2. Conserva el h1 preparado.\n3. No pongas title dentro de body.",
-        {"html": "<!doctype html>\n<html>\n  <head><title>Cambia este título</title></head>\n  <body><h1>Sobre mí</h1></body>\n</html>\n", "css": ""}, "<!doctype html>\n<html>\n  <head><title>Mi primera web</title></head>\n  <body><h1>Sobre mí</h1></body>\n</html>\n", "",
-        [("Nombre del documento", "html.text_contains", {"selector": "title", "expected": "Mi primera web"}, 2, "public"), ("Título visible", "html.text_contains", {"selector": "body h1", "expected": "Sobre mí"}, 1, "public")],
-        ["Reconocer head y body", "Distinguir title y h1"], xp=130,
-    ),
-    _challenge(
-        "css-modelo-de-caja", "08 · Enlaces y atributos",
-        "Un atributo añade información a una etiqueta. En un enlace, `href` indica el destino y las palabras entre `<a>` y `</a>` son el texto visible. Nombre, igual y valor entre comillas forman el atributo.",
+        "multimedia-responsiva",
+        "05 · Un enlace y su destino",
+        "Un enlace lleva a otra dirección. a abre el enlace y /a lo cierra. Dentro de la apertura, href guarda el destino: href=\"https://example.org\". href, el signo igual y las comillas forman un atributo, una información extra de la etiqueta.",
         "<a href=\"https://example.org\">Visitar un ejemplo</a>",
-        "1. Completa href con `https://example.com`.\n2. Escribe como texto visible `Página de ejemplo`.\n3. No hace falta abrir el enlace.",
-        {"html": "<a href=\"\">Escribe el texto</a>\n", "css": ""}, "<a href=\"https://example.com\">Página de ejemplo</a>\n", "",
-        [("Destino del enlace", "html.attribute_equals", {"selector": "a", "attribute": "href", "expected": "https://example.com"}, 2, "public"), ("Texto del enlace", "html.text_contains", {"selector": "a", "expected": "Página de ejemplo"}, 1, "public")],
-        ["Escribir un atributo", "Crear un enlace"], xp=135,
+        "href guarda el destino; el texto entre a y /a es la parte que una persona lee y pulsa.",
+        "1. Completa href con https://example.com.\n2. Escribe como texto visible Página de ejemplo.\n3. No hace falta abrir el enlace.",
+        {"html": _document("Enlaces", "    <a href=\"\">Escribe el texto</a>\n")},
+        _document("Enlaces", "    <a href=\"https://example.com\">Página de ejemplo</a>\n"),
+        "",
+        [
+            _test("Destino del enlace", "html.attribute_equals", {"selector": "a", "attribute": "href", "expected": "https://example.com"}, 2),
+            _test("Texto del enlace", "html.text_contains", {"selector": "a", "expected": "Página de ejemplo"}, 2),
+        ],
+        ["Escribir un atributo", "Crear un enlace con texto claro"],
+        xp=120,
     ),
     _challenge(
-        "css-responsive", "09 · Una lista sin orden",
-        "`<ul>` reúne una lista en la que el orden no importa. Cada elemento va dentro de `<li>`. Los puntos los añade el navegador: no los escribimos a mano.",
+        "html-limpio-y-valido",
+        "06 · Una lista de cosas",
+        "ul abre una lista cuando el orden de las cosas no importa. Cada cosa se escribe dentro de li y /li. La barra de /ul cierra toda la lista. Los puntos los añade el navegador; no se escriben a mano.",
         "<ul>\n  <li>Pan</li>\n  <li>Fruta</li>\n</ul>",
-        "1. Añade `<li>Ratón</li>` después de Teclado.\n2. Déjalo dentro de ul.\n3. Comprueba que aparecen dos puntos.",
-        {"html": "<ul>\n  <li>Teclado</li>\n</ul>\n", "css": ""}, "<ul>\n  <li>Teclado</li>\n  <li>Ratón</li>\n</ul>\n", "",
-        [("Dos elementos", "html.selector_count", {"selector": "ul > li", "expected": 2}, 1, "public"), ("Elemento añadido", "html.text_contains", {"selector": "ul > li:nth-of-type(2)", "expected": "Ratón"}, 1, "public")],
-        ["Crear una lista", "Anidar li en ul"], xp=140,
+        "ul reúne la lista y cada li aporta una cosa; los puntos los dibuja el navegador.",
+        "1. Dentro de ul, debajo de Teclado, añade <li>Ratón</li>.\n2. Déjalo antes de </ul>.\n3. Comprueba que aparecen dos puntos.",
+        {"html": _document("Material", "    <ul>\n      <li>Teclado</li>\n    </ul>\n")},
+        _document("Material", "    <ul>\n      <li>Teclado</li>\n      <li>Ratón</li>\n    </ul>\n"),
+        "",
+        [
+            _test("Dos elementos", "html.selector_count", {"selector": "ul > li", "expected": 2}),
+            _test("Elemento añadido", "html.text_contains", {"selector": "ul > li:nth-of-type(2)", "expected": "Ratón"}, 2),
+        ],
+        ["Crear una lista", "Colocar li dentro de ul"],
+        xp=125,
     ),
     _challenge(
-        "javascript-funciones-y-datos", "10 · Un apartado con sentido",
-        "`<main>` reúne el contenido principal de una página. `<section>` agrupa un apartado relacionado y suele incluir un título. Son etiquetas de estructura: ayudan a entender el documento antes de aplicar estilos.",
-        "<main>\n  <section>\n    <h2>Horario</h2>\n    <p>Consulta el tablón.</p>\n  </section>\n</main>",
-        "1. Rodea el h2 y el párrafo con `<section>` y `</section>`.\n2. Conserva ambos dentro de main.\n3. No cambies sus textos.",
-        {"html": "<main>\n  <h2>Material</h2>\n  <p>Trae una libreta.</p>\n</main>\n", "css": ""}, "<main>\n  <section>\n    <h2>Material</h2>\n    <p>Trae una libreta.</p>\n  </section>\n</main>\n", "",
-        [("Contenido principal", "html.selector_exists", {"selector": "main"}, 1, "public"), ("Apartado", "html.selector_exists", {"selector": "main > section"}, 2, "public"), ("Título dentro", "html.selector_exists", {"selector": "section > h2"}, 1, "public")],
-        ["Usar main", "Agrupar contenido con section"], xp=145,
+        "css-selectores-y-color",
+        "07 · Una imagen y su descripción",
+        "img muestra una imagen y no lleva etiqueta de cierre. src indica dónde está la imagen. alt contiene una descripción corta para quien no pueda verla. Los dos son atributos entre comillas y el Editor ya prepara src.",
+        f"<img src=\"{IMAGE_SRC}\" alt=\"Un ordenador sobre una mesa\">",
+        "`<img>` no se cierra. `src` conserva la dirección de la imagen y `alt` explica qué muestra.",
+        "1. Cambia solo `alt` por `Un monitor encendido`.\n2. Conserva `src`.\n3. No añadas un cierre para `img`.",
+        {"html": _document("Una imagen", f"    <img src=\"{IMAGE_SRC}\" alt=\"Completa la descripción\">\n")},
+        _document("Una imagen", f"    <img src=\"{IMAGE_SRC}\" alt=\"Un monitor encendido\">\n"),
+        "",
+        [
+            _test("Descripción alternativa", "html.attribute_equals", {"selector": "img", "attribute": "alt", "expected": "Un monitor encendido"}, 3),
+            _test("Imagen conservada", "html.attribute_equals", {"selector": "img", "attribute": "src", "expected": IMAGE_SRC}),
+        ],
+        ["Usar img", "Escribir un texto alternativo"],
+        xp=130,
     ),
     _challenge(
-        "javascript-eventos-dom", "11 · Una imagen y su alternativa",
-        "`<img>` muestra una imagen y no necesita etiqueta de cierre. `src` indica dónde está el archivo. `alt` describe con palabras su contenido para quien no pueda verla o use un lector de pantalla.",
-        f"<img src=\"{IMAGE_SRC}\" alt=\"Un libro abierto\">",
-        "1. Cambia solo alt por `Un ordenador sobre una mesa`.\n2. Conserva la dirección src preparada.\n3. No añadas un cierre para img.",
-        {"html": f"<img src=\"{IMAGE_SRC}\" alt=\"Completa la descripción\">\n", "css": ""}, f"<img src=\"{IMAGE_SRC}\" alt=\"Un ordenador sobre una mesa\">\n", "",
-        [("Descripción alternativa", "html.attribute_equals", {"selector": "img", "attribute": "alt", "expected": "Un ordenador sobre una mesa"}, 2, "public"), ("Imagen conservada", "html.attribute_equals", {"selector": "img", "attribute": "src", "expected": IMAGE_SRC}, 1, "public")],
-        ["Usar img", "Escribir un texto alternativo"], xp=150,
+        "css-modelo-de-caja",
+        "08 · Dar color con CSS",
+        "HTML escribe el contenido; CSS decide su aspecto. Desde este paso el Editor muestra también CSS. Una regla tiene selector, llaves y declaración: p { color: blue; }. p elige los párrafos, color es lo que cambia, blue es el valor y el punto y coma termina la declaración.",
+        "p {\n  color: green;\n}",
+        "`p` es el selector, `color` es lo que cambia y `green` es el valor. Las llaves guardan la regla.",
+        "1. En CSS completa color con navy.\n2. No borres p, llaves ni punto y coma.\n3. Mira el Resultado.",
+        {"html": _document("Estilos", "    <p>Un mensaje para el aula.</p>\n"), "css": "p {\n  color: ;\n}\n"},
+        _document("Estilos", "    <p>Un mensaje para el aula.</p>\n"),
+        "p {\n  color: navy;\n}\n",
+        [
+            _test("Regla para p", "css.selector_exists", {"selector": "p"}),
+            _test("Color pedido", "css.declaration_equals", {"selector": "p", "property": "color", "expected": "navy"}, 3),
+        ],
+        ["Distinguir HTML y CSS", "Completar una regla CSS"],
+        example_language="css",
+        xp=135,
     ),
     _challenge(
-        "panel-integrado-web", "12 · Margen: separar por fuera",
-        "El modelo de caja trata cada elemento como una caja. `margin` deja espacio fuera de esa caja, separándola de los elementos cercanos. `px` significa píxeles, una unidad pequeña de medida en pantalla: `16px` pide dieciséis píxeles. Se escribe como otra declaración dentro de una regla CSS.",
-        ".nota {\n  margin: 16px;\n}",
-        "1. Completa margin con `16px`.\n2. Conserva el selector `.nota`.\n3. Observa el espacio alrededor del párrafo.",
-        {"html": "<p class=\"nota\">Aviso del día.</p>\n", "css": ".nota {\n  margin: ;\n}\n"}, "<p class=\"nota\">Aviso del día.</p>\n", ".nota {\n  margin: 16px;\n}\n",
-        [("Regla de nota", "css.selector_exists", {"selector": ".nota"}, 1, "public"), ("Margen exterior", "css.declaration_equals", {"selector": ".nota", "property": "margin", "expected": "16px"}, 2, "public")],
-        ["Distinguir espacio exterior", "Usar margin"], example_language="css", xp=155,
+        "css-responsive",
+        "09 · Elegir otro elemento",
+        "Un selector no tiene que ser p. Si escribimos h1, la regla se aplica al título principal. color solo cambia el aspecto: no convierte h1 en otra etiqueta ni cambia sus palabras.",
+        "h1 {\n  color: tomato;\n}",
+        "La regla que empieza por h1 se aplica al título, sin cambiar el párrafo.",
+        "1. En CSS completa h1 con color: teal;.\n2. Conserva el párrafo.\n3. Comprueba que solo cambia el título.",
+        {"html": _document("Noticias", "    <h1>Noticias del aula</h1>\n    <p>Hoy hay biblioteca.</p>\n"), "css": "h1 {\n  color: ;\n}\n"},
+        _document("Noticias", "    <h1>Noticias del aula</h1>\n    <p>Hoy hay biblioteca.</p>\n"),
+        "h1 {\n  color: teal;\n}\n",
+        [
+            _test("Selector h1", "css.selector_exists", {"selector": "h1"}),
+            _test("Color del título", "css.declaration_equals", {"selector": "h1", "property": "color", "expected": "teal"}, 3),
+        ],
+        ["Usar un selector de elemento", "Aplicar color a un título"],
+        example_language="css",
+        xp=140,
     ),
     _challenge(
-        "13-relleno-interior", "13 · Relleno: espacio por dentro",
-        "`padding` deja espacio entre el contenido y el borde de una caja. A diferencia de margin, el relleno queda dentro de la caja. Usaremos píxeles, escritos como `12px`.",
+        "javascript-funciones-y-datos",
+        "10 · Una clase para destacar",
+        "Ya conoces los atributos por href. class pone un nombre reutilizable a un elemento. En CSS, un punto antes del nombre selecciona esa clase: .aviso { color: crimson; }. Así HTML marca qué párrafo es aviso y CSS decide su color.",
+        ".aviso {\n  color: crimson;\n}",
+        "El selector CSS `.aviso` encuentra el elemento HTML que lleva `class=\"aviso\"`.",
+        "1. Añade class=\"aviso\" al párrafo.\n2. Completa el color de .aviso con crimson.\n3. Conserva el punto de CSS.",
+        {"html": _document("Aviso", "    <p>Entrega el viernes.</p>\n"), "css": ".aviso {\n  color: ;\n}\n"},
+        _document("Aviso", "    <p class=\"aviso\">Entrega el viernes.</p>\n"),
+        ".aviso {\n  color: crimson;\n}\n",
+        [
+            _test("Clase en HTML", "html.selector_exists", {"selector": "p.aviso"}, 2),
+            _test("Selector de clase", "css.selector_exists", {"selector": ".aviso"}),
+            _test("Color del aviso", "css.declaration_equals", {"selector": ".aviso", "property": "color", "expected": "crimson"}, 2),
+        ],
+        ["Añadir una clase", "Relacionar HTML y CSS"],
+        example_language="css",
+        xp=145,
+    ),
+    _challenge(
+        "javascript-eventos-dom",
+        "11 · El contenido principal",
+        "Ahora que puedes escribir y dar estilo a contenido básico, conocerás etiquetas que explican su papel. main rodea el contenido principal. No cambia texto ni color: aclara qué parte es la más importante de la página.",
+        "<main>\n  <h1>Horario</h1>\n  <p>Consulta el tablón.</p>\n</main>",
+        "main rodea el contenido principal y no cambia cómo se escriben h1 o p.",
+        "1. Rodea h1 y p con <main> y </main>.\n2. No cambies sus textos.\n3. Conserva CSS.",
+        {"html": _document("Horario", "    <h1>Horario</h1>\n    <p>Consulta el tablón.</p>\n"), "css": ""},
+        _document("Horario", "    <main>\n      <h1>Horario</h1>\n      <p>Consulta el tablón.</p>\n    </main>\n"),
+        "",
+        [
+            _test("Contenido principal", "html.selector_exists", {"selector": "body > main"}, 3),
+            _test("Título dentro de main", "html.selector_exists", {"selector": "main > h1"}),
+        ],
+        ["Usar main", "Reconocer el contenido principal"],
+        xp=150,
+    ),
+    _challenge(
+        "panel-integrado-web",
+        "12 · Un apartado relacionado",
+        "section agrupa contenido que trata el mismo asunto. Dentro puede haber h2 y p. Ya conoces esas etiquetas: section solo deja claro que forman un apartado dentro de main.",
+        "<main>\n  <section><h2>Horario</h2><p>Consulta el tablón.</p></section>\n</main>",
+        "section mantiene juntos el título y el párrafo que hablan del mismo asunto.",
+        "1. Dentro de main, rodea h2 y p con <section> y </section>.\n2. Conserva h2 y p.\n3. No cambies CSS.",
+        {"html": _document("Material", "    <main>\n      <h2>Material</h2>\n      <p>Trae una libreta.</p>\n    </main>\n"), "css": ""},
+        _document("Material", "    <main>\n      <section>\n        <h2>Material</h2>\n        <p>Trae una libreta.</p>\n      </section>\n    </main>\n"),
+        "",
+        [
+            _test("Apartado", "html.selector_exists", {"selector": "main > section"}, 3),
+            _test("Título del apartado", "html.selector_exists", {"selector": "section > h2"}),
+        ],
+        ["Agrupar contenido con section", "Mantener un apartado dentro de main"],
+        xp=155,
+    ),
+    _challenge(
+        "13-relleno-interior",
+        "13 · Un artículo independiente",
+        "article reúne un contenido que se puede entender por sí solo, como una noticia corta. No necesitas estilos nuevos: pon dentro un título y su texto, como en los pasos anteriores.",
+        "<article><h2>Biblioteca abierta</h2><p>Hoy hasta las cinco.</p></article>",
+        "article reúne una pieza completa: el título y el texto de una noticia.",
+        "1. Rodea h2 y p con <article> y </article>.\n2. Conserva sus textos.\n3. Comprueba que quedan dentro del artículo.",
+        {"html": _document("Noticias", "    <h2>Biblioteca abierta</h2>\n    <p>Hoy hasta las cinco.</p>\n"), "css": ""},
+        _document("Noticias", "    <article>\n      <h2>Biblioteca abierta</h2>\n      <p>Hoy hasta las cinco.</p>\n    </article>\n"),
+        "",
+        [
+            _test("Artículo", "html.selector_exists", {"selector": "body > article"}, 3),
+            _test("Título del artículo", "html.selector_exists", {"selector": "article > h2"}),
+        ],
+        ["Usar article", "Agrupar una noticia corta"],
+        xp=160,
+    ),
+    _challenge(
+        "14-borde-visible",
+        "14 · Margen: separar por fuera",
+        "Ya sabes usar una clase y una regla CSS. margin deja espacio fuera de la caja de un elemento, para separarlo de lo que tiene alrededor. px significa píxeles: 12px pide doce píxeles.",
+        ".nota {\n  margin: 12px;\n}",
+        "margin deja doce píxeles fuera de .nota y la separa de lo que tenga alrededor.",
+        "1. En CSS completa margin con 12px.\n2. Conserva .nota.\n3. Observa el espacio alrededor del párrafo.",
+        {"html": _document("Margen", "    <p class=\"nota\">Aviso del día.</p>\n"), "css": ".nota {\n  margin: ;\n}\n"},
+        _document("Margen", "    <p class=\"nota\">Aviso del día.</p>\n"),
+        ".nota {\n  margin: 12px;\n}\n",
+        [
+            _test("Regla de nota", "css.selector_exists", {"selector": ".nota"}),
+            _test("Margen exterior", "css.declaration_equals", {"selector": ".nota", "property": "margin", "expected": "12px"}, 3),
+        ],
+        ["Distinguir el espacio exterior", "Usar margin"],
+        example_language="css",
+        xp=165,
+    ),
+    _challenge(
+        "15-display-en-linea",
+        "15 · Relleno: espacio por dentro",
+        "Antes de dibujar un borde, puedes dejar espacio dentro de la caja. padding separa contenido y borde. A diferencia de margin, el relleno queda dentro del elemento. Seguimos usando píxeles: 12px.",
         ".mensaje {\n  padding: 12px;\n}",
-        "1. Completa padding con `12px`.\n2. No cambies el párrafo HTML.\n3. Mira cómo el texto se aleja del borde imaginario.",
-        {"html": "<p class=\"mensaje\">El aula abre a las ocho.</p>\n", "css": ".mensaje {\n  padding: ;\n}\n"}, "<p class=\"mensaje\">El aula abre a las ocho.</p>\n", ".mensaje {\n  padding: 12px;\n}\n",
-        [("Regla de mensaje", "css.selector_exists", {"selector": ".mensaje"}, 1, "public"), ("Relleno interior", "css.declaration_equals", {"selector": ".mensaje", "property": "padding", "expected": "12px"}, 2, "public")],
-        ["Distinguir margin y padding", "Usar padding"], example_language="css", xp=160,
+        "padding deja espacio dentro de .mensaje, entre el texto y el borde.",
+        "1. En CSS completa padding con 12px.\n2. No cambies HTML.\n3. Mira cómo el texto se aleja del borde imaginario.",
+        {"html": _document("Relleno", "    <p class=\"mensaje\">El aula abre a las ocho.</p>\n"), "css": ".mensaje {\n  padding: ;\n}\n"},
+        _document("Relleno", "    <p class=\"mensaje\">El aula abre a las ocho.</p>\n"),
+        ".mensaje {\n  padding: 12px;\n}\n",
+        [
+            _test("Regla de mensaje", "css.selector_exists", {"selector": ".mensaje"}),
+            _test("Relleno interior", "css.declaration_equals", {"selector": ".mensaje", "property": "padding", "expected": "12px"}, 3),
+        ],
+        ["Distinguir margin y padding", "Usar padding"],
+        example_language="css",
+        xp=170,
     ),
     _challenge(
-        "14-borde-visible", "14 · Dibujar un borde",
-        "`border` dibuja el límite visible de una caja. En `border: 2px solid steelblue;`, 2px es el grosor, solid es una línea continua y steelblue es el color. Las tres partes van en la misma declaración.",
+        "16-flex-primera-fila",
+        "16 · Dibujar un borde",
+        "Ahora que conoces padding, el borde se verá separado del texto. border dibuja el límite de una caja. En border: 2px solid steelblue;, 2px es grosor, solid es línea continua y steelblue es color. Las tres partes van juntas.",
         ".tarjeta {\n  border: 2px solid steelblue;\n}",
-        "1. Completa border con `2px solid steelblue`.\n2. Deja el punto del selector `.tarjeta`.\n3. Comprueba el borde del texto.",
-        {"html": "<p class=\"tarjeta\">Una nota con borde.</p>\n", "css": ".tarjeta {\n  border: ;\n}\n"}, "<p class=\"tarjeta\">Una nota con borde.</p>\n", ".tarjeta {\n  border: 2px solid steelblue;\n}\n",
-        [("Regla de tarjeta", "css.selector_exists", {"selector": ".tarjeta"}, 1, "public"), ("Borde pedido", "css.declaration_equals", {"selector": ".tarjeta", "property": "border", "expected": "2px solid steelblue"}, 2, "public")],
-        ["Reconocer las partes de border", "Dibujar un borde"], example_language="css", xp=165,
+        "border reúne grosor, tipo de línea y color: 2px, solid y steelblue.",
+        "1. En CSS completa border con 2px solid steelblue.\n2. Conserva .tarjeta.\n3. Comprueba el borde.",
+        {"html": _document("Borde", "    <p class=\"tarjeta\">Una nota con borde.</p>\n"), "css": ".tarjeta {\n  border: ;\n}\n"},
+        _document("Borde", "    <p class=\"tarjeta\">Una nota con borde.</p>\n"),
+        ".tarjeta {\n  border: 2px solid steelblue;\n}\n",
+        [
+            _test("Regla de tarjeta", "css.selector_exists", {"selector": ".tarjeta"}),
+            _test("Borde pedido", "css.declaration_equals", {"selector": ".tarjeta", "property": "border", "expected": "2px solid steelblue"}, 3),
+        ],
+        ["Reconocer las partes de border", "Dibujar un borde"],
+        example_language="css",
+        xp=175,
     ),
     _challenge(
-        "15-display-en-linea", "15 · Display: cómo ocupa sitio",
-        "`display` indica cómo se coloca una caja. `<span>` es una etiqueta HTML en línea: suele seguir junto al texto que la rodea. Con `display: inline-block` puede recibir padding y border sin iniciar una línea nueva. Es una regla CSS aplicada a un selector.",
+        "17-formulario-y-campo",
+        "17 · Display: ocupar sitio",
+        "Ya sabes seleccionar una clase y darle padding y border. display indica cómo ocupa sitio esa caja. span sigue dentro de una frase. Con display: inline-block puede recibir padding y border sin empezar una línea nueva.",
         ".etiqueta {\n  display: inline-block;\n}",
-        "1. Completa display con `inline-block`.\n2. Conserva la clase etiqueta en el span.\n3. Mira que el texto sigue junto a su frase.",
-        {"html": "<p>Estado: <span class=\"etiqueta\">listo</span></p>\n", "css": ".etiqueta {\n  display: ;\n}\n"}, "<p>Estado: <span class=\"etiqueta\">listo</span></p>\n", ".etiqueta {\n  display: inline-block;\n}\n",
-        [("Regla de etiqueta", "css.selector_exists", {"selector": ".etiqueta"}, 1, "public"), ("Display en línea", "css.declaration_equals", {"selector": ".etiqueta", "property": "display", "expected": "inline-block"}, 2, "public")],
-        ["Reconocer display", "Usar inline-block"], example_language="css", xp=170,
+        "inline-block deja que span siga junto a la frase y permite darle espacio y borde.",
+        "1. En CSS completa display con inline-block.\n2. Conserva la clase etiqueta en span.\n3. Mira que el texto sigue junto a la frase.",
+        {"html": _document("Estado", "    <p>Estado: <span class=\"etiqueta\">listo</span></p>\n"), "css": ".etiqueta {\n  display: ;\n}\n"},
+        _document("Estado", "    <p>Estado: <span class=\"etiqueta\">listo</span></p>\n"),
+        ".etiqueta {\n  display: inline-block;\n}\n",
+        [
+            _test("Regla de etiqueta", "css.selector_exists", {"selector": ".etiqueta"}),
+            _test("Display en línea", "css.declaration_equals", {"selector": ".etiqueta", "property": "display", "expected": "inline-block"}, 3),
+        ],
+        ["Reconocer display", "Usar inline-block"],
+        example_language="css",
+        xp=180,
     ),
     _challenge(
-        "16-flex-primera-fila", "16 · Flex: una fila de cajas",
-        "Cuando un contenedor tiene `display: flex`, sus elementos hijos se colocan en una fila por defecto. `gap` deja espacio entre esos hijos. Flex se escribe en el contenedor, no en cada elemento interior.",
+        "18-etiqueta-del-campo",
+        "18 · Flex: una fila",
+        "Este paso usa lo que acabas de aprender sobre display. Un `contenedor` es el elemento que rodea a otros; sus `hijos` son los elementos que están dentro directamente. Cuando el contenedor tiene `display: flex`, sus hijos se colocan en una fila por defecto. `gap` deja espacio entre ellos. Flex se escribe en `.fila`, no en cada enlace.",
         ".fila {\n  display: flex;\n  gap: 8px;\n}",
-        "1. Completa `display: flex;`.\n2. Completa `gap: 8px;`.\n3. No cambies los dos enlaces HTML.",
-        {"html": "<section class=\"fila\">\n  <a href=\"#inicio\">Inicio</a>\n  <a href=\"#ayuda\">Ayuda</a>\n</section>\n", "css": ".fila {\n  display: ;\n  gap: ;\n}\n"}, "<section class=\"fila\">\n  <a href=\"#inicio\">Inicio</a>\n  <a href=\"#ayuda\">Ayuda</a>\n</section>\n", ".fila {\n  display: flex;\n  gap: 8px;\n}\n",
-        [("Regla de fila", "css.selector_exists", {"selector": ".fila"}, 1, "public"), ("Activa flex", "css.declaration_equals", {"selector": ".fila", "property": "display", "expected": "flex"}, 2, "public"), ("Separa elementos", "css.declaration_equals", {"selector": ".fila", "property": "gap", "expected": "8px"}, 1, "public")],
-        ["Crear un contenedor flex", "Separar hijos con gap"], example_language="css", xp=175,
+        "`display: flex` va en `.fila`; `gap` deja ocho píxeles entre sus dos enlaces.",
+        "1. En CSS completa `display: flex;`.\n2. Completa `gap: 8px;`.\n3. No cambies los enlaces HTML.",
+        {"html": _document("Enlaces", "    <section class=\"fila\">\n      <a href=\"https://example.com\">Inicio</a>\n      <a href=\"https://example.org\">Ayuda</a>\n    </section>\n"), "css": ".fila {\n  display: ;\n  gap: ;\n}\n"},
+        _document("Enlaces", "    <section class=\"fila\">\n      <a href=\"https://example.com\">Inicio</a>\n      <a href=\"https://example.org\">Ayuda</a>\n    </section>\n"),
+        ".fila {\n  display: flex;\n  gap: 8px;\n}\n",
+        [
+            _test("Regla de fila", "css.selector_exists", {"selector": ".fila"}),
+            _test("Activa flex", "css.declaration_equals", {"selector": ".fila", "property": "display", "expected": "flex"}, 2),
+            _test("Separa elementos", "css.declaration_equals", {"selector": ".fila", "property": "gap", "expected": "8px"}),
+        ],
+        ["Crear un contenedor flex", "Separar hijos con gap"],
+        example_language="css",
+        xp=185,
     ),
     _challenge(
-        "17-formulario-y-campo", "17 · Un formulario y un campo",
-        "`<form>` reúne controles con los que una persona puede escribir datos. `<input>` crea un campo y no tiene cierre. `type=\"text\"` indica texto y `name` da un nombre al dato; ambos son atributos entre comillas.",
+        "19-tarjeta-html-css",
+        "19 · Un formulario y un campo",
+        "Después de organizar y colocar contenido, puedes pedir un dato. form reúne controles de una petición. input crea un campo y no tiene cierre. type=\"text\" indica texto y name da un nombre al dato. Este reto solo muestra el formulario: no envía nada ni usa JavaScript.",
         "<form>\n  <input type=\"text\" name=\"ciudad\">\n</form>",
-        "1. Dentro de form escribe un input.\n2. Dale `type=\"text\"` y `name=\"nombre\"`.\n3. No añadas JavaScript: este formulario solo muestra un campo.",
-        {"html": "<form>\n  \n</form>\n", "css": ""}, "<form>\n  <input type=\"text\" name=\"nombre\">\n</form>\n", "",
-        [("Campo de texto", "html.attribute_equals", {"selector": "form input", "attribute": "type", "expected": "text"}, 2, "public"), ("Nombre del dato", "html.attribute_equals", {"selector": "form input", "attribute": "name", "expected": "nombre"}, 2, "public")],
-        ["Usar form", "Crear un input de texto"], xp=180,
+        "form reúne el campo. input crea un lugar para escribir y type indica texto.",
+        "1. Dentro de form escribe un input.\n2. Dale type=\"text\" y name=\"nombre\".\n3. No añadas JavaScript.",
+        {"html": _document("Formulario", "    <form>\n    </form>\n"), "css": ""},
+        _document("Formulario", "    <form>\n      <input type=\"text\" name=\"nombre\">\n    </form>\n"),
+        "",
+        [
+            _test("Formulario", "html.selector_exists", {"selector": "form"}),
+            _test("Campo de texto", "html.attribute_equals", {"selector": "form input", "attribute": "type", "expected": "text"}, 2),
+            _test("Nombre del dato", "html.attribute_equals", {"selector": "form input", "attribute": "name", "expected": "nombre"}, 2),
+        ],
+        ["Usar form", "Crear un input de texto"],
+        xp=190,
     ),
     _challenge(
-        "18-etiqueta-del-campo", "18 · Etiquetar un campo",
-        "`<label>` explica para qué sirve un campo. Su atributo `for` debe tener el mismo valor que el `id` del input. Esa pareja conecta texto y campo, y hace más claro el formulario.",
+        "20-repaso-html-css",
+        "20 · Etiquetar un campo",
+        "Un campo necesita un texto que explique para qué sirve. label contiene esa explicación. for debe tener el mismo valor que id de input. Esa pareja une el texto y el campo. Reutiliza form, input, type y name del paso anterior.",
         "<label for=\"correo\">Correo</label>\n<input id=\"correo\" type=\"text\" name=\"correo\">",
-        "1. Escribe `Nombre` dentro de label.\n2. Completa `for=\"nombre\"` y `id=\"nombre\"`.\n3. Conserva type y name preparados.",
-        {"html": "<form>\n  <label for=\"\">Escribe aquí</label>\n  <input id=\"\" type=\"text\" name=\"nombre\">\n</form>\n", "css": ""}, "<form>\n  <label for=\"nombre\">Nombre</label>\n  <input id=\"nombre\" type=\"text\" name=\"nombre\">\n</form>\n", "",
-        [("Texto de etiqueta", "html.text_contains", {"selector": "label", "expected": "Nombre"}, 1, "public"), ("Etiqueta asociada", "html.attribute_equals", {"selector": "label", "attribute": "for", "expected": "nombre"}, 2, "public"), ("Id del campo", "html.attribute_equals", {"selector": "input", "attribute": "id", "expected": "nombre"}, 2, "public")],
-        ["Crear label", "Relacionar for e id"], xp=185,
+        "`for` e `id` comparten `correo`, por eso la etiqueta Correo queda unida a su campo.",
+        "1. Escribe Nombre dentro de label.\n2. Completa for=\"nombre\" e id=\"nombre\".\n3. Conserva type y name.",
+        {"html": _document("Formulario", "    <form>\n      <label for=\"\">Escribe aquí</label>\n      <input id=\"\" type=\"text\" name=\"nombre\">\n    </form>\n"), "css": ""},
+        _document("Formulario", "    <form>\n      <label for=\"nombre\">Nombre</label>\n      <input id=\"nombre\" type=\"text\" name=\"nombre\">\n    </form>\n"),
+        "",
+        [
+            _test("Texto de etiqueta", "html.text_contains", {"selector": "label", "expected": "Nombre"}),
+            _test("Etiqueta asociada", "html.attribute_equals", {"selector": "label", "attribute": "for", "expected": "nombre"}, 2),
+            _test("Id del campo", "html.attribute_equals", {"selector": "input", "attribute": "id", "expected": "nombre"}, 2),
+        ],
+        ["Crear label", "Relacionar for e id"],
+        xp=200,
     ),
     _challenge(
-        "19-tarjeta-html-css", "19 · Una tarjeta con HTML y CSS",
-        "Ahora reunimos ideas ya conocidas: section agrupa un apartado; una clase permite seleccionar esa caja; padding deja espacio interior y border marca su límite. CSS mantiene el aspecto separado del HTML.",
-        "<section class=\"panel\"><h2>Consejos</h2><p>Lee antes de empezar.</p></section>\n\n.panel {\n  padding: 10px;\n  border: 1px solid slateblue;\n}",
-        "1. Añade `class=\"ficha\"` a section.\n2. Completa padding con `12px`.\n3. Completa border con `2px solid steelblue`.",
-        {"html": "<section>\n  <h2>Biblioteca</h2>\n  <p>Abierta hoy.</p>\n</section>\n", "css": ".ficha {\n  padding: ;\n  border: ;\n}\n"}, "<section class=\"ficha\">\n  <h2>Biblioteca</h2>\n  <p>Abierta hoy.</p>\n</section>\n", ".ficha {\n  padding: 12px;\n  border: 2px solid steelblue;\n}\n",
-        [("Apartado", "html.selector_exists", {"selector": "section"}, 1, "public"), ("Clase de ficha", "html.selector_exists", {"selector": "section.ficha"}, 1, "public"), ("Relleno", "css.declaration_equals", {"selector": ".ficha", "property": "padding", "expected": "12px"}, 2, "public"), ("Borde", "css.declaration_equals", {"selector": ".ficha", "property": "border", "expected": "2px solid steelblue"}, 2, "public")],
-        ["Combinar estructura y estilo", "Reutilizar padding y border"], example_language="css", xp=190,
-    ),
-    _challenge(
-        "20-repaso-html-css", "20 · Repaso: una ficha enlazada",
-        "En este repaso no aparece sintaxis nueva. HTML aporta main, h1, p y a; la clase `accion` conecta el enlace con CSS. `display: inline-block`, padding y border permiten que el enlace se vea como una pequeña ficha sin cambiar su significado de enlace.",
-        "<main><h1>Club de ciencias</h1><p>Experimentos cada jueves.</p><a class=\"accion\" href=\"#actividades\">Actividades</a></main>\n\n.accion { display: inline-block; padding: 6px; border: 1px solid purple; }",
-        "1. Cambia el texto del enlace por `Ver horario`.\n2. Completa padding con `8px`.\n3. Completa border con `1px solid teal` y conserva `display: inline-block`.",
-        {"html": "<main>\n  <h1>Club de lectura</h1>\n  <p>Una reunión semanal.</p>\n  <a class=\"accion\" href=\"#horario\">Cambia este texto</a>\n</main>\n", "css": ".accion {\n  display: inline-block;\n  padding: ;\n  border: ;\n}\n"}, "<main>\n  <h1>Club de lectura</h1>\n  <p>Una reunión semanal.</p>\n  <a class=\"accion\" href=\"#horario\">Ver horario</a>\n</main>\n", ".accion {\n  display: inline-block;\n  padding: 8px;\n  border: 1px solid teal;\n}\n",
-        [("Contenido principal", "html.selector_exists", {"selector": "main"}, 1, "public"), ("Enlace final", "html.text_contains", {"selector": ".accion", "expected": "Ver horario"}, 1, "public"), ("Display conocido", "css.declaration_equals", {"selector": ".accion", "property": "display", "expected": "inline-block"}, 1, "public"), ("Relleno final", "css.declaration_equals", {"selector": ".accion", "property": "padding", "expected": "8px"}, 2, "public"), ("Borde final", "css.declaration_equals", {"selector": ".accion", "property": "border", "expected": "1px solid teal"}, 2, "public")],
-        ["Repasar HTML y CSS", "Completar una ficha enlazada"], example_language="css", xp=200,
+        "21-repaso-html-css",
+        "21 · Repaso: una ficha de contacto",
+        "Este último paso no presenta sintaxis nueva. Reúne un documento HTML, main, una clase CSS, padding, border, form, label e input que ya has usado.",
+        ".ficha {\n  padding: 12px;\n  border: 1px solid teal;\n}",
+        "HTML organiza el contenido y CSS da aspecto a la misma clase sin cambiar el formulario.",
+        "1. Cambia el h1 por `Contacto del aula`.\n2. Completa `padding` con `12px`.\n3. Completa `border` con `1px solid teal`.\n4. No añadas sintaxis nueva.",
+        {
+            "html": _document("Contacto", "    <main class=\"ficha\">\n      <h1>Escribe el título</h1>\n      <form>\n        <label for=\"nombre\">Nombre</label>\n        <input id=\"nombre\" type=\"text\" name=\"nombre\">\n      </form>\n    </main>\n"),
+            "css": ".ficha {\n  padding: ;\n  border: ;\n}\n",
+        },
+        _document("Contacto", "    <main class=\"ficha\">\n      <h1>Contacto del aula</h1>\n      <form>\n        <label for=\"nombre\">Nombre</label>\n        <input id=\"nombre\" type=\"text\" name=\"nombre\">\n      </form>\n    </main>\n"),
+        ".ficha {\n  padding: 12px;\n  border: 1px solid teal;\n}\n",
+        [
+            _test("Título final", "html.text_contains", {"selector": "h1", "expected": "Contacto del aula"}, 2),
+            _test("Relleno conocido", "css.declaration_equals", {"selector": ".ficha", "property": "padding", "expected": "12px"}, 2),
+            _test("Borde conocido", "css.declaration_equals", {"selector": ".ficha", "property": "border", "expected": "1px solid teal"}, 2),
+        ],
+        ["Reutilizar HTML y CSS conocidos", "Completar una ficha sin sintaxis nueva"],
+        example_language="css",
+        xp=205,
     ),
 ]
 
 
 class Command(BaseCommand):
-    help = "Crea el itinerario HTML/CSS de 20 pasos para SMR y el catálogo JavaScript asociado."
+    help = "Crea el itinerario HTML/CSS de 21 pasos para SMR y el catálogo JavaScript asociado."
 
     def add_arguments(self, parser):
         parser.add_argument("--owner", required=True, help="Usuario profesor o administrador propietario del contenido.")
@@ -336,8 +566,15 @@ class Command(BaseCommand):
         if not (owner.is_superuser or owner.role in {User.Role.ADMIN, User.Role.TEACHER}):
             raise CommandError("--owner debe ser una cuenta de profesor o administrador.")
 
-        year, _ = AcademicYear.objects.get_or_create(name=self._academic_year_name(options.get("academic_year")), defaults={"active": True})
-        cohort, _ = Cohort.objects.get_or_create(name=options["cohort"], academic_year=year, defaults={"active": True, "track": Cohort.Track.WEB})
+        year, _ = AcademicYear.objects.get_or_create(
+            name=self._academic_year_name(options.get("academic_year")),
+            defaults={"active": True},
+        )
+        cohort, _ = Cohort.objects.get_or_create(
+            name=options["cohort"],
+            academic_year=year,
+            defaults={"active": True, "track": Cohort.Track.WEB},
+        )
         ensure_cohort_track(cohort, Cohort.Track.WEB)
         if owner.role == User.Role.TEACHER and not owner.is_superuser:
             TeachingAssignment.objects.get_or_create(cohort=cohort, teacher=owner, defaults={"active": True})
@@ -346,7 +583,7 @@ class Command(BaseCommand):
             slug=TRACK_SLUG,
             defaults={
                 "title": "HTML y CSS desde cero · SMR",
-                "description": "Veinte pasos guiados desde el primer párrafo hasta una pequeña ficha con HTML y CSS; cobertura parcial del módulo 0228 Aplicaciones web.",
+                "description": "Veintiún pasos guiados desde el documento HTML hasta una ficha de contacto con HTML y CSS; cobertura parcial del módulo 0228 Aplicaciones web.",
                 "web_stage": Course.WebStage.HTML_CSS,
                 "created_by": owner,
                 "active": True,
@@ -354,48 +591,88 @@ class Command(BaseCommand):
         )
         if not created:
             course.title = "HTML y CSS desde cero · SMR"
-            course.description = "Veinte pasos guiados desde el primer párrafo hasta una pequeña ficha con HTML y CSS; cobertura parcial del módulo 0228 Aplicaciones web."
+            course.description = "Veintiún pasos guiados desde el documento HTML hasta una ficha de contacto con HTML y CSS; cobertura parcial del módulo 0228 Aplicaciones web."
             course.web_stage = Course.WebStage.HTML_CSS
             course.save(update_fields=["title", "description", "web_stage", "updated_at"])
 
         module, module_created = Module.objects.get_or_create(
             course=course,
             position=1,
-            defaults={"title": "De la primera etiqueta a una ficha", "description": "Retos cortos y guiados de HTML y CSS, sin JavaScript.", "weight": 100},
+            defaults={
+                "title": "Del documento HTML a los formularios",
+                "description": "Retos cortos y guiados de HTML y CSS, sin JavaScript.",
+                "weight": 100,
+            },
         )
         if not module_created:
-            module.title = "De la primera etiqueta a una ficha"
+            module.title = "Del documento HTML a los formularios"
             module.description = "Retos cortos y guiados de HTML y CSS, sin JavaScript."
             module.save(update_fields=["title", "description"])
 
         created_versions = existing_versions = migrated_links = archived_assignments = newer_versions_skipped = 0
-        for item in CHALLENGES:
+        for position, item in enumerate(CHALLENGES, start=1):
             activity, _ = Activity.objects.get_or_create(
                 module=module,
                 slug=item["slug"],
-                defaults={"title": item["title"], "kind": Activity.Kind.CODE, "status": Activity.Status.PUBLISHED, "created_by": owner},
+                defaults={
+                    "title": item["title"],
+                    "position": position,
+                    "kind": Activity.Kind.CODE,
+                    "status": Activity.Status.PUBLISHED,
+                    "created_by": owner,
+                },
             )
-            # The dashboard orders by Activity.title.  Refresh only the
-            # built-in v2/v3 labels so an upgraded centre sees v4's ordinal
-            # sequence while a teacher's own title remains untouched.
-            known_titles = {V2_TITLES.get(item["slug"]), V3_TITLES.get(item["slug"])}
-            if activity.title in known_titles and activity.title != item["title"]:
-                activity.title = item["title"]
-                activity.save(update_fields=["title", "updated_at"])
+            # A centre's newer revision owns both its title and its position.
             if activity.versions.filter(version_number__gt=WEB_CATALOG_VERSION).exists():
                 newer_versions_skipped += 1
                 continue
+
+            known_titles = {
+                title
+                for catalogue_titles in PREVIOUS_CATALOGUE_TITLES
+                if (title := catalogue_titles.get(item["slug"]))
+            }
+            fields_to_update = []
+            if activity.title in known_titles and activity.title != item["title"]:
+                activity.title = item["title"]
+                fields_to_update.append("title")
+            if activity.position != position:
+                activity.position = position
+                fields_to_update.append("position")
+            if fields_to_update:
+                activity.save(update_fields=[*fields_to_update, "updated_at"])
+
             version, version_created = ActivityVersion.objects.get_or_create(
                 activity=activity,
                 version_number=WEB_CATALOG_VERSION,
                 defaults={
                     "language": ActivityVersion.Language.WEB,
-                    "difficulty": item["difficulty"], "xp_reward": item["xp"], "hints": item["hints"],
-                    "instructions": f"## Antes de empezar\nEl Editor ya está preparado. Escribe solo en las pestañas que el paso te ha presentado.\n\n## La idea\n{item['theory']}\n\n## Ejemplo explicado\n```{item['example_language']}\n{item['example']}\n```\n\n{item['example_explanation']}\n\n## Tu ejercicio\n{item['task']}\n\n> Las comprobaciones leen tu HTML y CSS; la plataforma no ejecuta código en el servidor.",
-                    "objectives": item["objectives"], "learning_outcomes": item["ra"], "assessment_criteria": item["ce"],
-                    "professional_module_code": "0228", "curriculum_scope": "Navarra · cobertura parcial", "curriculum_edition": "navarra-2025", "curriculum_unit": "", "curriculum_source": CURRICULUM_SOURCE,
-                    "starter_files": item["starter"], "reference_solution": {key: item[key] for key in item["starter"]},
-                    "grading_mode": ActivityVersion.GradingMode.AUTOMATIC_STATIC, "auto_weight": "1.0000", "manual_weight": "0.0000", "created_by": owner,
+                    "difficulty": item["difficulty"],
+                    "xp_reward": item["xp"],
+                    "hints": item["hints"],
+                    "instructions": (
+                        "## Antes de empezar\n"
+                        "El Editor ya está preparado. Escribe solo en las pestañas que el paso te ha presentado.\n\n"
+                        f"## La idea\n{item['theory']}\n\n"
+                        f"## Ejemplo explicado\n```{item['example_language']}\n{item['example']}\n```\n\n"
+                        f"{item['example_explanation']}\n\n"
+                        f"## Tu ejercicio\n{item['task']}\n\n"
+                        "> Las comprobaciones leen tu HTML y CSS; la plataforma no ejecuta código en el servidor."
+                    ),
+                    "objectives": item["objectives"],
+                    "learning_outcomes": item["ra"],
+                    "assessment_criteria": item["ce"],
+                    "professional_module_code": "0228",
+                    "curriculum_scope": "Navarra · cobertura parcial",
+                    "curriculum_edition": "navarra-2025",
+                    "curriculum_unit": "",
+                    "curriculum_source": CURRICULUM_SOURCE,
+                    "starter_files": item["starter"],
+                    "reference_solution": {key: item[key] for key in item["starter"]},
+                    "grading_mode": ActivityVersion.GradingMode.AUTOMATIC_STATIC,
+                    "auto_weight": "1.0000",
+                    "manual_weight": "0.0000",
+                    "created_by": owner,
                 },
             )
             if version_created:
@@ -407,12 +684,39 @@ class Command(BaseCommand):
                 activity.status = Activity.Status.PUBLISHED
                 activity.save(update_fields=["current_version", "status", "updated_at"])
             if not version.assignments.exists():
-                for position, (name, test_type, definition, points, visibility) in enumerate(item["tests"]):
-                    TestCase.objects.get_or_create(activity_version=version, name=name, defaults={"type": test_type, "definition": definition, "points": points, "visibility": visibility, "feedback": "Revisa la estructura indicada en el enunciado.", "position": position})
+                for test_position, (name, test_type, definition, points, visibility) in enumerate(item["tests"]):
+                    TestCase.objects.get_or_create(
+                        activity_version=version,
+                        name=name,
+                        defaults={
+                            "type": test_type,
+                            "definition": definition,
+                            "points": points,
+                            "visibility": visibility,
+                            "feedback": "Revisa la estructura indicada en el enunciado.",
+                            "position": test_position,
+                        },
+                    )
+            previous_catalog_titles = tuple(
+                title
+                for catalogue_titles in PREVIOUS_CATALOGUE_TITLES
+                if (title := catalogue_titles.get(item["slug"]))
+            )
             assignment, assignment_created, upgrade = get_or_create_catalog_revision_assignment(
-                previous_catalog_titles=tuple(title for title in (V2_TITLES.get(item["slug"]), V3_TITLES.get(item["slug"])) if title),
-                activity=activity, version=version, cohort=cohort,
-                defaults={"status": Assignment.Status.PUBLISHED, "created_by": owner, "title_override": item["title"], "attempt_policy": Assignment.AttemptPolicy.BEST, "max_attempts": None, "weight": 100, "allow_late": True, "published_at": timezone.now()},
+                previous_catalog_titles=previous_catalog_titles,
+                activity=activity,
+                version=version,
+                cohort=cohort,
+                defaults={
+                    "status": Assignment.Status.PUBLISHED,
+                    "created_by": owner,
+                    "title_override": item["title"],
+                    "attempt_policy": Assignment.AttemptPolicy.BEST,
+                    "max_attempts": None,
+                    "weight": 100,
+                    "allow_late": True,
+                    "published_at": timezone.now(),
+                },
             )
             if assignment_created and not assignment.title_override:
                 assignment.title_override = item["title"]
@@ -420,10 +724,6 @@ class Command(BaseCommand):
             migrated_links += upgrade["migrated_links"]
             archived_assignments += upgrade["archived_assignments"]
 
-        # A revision migrates the existing 12 activities for linked historical
-        # groups, but the eight new activities initially belong only to the
-        # requested cohort. Complete this HTML/CSS v4 course for every active
-        # web group that is already linked to one of its current assignments.
         current_assignments = list(
             Assignment.objects.filter(
                 status=Assignment.Status.PUBLISHED,
@@ -445,18 +745,19 @@ class Command(BaseCommand):
         completed_group_links = 0
         for linked_cohort in javascript_cohorts:
             for current_assignment in current_assignments:
-                _, linked = AssignmentCohort.objects.get_or_create(
-                    assignment=current_assignment,
-                    cohort=linked_cohort,
-                )
+                _, linked = AssignmentCohort.objects.get_or_create(assignment=current_assignment, cohort=linked_cohort)
                 completed_group_links += int(linked)
 
-        self.stdout.write(self.style.SUCCESS(f"Itinerario HTML/CSS v{WEB_CATALOG_VERSION} listo: {len(CHALLENGES)} retos, grupo {cohort.name}, {created_versions} versiones nuevas y {existing_versions} ya existentes. Actualizados {migrated_links} vínculos, completados {completed_group_links} enlaces de grupos activos y archivadas {archived_assignments} asignaciones anteriores. Respetadas {newer_versions_skipped} revisiones posteriores del centro."))
-        # JavaScript is a separate course but uses these same fully linked web
-        # cohorts. Its command deliberately does not call back here.
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Itinerario HTML/CSS v{WEB_CATALOG_VERSION} listo: {len(CHALLENGES)} retos, "
+                f"grupo {cohort.name}, {created_versions} versiones nuevas y {existing_versions} ya existentes. "
+                f"Actualizados {migrated_links} vínculos, completados {completed_group_links} enlaces de "
+                f"grupos activos y archivadas {archived_assignments} asignaciones anteriores. Respetadas "
+                f"{newer_versions_skipped} revisiones posteriores del centro."
+            )
+        )
         for javascript_cohort in javascript_cohorts:
-            # seed_javascript deliberately does not call back here, avoiding
-            # recursion while retaining the cohort's own academic year.
             call_command(
                 "seed_javascript",
                 owner=owner.username,

@@ -46,7 +46,7 @@ retos cada uno; los conteos de los cursos Web se obtienen de sus catálogos.
 El propietario interno del catálogo no puede iniciar sesión y no se muestra
 en la lista de usuarios.
 
-Los catálogos incorporados son HTML/CSS v4, JavaScript v1 y Bash/Python v3.
+Los catálogos incorporados son HTML/CSS v5, JavaScript v2 y Bash/Python v3.
 El bootstrap crea nuevas versiones para actualizar contenido ya asignado,
 archiva las asignaciones anteriores y conserva sus evidencias sin trasladar
 progreso. Una revisión posterior del centro nunca se degrada.
@@ -118,7 +118,11 @@ matrícula activa que aplica el servidor.
 ```
 
 La lista ya está limitada al único ciclo activo del alumno y ordenada por
-módulo, posición y título. El primer elemento es el reto que debe comenzar;
+etapa web, posición del módulo, `Activity.position` y título como desempate.
+Cada fila y el detalle del workspace incluyen `position`: número de paso
+dentro del módulo, o `0` para actividades antiguas sin posición definida.
+La interfaz conserva el orden del servidor y muestra «Paso N» cuando N es positivo;
+no reordena por títulos, slugs ni XP. El primer elemento es el reto que debe comenzar;
 cuando está sin iniciar, el cliente muestra **Empezar primer reto**. Con cero
 asignaciones, no se fabrica ninguna actividad: se muestra una indicación para
 que el administrador seleccione el ciclo e itinerario desde el panel. Las
@@ -204,6 +208,8 @@ HTML/CSS incorpora `css` solo después de explicarlo. JavaScript es otro curso
 con `language=web`, no un lenguaje nuevo para el corrector; las pestañas siguen
 limitadas por `editor_files`.
 Python y Bash mantienen su análisis estático, sin ejecución ni salida simulada.
+El panel de revisión utiliza `version.objectives` del paso actual; no genera
+recomendaciones de sintaxis avanzada por detectar su ausencia en el código.
 Véase [criterio didáctico](../docs/DIDACTICA.md).
 
 ## Acceso progresivo a JavaScript

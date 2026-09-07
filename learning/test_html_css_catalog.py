@@ -11,7 +11,10 @@ from learning.management.commands.seed_web import (
     CHALLENGES,
     CURRICULUM_SOURCE,
     TRACK_SLUG,
+    V1_TITLES,
+    V2_TITLES,
     V3_TITLES,
+    V4_TITLES,
     WEB_CATALOG_VERSION,
 )
 from learning.models import (
@@ -46,25 +49,40 @@ class HtmlCssCatalogTests(TestCase):
             )
         return seed_javascript
 
-    def test_v4_catalogue_has_a_guided_html_css_progression(self):
+    def test_v5_catalogue_has_a_guided_html_css_progression(self):
         seed_javascript = self.seed()
 
-        self.assertEqual(WEB_CATALOG_VERSION, 4)
-        self.assertEqual(len(CHALLENGES), 20)
+        self.assertEqual(WEB_CATALOG_VERSION, 5)
+        self.assertEqual(len(CHALLENGES), 21)
         self.assertEqual(
             [item["title"].split(" · ")[0] for item in CHALLENGES],
-            [f"{number:02}" for number in range(1, 21)],
+            [f"{number:02}" for number in range(1, 22)],
         )
         self.assertTrue(all(item["javascript"] == "" for item in CHALLENGES))
         self.assertTrue(
             all(not any(test[1].startswith("js.") for test in item["tests"]) for item in CHALLENGES)
         )
-        self.assertEqual([set(item["starter"]) for item in CHALLENGES[:3]], [{"html"}] * 3)
-        self.assertTrue(all(set(item["starter"]) == {"html", "css"} for item in CHALLENGES[3:]))
-        self.assertIn("regla CSS", CHALLENGES[3]["theory"])
-        self.assertIn("selector", CHALLENGES[3]["theory"])
-        self.assertIn("declaración", CHALLENGES[3]["theory"])
-        self.assertTrue(all("CSS" not in item["theory"] for item in CHALLENGES[:3]))
+        self.assertEqual([set(item["starter"]) for item in CHALLENGES[:7]], [{"html"}] * 7)
+        self.assertTrue(all(set(item["starter"]) == {"html", "css"} for item in CHALLENGES[7:]))
+        first_starter = CHALLENGES[0]["starter"]["html"]
+        for part in ("<!doctype html>", "<html>", "<head>", "<title>", "<body>", "<p>"):
+            self.assertIn(part, first_starter)
+        self.assertIn("documento", CHALLENGES[0]["theory"])
+        self.assertTrue(all("CSS" not in item["theory"] for item in CHALLENGES[:7]))
+        self.assertIn("regla", CHALLENGES[7]["theory"])
+        self.assertIn("selector", CHALLENGES[7]["theory"])
+        self.assertIn("declaración", CHALLENGES[7]["theory"])
+        self.assertIn("class", CHALLENGES[9]["theory"])
+        self.assertEqual(
+            [item["title"] for item in CHALLENGES[10:13]],
+            [
+                "11 · El contenido principal",
+                "12 · Un apartado relacionado",
+                "13 · Un artículo independiente",
+            ],
+        )
+        self.assertIn("Ya sabes", CHALLENGES[13]["theory"])
+        self.assertIn("Este paso usa", CHALLENGES[17]["theory"])
 
         course = Course.objects.get(slug=TRACK_SLUG)
         self.assertEqual(course.web_stage, Course.WebStage.HTML_CSS)
@@ -72,7 +90,7 @@ class HtmlCssCatalogTests(TestCase):
             ActivityVersion.objects.filter(activity__module__course=course)
             .select_related("activity")
             .prefetch_related("test_cases")
-            .order_by("activity__title")
+            .order_by("activity__position")
         )
         self.assertEqual(len(versions), len(CHALLENGES))
         self.assertEqual(Assignment.objects.filter(activity_version__in=versions).count(), len(CHALLENGES))
@@ -81,6 +99,7 @@ class HtmlCssCatalogTests(TestCase):
         for version in versions:
             item = by_slug[version.activity.slug]
             self.assertEqual(version.version_number, WEB_CATALOG_VERSION)
+            self.assertEqual(version.activity.position, CHALLENGES.index(item) + 1)
             self.assertEqual(version.language, ActivityVersion.Language.WEB)
             self.assertEqual(version.starter_files, item["starter"])
             self.assertEqual(version.reference_solution, {key: item[key] for key in item["starter"]})
@@ -105,11 +124,12 @@ class HtmlCssCatalogTests(TestCase):
             module__course=course,
             slug=CHALLENGES[0]["slug"],
         )
-        first_activity.title = V3_TITLES[CHALLENGES[0]["slug"]]
-        first_activity.save(update_fields=["title", "updated_at"])
-        self.seed()
-        first_activity.refresh_from_db()
-        self.assertEqual(first_activity.title, CHALLENGES[0]["title"])
+        for titles in (V1_TITLES, V2_TITLES, V3_TITLES, V4_TITLES):
+            first_activity.title = titles[CHALLENGES[0]["slug"]]
+            first_activity.save(update_fields=["title", "updated_at"])
+            self.seed()
+            first_activity.refresh_from_db()
+            self.assertEqual(first_activity.title, CHALLENGES[0]["title"])
 
     def test_html_css_upgrade_seeds_javascript_for_all_linked_active_web_cohorts(self):
         course = Course.objects.create(title="HTML histórico", slug=TRACK_SLUG, created_by=self.owner)

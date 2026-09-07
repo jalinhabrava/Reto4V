@@ -29,7 +29,7 @@ docker compose --env-file .env exec web python manage.py bootstrap_catalogs
 
 `PRELOAD_CATALOGS=0` desactiva el paso automático para una instalación que
 necesite gestionar su catálogo manualmente. Los seeds de cada itinerario
-siguen disponibles para ampliaciones controladas. Los catálogos incorporados son HTML/CSS v4, JavaScript v1 y Bash/Python v3.
+siguen disponibles para ampliaciones controladas. Los catálogos incorporados son HTML/CSS v5, JavaScript v2 y Bash/Python v3.
 El bootstrap crea nuevas versiones para actualizar contenido ya asignado,
 archiva las asignaciones anteriores y conserva sus evidencias sin trasladar
 progreso. Una revisión posterior del centro nunca se degrada.
@@ -90,7 +90,7 @@ pestañas del workspace son **Pasos**, **Editor** y **Resultado**, y los paneles
 inferiores se llaman **Comprobaciones** y **Entregas**.
 
 El comando `python manage.py seed_web --owner PROFESOR --cohort 1SMR`
-crea HTML/CSS v4 y JavaScript v1 para el mismo grupo de `0228 Aplicaciones
+crea HTML/CSS v5 y JavaScript v2 para el mismo grupo de `0228 Aplicaciones
 web`. JavaScript también puede precargarse con `seed_javascript`. El comando `python manage.py seed_bash --owner PROFESOR --cohort 2ASIR`
 crea el itinerario local v3 de doce retos de apoyo transversal para el módulo
 0378. No crea alumnos y no asigna RA/CE. Véase
@@ -185,12 +185,19 @@ para poder distinguir modificaciones futuras del currículo.
 ## Lecciones desde cero
 
 `version.instructions` incluye explicación, ejemplo de código y ejercicio guiado.
+El dashboard y el detalle de asignación incluyen `position`, procedente de
+`Activity.position`. Los catálogos lo asignan desde 1 dentro de cada módulo;
+0 conserva la compatibilidad de contenido sin posición definida. El servidor
+ordena por etapa, módulo y posición antes del título, por lo que un título
+personalizado no altera la progresión. Requiere la migración aditiva
+`learning.0007_activity_position` y ejecutar el bootstrap del catálogo actual.
 El cliente conserva los saltos de línea y la sangría de los bloques cercados
 con tres acentos graves; los renderiza como texto seguro, nunca como HTML activo.
 HTML/CSS incorpora `css` solo después de explicarlo. JavaScript es otro curso
 con `language=web`, no un lenguaje nuevo para el corrector; las pestañas siguen
 limitadas por `editor_files`.
 Python y Bash mantienen su análisis estático, sin ejecución ni salida simulada.
+El panel de revisión utiliza únicamente los objetivos del paso actual.
 Véase [criterio didáctico](../docs/DIDACTICA.md).
 
 ## Acceso progresivo a JavaScript

@@ -500,8 +500,9 @@ function workspaceActivityFromPayload(payload, assignmentId) {
   return assignmentWithDefaults({
     id: payload?.id || assignmentId,
     title: payload?.title || activity.title || 'Reto de programación',
+    position: payload?.position || 0,
     module: activity.module,
-    summary: version.instructions,
+    summary: Array.isArray(version.objectives) ? version.objectives[0] || '' : '',
     instructions: version.instructions,
     objectives: version.objectives,
     hints: version.hints,
@@ -951,7 +952,7 @@ function StudentActivityRow({ activity, onOpen, pathways = [] }) {
   return (
     <button className={`activity-row ${locked ? 'is-locked' : ''}`} onClick={onOpen} type="button" disabled={locked} aria-disabled={locked} title={locked ? lockReasonForActivity(activity, pathways) : undefined}>
       <span className={`activity-icon activity-icon-${language}`}><Icon icon={language === 'bash' ? IconTerminal2 : language === 'python' ? IconBrandPython : activity.id === 'semantic-html' ? IconBrandHtml5 : activity.id === 'dom-events' ? IconBrandJavascript : IconBrandCss3} size={22} /></span>
-      <span className="activity-row-main"><span className="activity-row-title">{activity.title}</span><span className="activity-row-meta">{activity.module} <span className="meta-dot">·</span> {activity.summary}</span></span>
+      <span className="activity-row-main"><span className="activity-row-title">{activity.title}</span><span className="activity-row-meta">{activity.position > 0 && <>Paso {activity.position} <span className="meta-dot">·</span> </>}{activity.module} <span className="meta-dot">·</span> {activity.summary}</span></span>
       <span className={`status-label status-${status.tone}`}><span className="status-dot" />{status.label}</span>
       <span className="activity-row-score">{locked ? <><strong>Bloqueado</strong><small>{lockReasonForActivity(activity, pathways)}</small></> : activity.xp_reward ? <><strong>{formatXp(activity.earned_xp)} / {formatXp(activity.xp_reward)} XP</strong><small>{completed ? 'Reto completado' : 'XP logrados'}</small></> : activity.score != null ? `${Number(activity.score).toLocaleString('es-ES')}/10` : activity.progress != null ? `${activity.progress}%` : '—'}</span>
       <Icon icon={IconChevronRight} size={18} className="row-chevron" />
@@ -1475,7 +1476,7 @@ function Workspace({ activity, user }) {
           <div className="editor-stage"><CodeEditor file={activeFile} value={safeFiles[activeFile] || ''} language={effectiveLanguage} onChange={(value) => changeFile(activeFile, value)} /></div>
           <div className="editor-footer"><span><Icon icon={IconInfoCircle} size={14} />{workspaceCopy.editorSaved}</span><span className="editor-shortcuts">{effectiveLanguage !== 'web' ? <><Icon icon={effectiveIsPython ? IconBrandPython : IconTerminal2} size={13} />Nunca se ejecuta desde la plataforma</> : workspaceCopy.editorHint}</span></div>
         </section>
-        {effectiveIsBash ? <BashValidationPanel source={safeFiles.bash || ''} mobileVisible={mobilePanel === 'preview'} /> : effectiveIsPython ? <PythonAnalysisPanel source={safeFiles.python || ''} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">{WEB_WORKSPACE_COPY.previewPanelLabel}</span><h2>{WEB_WORKSPACE_COPY.previewHeading}</h2>{showConsole && <p className="preview-explanation">Lo que ves es el resultado en el navegador; las comprobaciones oficiales revisan tu código por separado.</p>}</div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />{WEB_WORKSPACE_COPY.previewIsolation}</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />{WEB_WORKSPACE_COPY.previewButton}</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa de tu página" sandbox="allow-scripts" srcDoc={previewHtml} /></div>{showConsole && <div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />{workspaceCopy.consoleHeading}</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>{workspaceCopy.consoleClear}</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">{workspaceCopy.consoleEmpty}</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div>}</aside>}
+        {effectiveIsBash ? <BashValidationPanel objectives={objectives} mobileVisible={mobilePanel === 'preview'} /> : effectiveIsPython ? <PythonAnalysisPanel objectives={objectives} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">{WEB_WORKSPACE_COPY.previewPanelLabel}</span><h2>{WEB_WORKSPACE_COPY.previewHeading}</h2>{showConsole && <p className="preview-explanation">Lo que ves es el resultado en el navegador; las comprobaciones oficiales revisan tu código por separado.</p>}</div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />{WEB_WORKSPACE_COPY.previewIsolation}</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />{WEB_WORKSPACE_COPY.previewButton}</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa de tu página" sandbox="allow-scripts" srcDoc={previewHtml} /></div>{showConsole && <div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />{workspaceCopy.consoleHeading}</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>{workspaceCopy.consoleClear}</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">{workspaceCopy.consoleEmpty}</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div>}</aside>}
       </section>
       <section className="workspace-bottom">
         <div className="test-dock">
@@ -1507,57 +1508,30 @@ function Workspace({ activity, user }) {
 
 const BASH_FILE_META = { bash: { label: 'script.sh', short: 'Bash', icon: IconTerminal2, className: 'file-bash' } }
 
-function BashValidationPanel({ source, mobileVisible }) {
-  const checks = inspectBash(source)
-  return <aside className={`preview-panel workspace-panel bash-validation-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Revisión del script</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="bash-validation-body"><div className="bash-safety-note"><Icon icon={IconTerminal2} size={18} /><div><strong>El script no se ejecuta aquí</strong><p>Programmy4V solo guarda y comprueba el texto. No hay terminal real ni salida simulada.</p></div></div><div className="bash-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.commands}</strong><small>comandos</small></span><span><strong>{checks.variables}</strong><small>variables</small></span></div><div className="bash-check-list" aria-label="Indicadores de lectura estática">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />La comprobación oficial y la nota se calculan en el servidor al analizar o entregar.</p></div></aside>
+function BashValidationPanel({ objectives, mobileVisible }) {
+  return <StaticLessonPanel language="bash" objectives={objectives} mobileVisible={mobileVisible} />
 }
 
-function PythonAnalysisPanel({ source, mobileVisible }) {
-  const checks = inspectPython(source)
-  return <aside className={`preview-panel workspace-panel python-analysis-panel ${mobileVisible ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>Revisión del archivo</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div><div className="python-analysis-body"><div className="python-safety-note"><Icon icon={IconBrandPython} size={18} /><div><strong>El código Python no se ejecuta aquí</strong><p>Programmy4V solo analiza el texto y guarda tu trabajo. No hay intérprete, archivos reales ni salida simulada.</p></div></div><div className="python-metrics"><span><strong>{checks.lines}</strong><small>líneas</small></span><span><strong>{checks.functions}</strong><small>funciones</small></span><span><strong>{checks.imports}</strong><small>imports</small></span><span><strong>{checks.operations}</strong><small>operaciones</small></span></div><div className="bash-check-list python-check-list" aria-label="Indicadores orientativos de estructura Python">{checks.items.map((check) => <div className={`bash-check bash-check-${check.state}`} key={check.id}><span className="bash-check-mark">{check.state === 'detected' ? <Icon icon={IconCircleCheck} size={16} /> : <Icon icon={IconClock} size={16} />}</span><span><strong>{check.label}</strong><small>{check.detail}</small></span></div>)}</div><p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />Estos indicadores son orientativos. La comprobación oficial y la calificación proceden del servidor.</p></div></aside>
+function PythonAnalysisPanel({ objectives, mobileVisible }) {
+  return <StaticLessonPanel language="python" objectives={objectives} mobileVisible={mobileVisible} />
 }
 
-function inspectPython(source = '') {
-  const text = String(source)
-  const lines = text ? text.split(/\r?\n/).filter((line) => line.trim()).length : 0
-  const functions = text ? (text.match(/^\s*(?:async\s+)?def\s+[A-Za-z_]\w*/gm) || []).length : 0
-  const imports = text ? (text.match(/^\s*(?:from\s+[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*\s+import|import\s+[A-Za-z_]\w*)/gm) || []).length : 0
-  const operations = text ? (text.match(/\b(?:open|read_text|write_text|read_bytes|write_bytes)\s*\(/g) || []).length : 0
-  const hasCollection = /(?:\[[^\]]*\]|\{[^}]*\}|\([^)]*,[^)]*\))/.test(text)
-  const hasControlFlow = /^\s*(?:if|for|while|try)\b/m.test(text)
-  const hasFileContext = /\bwith\s+open\s*\(/.test(text)
-  return {
-    lines,
-    functions,
-    imports,
-    operations,
-    items: [
-      { id: 'python-structure', label: 'Estructura del programa', detail: functions ? `${functions} función(es) definida(s) para organizar la lógica.` : 'Puedes separar la lógica repetida en funciones.', state: functions ? 'detected' : 'pending' },
-      { id: 'python-collections', label: 'Datos estructurados', detail: hasCollection ? 'Se detectan colecciones literales para representar datos.' : 'Prueba una lista o diccionario para representar registros.', state: hasCollection ? 'detected' : 'pending' },
-      { id: 'python-control-flow', label: 'Decisiones y repeticiones', detail: hasControlFlow ? 'Se detecta una estructura de control para procesar los datos.' : 'Todavía no se detectan decisiones o bucles.', state: hasControlFlow ? 'detected' : 'pending' },
-      { id: 'python-file-context', label: 'Lectura y escritura', detail: operations ? `${operations} operación(es) de archivo para revisar de forma estática.` : 'Cuando trabajes con archivos, usa with open(...) o pathlib.', state: operations ? 'detected' : 'pending' },
-      { id: 'python-safe-context', label: 'Contexto de archivo', detail: hasFileContext ? 'Se detecta with open(...), una forma clara de cerrar el archivo.' : 'Para archivos, revisa que el contexto with cierre el recurso.', state: hasFileContext ? 'detected' : 'pending' },
-    ],
-  }
-}
-
-function inspectBash(source = '') {
-  const text = String(source)
-  const lines = text ? text.split(/\r?\n/).filter((line) => line.trim()).length : 0
-  const commands = text ? (text.match(/(^|[;&|]\s*)(?:sudo\s+)?[a-zA-Z][a-zA-Z0-9_-]*/gm) || []).length : 0
-  const variables = text ? (text.match(/\$\{?[A-Za-z_][A-Za-z0-9_]*\}?/g) || []).length : 0
-  return {
-    lines,
-    commands,
-    variables,
-    items: [
-      { id: 'shebang', label: 'Intérprete declarado', detail: text.startsWith('#!') ? 'Shebang detectado en la primera línea.' : 'Pendiente: empieza indicando el intérprete.', state: text.startsWith('#!') ? 'detected' : 'pending' },
-      { id: 'safe-mode', label: 'Opciones de error', detail: /set\s+-[^\n]*(?:e|u)/.test(text) ? 'Se detectan opciones para controlar errores y variables.' : 'Revisa qué opciones necesita tu script.', state: /set\s+-[^\n]*(?:e|u)/.test(text) ? 'detected' : 'pending' },
-      { id: 'quoted-paths', label: 'Variables revisables', detail: variables ? `${variables} referencias a variables para revisar.` : 'Todavía no se usan variables.', state: variables ? 'detected' : 'pending' },
-      { id: 'archive-or-copy', label: 'Órdenes de archivo', detail: /\b(tar|rsync|cp|dd|zip|gzip)\b/.test(text) ? 'Se detecta una orden de copia o empaquetado.' : 'Indicador opcional: todavía no aparece una orden de archivo.', state: /\b(tar|rsync|cp|dd|zip|gzip)\b/.test(text) ? 'detected' : 'pending' },
-      { id: 'exit-signal', label: 'Salida comprensible', detail: /\b(echo|printf|exit)\b/.test(text) ? 'Hay una señal de salida para quien revise el script.' : 'Añade una salida o código de retorno explicativo.', state: /\b(echo|printf|exit)\b/.test(text) ? 'detected' : 'pending' },
-    ],
-  }
+function StaticLessonPanel({ language, objectives = [], mobileVisible }) {
+  const isPython = language === 'python'
+  return (
+    <aside className={`preview-panel workspace-panel ${isPython ? 'python-analysis-panel' : 'bash-validation-panel'} ${mobileVisible ? 'mobile-panel-visible' : ''}`}>
+      <div className="preview-heading"><div><span className="panel-label">02 · Revisión</span><h2>{isPython ? 'Revisión del archivo' : 'Revisión del script'}</h2></div><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />Sin ejecución</span></div>
+      <div className={isPython ? 'python-analysis-body' : 'bash-validation-body'}>
+        <div className={isPython ? 'python-safety-note' : 'bash-safety-note'}><Icon icon={isPython ? IconBrandPython : IconTerminal2} size={18} /><div><strong>{isPython ? 'El código Python no se ejecuta aquí' : 'El script no se ejecuta aquí'}</strong><p>{isPython ? 'Programmy4V solo analiza el texto y guarda tu trabajo. No hay intérprete, archivos reales ni salida simulada.' : 'Programmy4V solo guarda y comprueba el texto. No hay terminal real ni salida simulada.'}</p></div></div>
+        <h3>En este paso</h3>
+        <div className="bash-check-list" aria-label="Objetivos del paso actual">
+          {objectives.map((objective, index) => <div className="bash-check" key={`${index}-${objective}`}><Icon icon={IconInfoCircle} size={16} /><span>{objective}</span></div>)}
+          {objectives.length === 0 && <p>Completa únicamente lo que pide el enunciado.</p>}
+        </div>
+        <p className="bash-validation-footnote"><Icon icon={IconInfoCircle} size={14} />Pulsa Comprobar para revisar este ejercicio. Sus comprobaciones y resultados aparecen debajo del Editor.</p>
+      </div>
+    </aside>
+  )
 }
 
 function CodeEditor({ file, value, language = 'web', onChange }) {
