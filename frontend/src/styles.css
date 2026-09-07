@@ -782,6 +782,14 @@ h1, h2, h3 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; letter-spacing
 
 .workspace-notice { animation: notice-in .22s ease; background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--mint-strong); border-radius: 8px; color: #58717d; font-size: 11px; gap: 9px; justify-content: flex-start; margin-bottom: 12px; min-height: 37px; padding: 0 8px 0 11px; }
 
+.workspace-next-challenge { align-items: center; background: #f4fbf7; border: 1px solid #c8e5d5; border-radius: 10px; display: flex; gap: 18px; justify-content: space-between; margin: 0 0 12px; padding: 15px 17px; }
+
+.workspace-next-challenge h2 { color: var(--navy-900); font-size: 15px; margin: 2px 0 4px; }
+
+.workspace-next-challenge p:not(.card-overline) { color: #58717d; font-size: 11px; margin: 0; }
+
+.workspace-next-challenge > .button { flex: 0 0 auto; }
+
 .workspace-loading { align-items: center; background: #eef4f2; border: 1px solid #d8e5e1; border-radius: 8px; color: #55736a; display: flex; font-size: 10px; gap: 9px; margin-bottom: 12px; padding: 10px 12px; }
 
 .workspace-notice > .icon-button { height: 25px; margin-left: auto; width: 25px; }
@@ -1601,6 +1609,8 @@ kbd { background: #203b52; border: 1px solid #365269; border-radius: 3px; color:
   .workspace-title-actions { align-items: flex-start; flex-direction: column; gap: 10px; }
   .workspace-title-actions .button { width: 100%; }
   .workspace-title-actions .save-status { order: 2; }
+  .workspace-next-challenge { align-items: flex-start; flex-direction: column; }
+  .workspace-next-challenge > .button { width: 100%; }
   .workspace-context-tags { gap: 5px; }
   .context-tag { font-size: 7px; }
   .dialog-actions { align-items: stretch; flex-direction: column-reverse; }

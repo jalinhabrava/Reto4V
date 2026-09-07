@@ -47,7 +47,10 @@ se conservan para mantener la compatibilidad de despliegues existentes.
   no cambian la secuencia. El bloqueo se decide en servicios Django y se aplica también al acceso
   directo, borradores, comprobaciones y entregas. `pathway`, `locked` y
   `lock_reason` son estado de servidor; el cliente no infiere autorización
-  a partir de XP. El dashboard expone el resumen `pathways` y refresca su estado.
+  a partir de XP. El dashboard expone el resumen `pathways`; la interfaz
+  sincroniza el progreso al entregar y revalida al entrar en Resumen/Mis retos
+  y recuperar el foco. «Siguiente reto» exige finalización confirmada por el
+  servidor, respeta su orden y nunca recomienda una asignación bloqueada.
 - `seed_web --owner ... --cohort ...` carga HTML/CSS y también JavaScript
   para ese grupo. `seed_javascript` puede ejecutarse por separado sin
   saltarse la política de desbloqueo. Las mismas operaciones académicas

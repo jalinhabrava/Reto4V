@@ -45,6 +45,18 @@ class PublishedWebPathwayFlowTests(TestCase):
             ).select_related("activity_version").order_by("activity__title")
         )
         for index, assignment in enumerate(html_css):
+            if index == 0:
+                checks = self.client.post(
+                    reverse("workspace_tests_api", args=[assignment.id]),
+                    {"files": assignment.activity_version.reference_solution},
+                    content_type="application/json",
+                )
+                self.assertEqual(checks.status_code, 200)
+                checked = self.client.get(dashboard_url, HTTP_ACCEPT="application/json").json()
+                row = next(row for row in checked["assignments"] if row["id"] == str(assignment.id))
+                self.assertFalse(row["completed"])
+                self.assertEqual(row["submissions"], 0)
+                self.assertEqual(row["earned_xp"], 0)
             # Access is still denied immediately before the last prerequisite.
             if index == len(html_css) - 1:
                 self.assertEqual(self.client.get(detail_url).status_code, 404)
@@ -55,6 +67,15 @@ class PublishedWebPathwayFlowTests(TestCase):
             )
             self.assertEqual(response.status_code, 201, response.content)
             self.assertTrue(response.json()["gamification"]["completed"], assignment.title)
+            immediate = self.client.get(dashboard_url, HTTP_ACCEPT="application/json").json()
+            row = next(row for row in immediate["assignments"] if row["id"] == str(assignment.id))
+            self.assertEqual(row["submissions"], 1)
+            self.assertEqual(row["status"], "submitted")
+            for key in ("completed", "earned_xp", "progress"):
+                self.assertEqual(row[key], response.json()["gamification"][key])
+            current_pathways = {row["id"]: row for row in immediate["pathways"]}
+            self.assertEqual(current_pathways["html_css"]["completed"], index + 1)
+            self.assertEqual(current_pathways["javascript"]["locked"], index < len(html_css) - 1)
 
         unlocked = self.client.get(dashboard_url, HTTP_ACCEPT="application/json").json()
         pathways = {row["id"]: row for row in unlocked["pathways"]}

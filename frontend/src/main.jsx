@@ -24,6 +24,7 @@ import {
   pathwayProgress,
   selectCurrentActivity,
 } from './pathways.js'
+import { findNextAvailableActivity, mergeDashboardChallenge, resolveDashboardResponse } from './dashboard-sync.js'
 import {
   IconAlertTriangle,
   IconArrowLeft,
@@ -661,28 +662,69 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
   const [selectedActivity, setSelectedActivity] = useState(initialActivityAllowed ? initialActivity : (initialRoute.view === 'workspace' ? null : (DEMO_MODE ? DEMO_ACTIVITIES[0] : null)))
   const [dashboardData, setDashboardData] = useState(initialDashboard)
   const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0)
+  const [dashboardSyncState, setDashboardSyncState] = useState('idle')
   const [routeError, setRouteError] = useState('')
   const routeRequestRef = useRef(0)
   const routeInitRef = useRef(false)
+  const dashboardRequestRef = useRef(0)
   const activityCount = dashboardData?.assignments?.length ?? (DEMO_MODE ? DEMO_ACTIVITIES.length : 0)
   const contextGroup = user.group || (isTeacher ? 'Grupos asignados' : 'Mi grupo')
   const contextMark = contextGroup.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AW'
 
-  useEffect(() => {
-    if (DEMO_MODE || view !== 'dashboard') return undefined
-    let active = true
-    let refreshing = false
+  const refreshDashboard = useCallback(async () => {
+    if (DEMO_MODE) return null
+    const requestId = ++dashboardRequestRef.current
     const path = isTeacher ? '/teacher/dashboard/' : `${API_PREFIX}/student/dashboard/`
-    const refresh = () => {
-      if (refreshing) return
-      refreshing = true
-      apiFetch(path).then((data) => { if (active) setDashboardData(data) }).catch(() => { if (active) setDashboardData({ assignments: [], pathways: [], gamification: normalizeGamification({}) }) }).finally(() => { refreshing = false })
+    setDashboardSyncState('refreshing')
+    try {
+      const data = await apiFetch(path)
+      if (!resolveDashboardResponse(null, data, requestId, dashboardRequestRef.current).accepted) return null
+      setDashboardData(data)
+      setDashboardSyncState('fresh')
+      return data
+    } catch (error) {
+      // Conservamos el último snapshot válido: un fallo de red no significa que
+      // la matrícula, los retos o el progreso hayan desaparecido.
+      if (requestId === dashboardRequestRef.current) setDashboardSyncState('error')
+      throw error
     }
+  }, [isTeacher])
+
+  const reconcileDashboardChallenge = useCallback((assignmentId, gamification, submission = null) => {
+    if (typeof gamification?.completed !== 'boolean') return
+    // Una respuesta anterior no puede deshacer la fila confirmada por Django.
+    dashboardRequestRef.current += 1
+    setDashboardData((current) => mergeDashboardChallenge(current, assignmentId, gamification, submission))
+    setDashboardSyncState('stale')
+  }, [])
+
+  const handleWorkspaceSnapshot = useCallback(({ assignmentId, gamification }) => {
+    if (typeof gamification?.completed !== 'boolean') return
+    reconcileDashboardChallenge(assignmentId, gamification)
+    void refreshDashboard().catch(() => {})
+  }, [reconcileDashboardChallenge, refreshDashboard])
+
+  const handleWorkspaceSubmission = useCallback(async ({ assignmentId, gamification, submission }) => {
+    reconcileDashboardChallenge(assignmentId, gamification, submission)
+    try {
+      const dashboard = await refreshDashboard()
+      return { dashboard, fresh: Boolean(dashboard) }
+    } catch {
+      return { dashboard: null, fresh: false }
+    }
+  }, [reconcileDashboardChallenge, refreshDashboard])
+
+  useEffect(() => () => { dashboardRequestRef.current += 1 }, [])
+
+  useEffect(() => {
+    const shouldRefresh = view === 'dashboard' || (!isTeacher && (view === 'activities' || view === 'workspace'))
+    if (DEMO_MODE || !shouldRefresh) return undefined
+    const refresh = () => { void refreshDashboard().catch(() => {}) }
     const interval = window.setInterval(refresh, 30000)
     window.addEventListener('focus', refresh)
     refresh()
-    return () => { active = false; window.clearInterval(interval); window.removeEventListener('focus', refresh) }
-  }, [isTeacher, view, dashboardRefreshToken])
+    return () => { window.clearInterval(interval); window.removeEventListener('focus', refresh) }
+  }, [dashboardRefreshToken, isTeacher, refreshDashboard, view])
 
   useEffect(() => {
     const handlePopState = () => {
@@ -758,7 +800,7 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
     setView(nextView)
     setSidebarOpen(false)
     setRouteError('')
-    if (nextView === 'dashboard') setDashboardRefreshToken((current) => current + 1)
+    if (nextView === 'dashboard' || nextView === 'activities') setDashboardRefreshToken((current) => current + 1)
   }
 
   const openActivity = (activity = null) => {
@@ -820,7 +862,7 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
           <button type="button" className="avatar avatar-small" onClick={onLogout} aria-label="Cerrar sesión">{getInitials(user.display_name)}</button>
         </header>}
         {routeError && !workspaceOpen && <div className="route-error" role="alert"><Icon icon={IconAlertTriangle} size={15} />{routeError}</div>}
-        {workspaceOpen ? <WorkspaceShell key={String(selectedActivity.id)} user={user} activity={selectedActivity} onBack={() => navigate('dashboard')} onLogout={onLogout} /> : view === 'workspace' ? <div className="route-loading" role="status"><span className="mini-spinner" />Cargando tu actividad…</div> : view === 'dashboard' ? (isTeacher ? <TeacherDashboard user={user} data={dashboardData} onOpenActivity={openActivity} /> : <StudentDashboard user={user} data={dashboardData} onOpenActivity={openActivity} />) : <SecondaryView view={view} isTeacher={isTeacher} data={dashboardData} onOpenActivity={openActivity} />}
+        {workspaceOpen ? <WorkspaceShell key={String(selectedActivity.id)} user={user} activity={selectedActivity} dashboardData={dashboardData} dashboardSyncState={dashboardSyncState} dashboardIsFresh={dashboardSyncState === 'fresh'} onWorkspaceSnapshot={handleWorkspaceSnapshot} onWorkspaceSubmission={handleWorkspaceSubmission} onRefreshDashboard={refreshDashboard} onOpenNext={openActivity} onBack={() => navigate('dashboard')} onActivities={() => navigate('activities')} onLogout={onLogout} /> : view === 'workspace' ? <div className="route-loading" role="status"><span className="mini-spinner" />Cargando tu actividad…</div> : view === 'dashboard' ? (isTeacher ? <TeacherDashboard user={user} data={dashboardData} onOpenActivity={openActivity} /> : <StudentDashboard user={user} data={dashboardData} onOpenActivity={openActivity} />) : <SecondaryView view={view} isTeacher={isTeacher} data={dashboardData} onOpenActivity={openActivity} />}
       </main>
     </div>
   )
@@ -1044,9 +1086,9 @@ function ActivityCatalog({ data, onOpenActivity }) {
   return <section className="catalog-section" aria-label="Catálogo de retos"><div className="catalog-toolbar"><div><span className="card-overline">Filtrar por recorrido</span><p>{visible.length} {visible.length === 1 ? 'reto disponible' : 'retos disponibles'}</p></div><div className="catalog-filters" role="group" aria-label="Filtrar retos">{availableTrackEntries.map(([key, track]) => <button key={key} className={activeTrack === key ? 'is-active' : ''} type="button" aria-pressed={activeTrack === key} onClick={() => { setActiveTrack(key); if (key !== 'web') setActivePathway('all') }}>{track.label}</button>)}{webPathways.length > 0 && <><button className={activeTrack === 'web' && activePathway === 'all' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'web' && activePathway === 'all'} onClick={() => { setActiveTrack('web'); setActivePathway('all') }}>Web completo</button>{webPathways.map((pathway) => { const progress = pathwayProgress(webPathways, pathway.id); return <button key={pathway.id} className={`${activeTrack === 'web' && activePathway === pathway.id ? 'is-active' : ''} ${progress.locked ? 'is-locked' : ''}`} type="button" aria-pressed={activeTrack === 'web' && activePathway === pathway.id} onClick={() => { setActiveTrack('web'); setActivePathway(pathway.id) }}>{PATHWAY_LABELS[pathway.id] || pathway.title}{progress.locked ? ' · Bloqueado' : ''}</button> })}</>}</div></div><div className="catalog-list">{visible.length ? visible.map((activity) => <StudentActivityRow key={activity.id} activity={activity} pathways={pathways} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activities.length ? `Todavía no hay retos de ${activeTrack === 'web' && activePathway !== 'all' ? PATHWAY_LABELS[activePathway] : TRACKS[activeTrack].label} en tu itinerario.` : 'El administrador debe asignarte un ciclo e itinerario. En cuanto lo haga, aquí aparecerá tu primer reto.'}</span></div>}</div></section>
 }
 
-function WorkspaceShell({ user, activity, onBack, onLogout }) {
+function WorkspaceShell({ user, activity, dashboardData, dashboardSyncState, dashboardIsFresh, onWorkspaceSnapshot, onWorkspaceSubmission, onRefreshDashboard, onOpenNext, onBack, onActivities, onLogout }) {
   const moduleLabel = activity.module || activity.activity?.module || 'Actividad'
-  return <div className="workspace-shell"><header className="workspace-header"><div className="workspace-header-left"><button className="icon-button" onClick={onBack} aria-label="Volver al resumen"><Icon icon={IconArrowLeft} /></button><span className="workspace-breadcrumb"><span>Programmy4V</span><Icon icon={IconChevronRight} size={14} /><span>{moduleLabel}</span><Icon icon={IconChevronRight} size={14} /><strong>{activity.title}</strong></span></div><div className="workspace-header-right"><span className="workspace-lan"><span className="pulse-dot pulse-dot-dark" />Solo LAN</span><button className="avatar avatar-small" onClick={onLogout} aria-label="Cerrar sesión">{getInitials(user.display_name)}</button></div></header><Workspace user={user} activity={activity} onBack={onBack} /></div>
+  return <div className="workspace-shell"><header className="workspace-header"><div className="workspace-header-left"><button className="icon-button" onClick={onBack} aria-label="Volver al resumen"><Icon icon={IconArrowLeft} /></button><span className="workspace-breadcrumb"><span>Programmy4V</span><Icon icon={IconChevronRight} size={14} /><span>{moduleLabel}</span><Icon icon={IconChevronRight} size={14} /><strong>{activity.title}</strong></span></div><div className="workspace-header-right"><span className="workspace-lan"><span className="pulse-dot pulse-dot-dark" />Solo LAN</span><button className="avatar avatar-small" onClick={onLogout} aria-label="Cerrar sesión">{getInitials(user.display_name)}</button></div></header><Workspace user={user} activity={activity} dashboardData={dashboardData} dashboardSyncState={dashboardSyncState} dashboardIsFresh={dashboardIsFresh} onWorkspaceSnapshot={onWorkspaceSnapshot} onWorkspaceSubmission={onWorkspaceSubmission} onRefreshDashboard={onRefreshDashboard} onOpenNext={onOpenNext} onBack={onBack} onActivities={onActivities} /></div>
 }
 
 function InstructionText({ value, className = 'instruction-rich-text', compact = false }) {
@@ -1231,7 +1273,7 @@ function getWorkspaceCopy(language) {
   }
 }
 
-function Workspace({ activity, user }) {
+function Workspace({ activity, user, dashboardData, dashboardSyncState, dashboardIsFresh, onWorkspaceSnapshot, onWorkspaceSubmission, onRefreshDashboard, onOpenNext, onBack, onActivities }) {
   const initialLanguage = normalizeLanguage(activity.language || activity.track || activity.version?.language)
   const initialPathway = pathwayForActivity(activity)
   const initialFiles = starterFilesFor(initialLanguage)
@@ -1254,6 +1296,7 @@ function Workspace({ activity, user }) {
   const [testsState, setTestsState] = useState('idle')
   const [submitOpen, setSubmitOpen] = useState(false)
   const [submitState, setSubmitState] = useState('idle')
+  const [nextState, setNextState] = useState({ status: 'idle', activity: null })
   const [notice, setNotice] = useState('')
   const [mobilePanel, setMobilePanel] = useState('instructions')
   const [showHistory, setShowHistory] = useState(false)
@@ -1268,6 +1311,9 @@ function Workspace({ activity, user }) {
       if (!active || !data) return
       loaded = true
       setWorkspaceData(data)
+      if (typeof data?.gamification?.completed === 'boolean') {
+        onWorkspaceSnapshot?.({ assignmentId: data.id || activity.id, gamification: data.gamification })
+      }
       const nextLanguage = normalizeLanguage(data.version?.language || data.language || activity.language)
       const nextPathway = normalizePathway(data.version?.pathway || data.pathway || activity.pathway, nextLanguage)
       const nextStarterFiles = normalizeFiles(data.version?.files || data.activity?.files || {}, nextLanguage)
@@ -1288,7 +1334,7 @@ function Workspace({ activity, user }) {
       }
     }).finally(() => { if (active) setHydrated(loaded || DEMO_MODE) })
     return () => { active = false }
-  }, [activity.id])
+  }, [activity.id, onWorkspaceSnapshot])
 
   useEffect(() => {
     if (!hydrated) return undefined
@@ -1381,6 +1427,15 @@ function Workspace({ activity, user }) {
       setSubmitState('success')
       setSubmitOpen(false)
       if (data?.submission) setWorkspaceData((current) => ({ ...current, submissions: [...(current?.submissions || []), data.submission], gamification: data.gamification || current?.gamification }))
+      const completed = data?.gamification?.completed === true
+      if (completed) setNextState({ status: 'loading', activity: null })
+      if (onWorkspaceSubmission && data?.gamification) {
+        const synced = await onWorkspaceSubmission({ assignmentId: activity.id, gamification: data.gamification, submission: data.submission || null })
+        if (completed) {
+          const nextActivity = synced?.fresh ? findNextAvailableActivity(synced.dashboard?.assignments, activity.id, synced.dashboard?.pathways) : null
+          setNextState({ status: synced?.fresh ? 'ready' : 'error', activity: nextActivity })
+        }
+      }
       const attempt = data?.submission?.attempt_number
       setNotice(attempt ? `Entrega registrada correctamente · intento ${attempt}` : (data?.message || 'Entrega registrada correctamente'))
     } catch (error) {
@@ -1431,6 +1486,21 @@ function Workspace({ activity, user }) {
   const objectives = asList(activityVersion.objectives || activity.objectives)
   const hints = Array.isArray(activityVersion.hints || activity.hints) ? (activityVersion.hints || activity.hints) : []
   const challengeGamification = normalizeChallengeGamification(workspaceData || (DEMO_MODE ? { gamification: { xp_reward: activity.xp_reward, earned_xp: activity.earned_xp, completed: activity.completed, progress: activity.progress, language: effectiveLanguage, difficulty: activity.difficulty } } : null), activity)
+  const dashboardNextActivity = challengeGamification.completed && dashboardIsFresh
+    ? findNextAvailableActivity(dashboardData?.assignments, activity.id, dashboardData?.pathways)
+    : null
+  const nextActivity = dashboardNextActivity
+  const nextNeedsRefresh = challengeGamification.completed && !nextActivity && (nextState.status === 'loading' || (nextState.status !== 'error' && !dashboardIsFresh))
+  const nextRefreshError = !dashboardIsFresh && (nextState.status === 'error' || dashboardSyncState === 'error')
+  const refreshNextActivity = async () => {
+    setNextState({ status: 'loading', activity: null })
+    try {
+      const dashboard = await onRefreshDashboard?.()
+      setNextState({ status: 'ready', activity: findNextAvailableActivity(dashboard?.assignments, activity.id, dashboard?.pathways) })
+    } catch {
+      setNextState({ status: 'error', activity: null })
+    }
+  }
   const xpReward = challengeGamification.xp_reward
   const earnedXp = challengeGamification.earned_xp
   const configuredEditorFiles = Array.isArray(activityVersion.editor_files)
@@ -1455,6 +1525,7 @@ function Workspace({ activity, user }) {
     <main className="workspace-main">
       <div className="workspace-titlebar"><div><p className="kicker">{activity.module || activity.activity?.module || (effectiveIsBash ? 'Seguridad · ASIR' : effectiveIsPython ? 'SGE · 2DAM' : 'Aplicaciones web · SMR')}</p><h1>{activity.title}</h1><p className="workspace-subtitle">{activity.summary || activity.description || (effectiveIsBash ? 'Resuelve el reto de scripting y deja una entrega revisable.' : effectiveIsPython ? 'Practica Python con datos de gestión y prepara tu base para trabajar con Odoo.' : 'Hazlo poco a poco: cambia una cosa, mira cómo queda y sigue avanzando.')}</p><div className="workspace-context-tags"><span className={`context-tag context-tag-${effectiveLanguage}`}><Icon icon={getTrackIcon(effectiveLanguage)} size={14} />{trackLabel}</span>{effectiveIsPython && <span className="context-tag context-tag-curriculum">0491 · SGE</span>}<span className="context-tag">{getDifficultyLabel(activity.difficulty || activityVersion.difficulty)}</span>{xpReward > 0 && <span className="context-tag context-tag-xp"><Icon icon={IconRocket} size={13} />{formatXp(earnedXp)} / {formatXp(xpReward)} XP</span>}<span className={`context-tag ${challengeGamification.completed ? 'context-tag-complete' : ''}`}>{challengeGamification.completed ? 'Reto completado' : `${challengeGamification.progress}% ${isWeb ? 'de avance' : 'de progreso'}`}</span></div></div><div className="workspace-title-actions"><span className={`save-status save-${saveState}`}><span className="save-status-icon">{saveState === 'saving' ? <span className="mini-spinner" /> : saveState === 'error' || saveState === 'conflict' ? <Icon icon={IconAlertTriangle} size={15} /> : <Icon icon={IconDeviceFloppy} size={15} />}</span>{saveMessage}</span><button className="button button-outline" type="button" onClick={() => setShowHistory((current) => !current)}><Icon icon={IconHistory} size={16} />{isWeb ? 'Entregas' : 'Historial'}</button></div></div>
       <div className="workspace-challenge-progress" aria-label={`${isWeb ? 'Avance' : 'Progreso'} del reto: ${challengeGamification.progress}%`}><div className="workspace-challenge-progress-copy"><span>{isWeb ? 'Tu avance' : 'Progreso del reto'}</span><strong>{challengeGamification.progress}%</strong></div><div className="progress-track"><span style={{ width: `${challengeGamification.progress}%` }} /></div>{challengeGamification.best_score != null && <small>Mejor nota: {formatScore(challengeGamification.best_score)}/10</small>}</div>
+      {challengeGamification.completed && <section className="workspace-next-challenge" aria-live="polite"><div><p className="card-overline">Reto completado</p><h2>{nextActivity ? 'Puedes continuar con el siguiente reto' : nextRefreshError ? 'No hemos podido actualizar el siguiente reto' : nextNeedsRefresh ? 'Buscando el siguiente reto…' : 'No hay más retos después de este'}</h2><p>{nextActivity ? `${nextActivity.title}${nextActivity.module ? ` · ${nextActivity.module}` : ''}` : nextRefreshError ? 'Tu entrega sigue guardada. Vuelve a intentarlo para consultar el recorrido actualizado.' : nextNeedsRefresh ? 'Actualizamos tu recorrido desde el servidor para respetar los desbloqueos.' : 'Vuelve a Mis retos para revisar tu recorrido y los pasos pendientes.'}</p></div>{nextActivity ? <button className="button button-dark" type="button" onClick={() => onOpenNext?.(nextActivity)}><span>Siguiente reto</span><Icon icon={IconArrowRight} size={17} /></button> : nextRefreshError ? <button className="button button-outline" type="button" onClick={refreshNextActivity}>Reintentar</button> : nextNeedsRefresh ? <button className="button button-outline" type="button" disabled><span className="button-loader" />Actualizando…</button> : <button className="button button-outline" type="button" onClick={onActivities}>Volver a Mis retos</button>}</section>}
       {notice && <div className="workspace-notice" role="status"><Icon icon={IconInfoCircle} size={16} /><span>{notice}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setNotice('')}><Icon icon={IconX} size={15} /></button></div>}
       {!hydrated && <div className="workspace-loading" role="status"><span className="mini-spinner" />{workspaceCopy.loading}</div>}
       {conflict && <div className="conflict-banner" role="alert"><span className="conflict-icon"><Icon icon={IconAlertTriangle} size={18} /></span><div><strong>{workspaceCopy.conflictTitle}</strong><p>{workspaceCopy.conflictBody}</p></div><div className="conflict-actions"><button className="button button-light button-small" onClick={restoreServerDraft}>{workspaceCopy.restoreServer}</button><button className="button button-dark button-small" onClick={useLocalCopy}>{workspaceCopy.useLocal}</button></div></div>}

@@ -96,7 +96,10 @@ export function filterActivities(activities = [], track = 'all', pathway = 'all'
 }
 
 export function selectCurrentActivity(activities = [], track = 'all', pathway = 'all', pathways = []) {
-  return filterActivities(activities, track, pathway).find((activity) => !isActivityLocked(activity, pathways)) || null
+  const available = filterActivities(activities, track, pathway).filter((activity) => !isActivityLocked(activity, pathways))
+  // La lista ya tiene el orden pedagógico del servidor. El CTA no debe saltar
+  // un paso pendiente solo porque haya otro reto abierto o ya completado.
+  return available.find((activity) => activity.completed !== true) || available[0] || null
 }
 
 export function pathwayProgress(pathways = [], id = 'html_css') {

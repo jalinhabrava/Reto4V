@@ -222,8 +222,17 @@ Cada fila del dashboard añade `pathway`, `locked` y `lock_reason`. El resumen
 superior `pathways` expone `{id, title, total, completed, locked, unlock_override}`.
 El detalle del workspace incluye también el recorrido en `version.pathway`.
 La interfaz puede mostrar títulos bloqueados, pero no abrirlos ni recomendarlos
-como siguiente actividad. Revalida el estado al volver al resumen y durante
-su uso; no calcula permisos a partir de puntos locales.
+como siguiente actividad. Actualiza el reto con la respuesta de entrega y
+reconsulta el dashboard al entregar, al entrar en Resumen o Mis retos y al
+recuperar el foco. Descarta respuestas anteriores a una actualización más
+reciente y conserva los últimos datos válidos ante un error de red.
+Los totales y desbloqueos proceden del servidor; no calcula permisos con XP.
+
+«Siguiente reto» aparece cuando el servidor confirma una entrega que completa
+el reto. Selecciona el siguiente pendiente disponible en el orden del
+dashboard y vuelve a comprobar el acceso al abrirlo. Aprobar Comprobaciones
+sin entregar no activa esta acción. El paso de HTML/CSS a JavaScript requiere
+que el dashboard confirme el desbloqueo.
 
 El servidor permite JS solo si todos los retos HTML/CSS publicados o cerrados
 asignados a la matrícula activa tienen una entrega automática válida de al
