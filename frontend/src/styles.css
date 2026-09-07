@@ -253,6 +253,8 @@ h1, h2, h3 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; letter-spacing
 
 .route-error { align-items: center; background: #fff4ef; border: 1px solid #f0d4ca; border-radius: 8px; color: #a05246; display: flex; font-size: 11px; gap: 8px; margin: 18px clamp(18px, 4vw, 70px) -8px; padding: 10px 12px; }
 
+.route-loading { align-items: center; color: var(--ink-soft); display: flex; font-size: 12px; gap: 8px; justify-content: center; min-height: 360px; }
+
 .dashboard-page, .secondary-page { margin: 0 auto; max-width: 1440px; padding: 54px clamp(26px, 4vw, 70px) 58px; }
 
 .dashboard-header { align-items: flex-end; display: flex; gap: 30px; justify-content: space-between; margin-bottom: 37px; }
@@ -350,6 +352,10 @@ h1, h2, h3 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; letter-spacing
 
 .activity-row:hover { background: #fff; border-radius: 7px; padding-left: 12px; padding-right: 12px; }
 
+.activity-row.is-locked { background: #f7f8f7; cursor: not-allowed; opacity: .72; }
+
+.activity-row.is-locked:hover { border-radius: 0; padding-left: 5px; padding-right: 5px; }
+
 .activity-icon { align-items: center; border-radius: 10px; display: flex; height: 39px; justify-content: center; width: 39px; }
 
 .activity-icon-box-model { background: var(--gold-soft); color: #b17b20; }
@@ -377,6 +383,8 @@ h1, h2, h3 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; letter-spacing
 .status-red { color: var(--red); }
 
 .status-muted { color: #9aa8af; }
+
+.status-locked { color: #a06458; }
 
 .activity-row-score { color: var(--navy-900); font-family: 'DM Mono', monospace; font-size: 11px; text-align: right; }
 
@@ -450,6 +458,22 @@ h1, h2, h3 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; letter-spacing
 .track-option-count { color: #8aa49b; font-family: 'DM Mono', monospace; font-size: 10px; margin-left: auto; }
 
 .track-option.is-active .track-option-count { color: var(--gold); }
+
+.pathway-options { align-items: stretch; display: flex; flex-wrap: wrap; gap: 7px; grid-column: 1 / -1; }
+
+.pathway-option { align-items: flex-start; background: rgb(255 255 255 / 58%); border: 1px solid transparent; border-radius: 8px; color: var(--ink-soft); cursor: pointer; display: flex; flex-direction: column; font-size: 9px; gap: 3px; min-width: 118px; padding: 7px 10px; text-align: left; }
+
+.pathway-option:hover { background: #fff; border-color: #c9d9d3; }
+
+.pathway-option.is-active { background: var(--navy-900); border-color: var(--navy-900); color: #fff; }
+
+.pathway-option.is-locked { color: #936459; }
+
+.pathway-option.is-active.is-locked { color: #f6d7c9; }
+
+.pathway-option small { color: #829890; font-family: 'DM Mono', monospace; font-size: 8px; }
+
+.pathway-option.is-active small { color: #aac2bd; }
 
 .continue-meta { align-items: center; color: #adc2c5; display: flex; font-family: 'DM Mono', monospace; font-size: 9px; gap: 12px; margin-top: 12px; position: relative; z-index: 1; }
 
@@ -824,6 +848,10 @@ h1, h2, h3 { font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; letter-spacing
 
 .instruction-rich-text code { font-size: .9em; }
 
+.instruction-code-block { background: #f5f7f6; border: 1px solid #e3ebe7; border-radius: 7px; box-sizing: border-box; color: #476779; display: block; font-family: 'DM Mono', monospace; font-size: 10px; line-height: 1.5; margin: 11px 0; max-width: 100%; overflow-x: auto; padding: 10px 11px; white-space: pre; }
+
+.instruction-code-block code { background: transparent; border-radius: 0; color: inherit; display: block; font: inherit; padding: 0; white-space: inherit; }
+
 .instruction-empty { color: #93a3a8; font-size: 10px; }
 
 .objective-list { display: grid; gap: 10px; list-style: none; margin: 0; padding: 0; }
@@ -881,6 +909,8 @@ code { background: #f0f3f2; border-radius: 3px; color: #476779; font-family: 'DM
 .instructions-panel-web .instruction-lede { font-size: 13px; line-height: 1.6; }
 
 .instructions-panel-web .instruction-rich-text > h3 { font-size: 14px; }
+
+.instructions-panel-web .instruction-code-block { font-size: 11px; }
 
 .instructions-panel-web .instruction-rich-text > blockquote,
 .instructions-panel-web .instruction-rich-text > ul li,
@@ -1017,6 +1047,8 @@ kbd { background: #203b52; border: 1px solid #365269; border-radius: 3px; color:
 .preview-heading { min-height: 71px; padding: 17px 16px 12px 18px; }
 
 .preview-heading .panel-label { display: block; margin-bottom: 7px; }
+
+.preview-explanation { color: #84979c; font-size: 9px; line-height: 1.35; margin: 0 0 8px; max-width: 260px; }
 
 .preview-heading-actions { align-items: center; display: flex; gap: 9px; }
 
@@ -1490,6 +1522,8 @@ kbd { background: #203b52; border: 1px solid #365269; border-radius: 3px; color:
   .workspace-panel { display: none; min-height: 510px; }
   .workspace-panel.mobile-panel-visible { display: flex; }
   .instructions-panel { min-height: 510px; }
+  .instructions-panel.workspace-panel { overflow-x: hidden; }
+  .instruction-code-block { -webkit-overflow-scrolling: touch; }
   .editor-panel { min-height: 530px; }
   .preview-panel { min-height: 530px; }
   .bash-validation-panel { min-height: 530px; }

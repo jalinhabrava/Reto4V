@@ -11,6 +11,7 @@ from learning.management.commands.seed_bash import (
     BASH_CATALOG_VERSION,
     CHALLENGES,
     TRACK_SLUG,
+    V2_TITLES,
 )
 from learning.models import (
     AcademicYear,
@@ -64,6 +65,35 @@ class BashCatalogTests(TestCase):
             Assignment.objects.filter(activity_version__in=versions).count(),
             len(CHALLENGES),
         )
+        self.assertEqual(BASH_CATALOG_VERSION, 3)
+        self.assertEqual(
+            [item["slug"] for item in CHALLENGES],
+            [
+                "01-variables-y-salida",
+                "02-condiciones-y-rutas",
+                "03-bucle-de-registros",
+                "04-funciones-reutilizables",
+                "05-pipelines-de-registros",
+                "06-parametros-posicionales",
+                "07-codigos-de-salida",
+                "08-plan-de-copia",
+                "09-permisos-del-script",
+                "10-pipeline-awk-y-orden",
+                "11-case-de-operacion",
+                "12-rutina-integrada",
+            ],
+        )
+        self.assertNotIn("printf", CHALLENGES[0]["theory"])
+        self.assertNotIn("printf", CHALLENGES[0]["example"])
+        self.assertNotIn("printf", CHALLENGES[0]["task"])
+        self.assertEqual(
+            CHALLENGES[0]["starter"],
+            '#!/usr/bin/env bash\n\n# Cambia solo el mensaje de la línea siguiente.\necho "Cambia este mensaje"\n',
+        )
+        self.assertIn(
+            ("Saludo con echo", "bash.command_used", {"command": "echo", "args": ["Hola, Bash"]}, 1, "public"),
+            CHALLENGES[0]["tests"],
+        )
 
         for version in versions:
             item = next(item for item in CHALLENGES if item["slug"] == version.activity.slug)
@@ -75,15 +105,26 @@ class BashCatalogTests(TestCase):
             self.assertEqual(version.test_cases.count(), 4)
             self.assertEqual(set(version.starter_files), {"bash"})
             self.assertEqual(set(version.reference_solution), {"bash"})
-            report = evaluate_tests(
+            self.assertTrue(item["example"].startswith("```bash"))
+            self.assertIn("## Concepto", version.instructions)
+            self.assertIn("## Ejemplo explicado", version.instructions)
+            self.assertIn("## Ejercicio", version.instructions)
+            solution_report = evaluate_tests(
                 version.reference_solution,
                 list(version.test_cases.all()),
                 language="bash",
             )
-            self.assertEqual(report.status, "passed", version.activity.slug)
-            self.assertEqual(report.score, 10, version.activity.slug)
+            self.assertEqual(solution_report.status, "passed", version.activity.slug)
+            self.assertEqual(solution_report.score, 10, version.activity.slug)
+            starter_report = evaluate_tests(
+                version.starter_files,
+                list(version.test_cases.all()),
+                language="bash",
+            )
+            self.assertIsNotNone(starter_report.score, version.activity.slug)
+            self.assertLess(starter_report.score, 8, version.activity.slug)
 
-    def test_reseeding_v2_is_idempotent_and_keeps_teacher_solution_edits(self):
+    def test_reseeding_v3_is_idempotent_and_keeps_teacher_solution_edits(self):
         self.seed()
         versions = list(
             ActivityVersion.objects.filter(language=ActivityVersion.Language.BASH)
@@ -115,7 +156,7 @@ class BashCatalogTests(TestCase):
         self.assertEqual(course.title, "Laboratorio Bash para Seguridad · ASIR")
         self.assertEqual(module.title, "De cero a tus primeras automatizaciones")
 
-    def test_v1_evidence_is_preserved_when_catalogue_moves_to_v2(self):
+    def test_v2_evidence_is_preserved_when_catalogue_moves_to_v3(self):
         year = AcademicYear.objects.create(name="2026-2027")
         cohort = Cohort.objects.create(
             name="2ASIR",
@@ -138,7 +179,7 @@ class BashCatalogTests(TestCase):
         )
         old_version = ActivityVersion.objects.create(
             activity=activity,
-            version_number=1,
+            version_number=2,
             language=ActivityVersion.Language.BASH,
             starter_files={"bash": "#!/usr/bin/env bash\n"},
             reference_solution={"bash": "#!/usr/bin/env bash\necho antiguo\n"},
@@ -157,6 +198,7 @@ class BashCatalogTests(TestCase):
             max_attempts=3,
             weight=70,
             allow_late=False,
+            title_override=V2_TITLES[item["slug"]],
         )
         AssignmentCohort.objects.create(assignment=old_assignment, cohort=cohort)
 
@@ -196,6 +238,7 @@ class BashCatalogTests(TestCase):
         self.assertFalse(old_assignment.allow_late)
         self.assertEqual(new_assignment.weight, 70)
         self.assertFalse(new_assignment.allow_late)
+        self.assertEqual(new_assignment.title_override, item["title"])
         self.assertTrue(
             AssignmentCohort.objects.filter(assignment=new_assignment, cohort=cohort).exists()
         )

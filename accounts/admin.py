@@ -16,10 +16,10 @@ class ProgrammyUserAdmin(UserAdmin):
     workflow under ``/admin-ui/users/`` use the application services instead.
     """
 
-    list_display = ("username", "display_name", "role", "is_active", "last_login")
-    list_filter = ("role", "is_active", "must_change_password")
+    list_display = ("username", "display_name", "role", "javascript_enabled", "is_active", "last_login")
+    list_filter = ("role", "is_active", "must_change_password", "javascript_enabled")
     fieldsets = UserAdmin.fieldsets + (
-        ("Programmy4V", {"fields": ("display_name", "role", "must_change_password")}),
+        ("Programmy4V", {"fields": ("display_name", "role", "javascript_enabled", "must_change_password")}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (("Programmy4V", {"fields": ("display_name", "role")}),)
 

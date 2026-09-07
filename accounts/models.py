@@ -13,6 +13,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.STUDENT, db_index=True)
     display_name = models.CharField(max_length=160, blank=True)
     must_change_password = models.BooleanField(default=False)
+    javascript_enabled = models.BooleanField(default=False)
     last_failed_login_at = models.DateTimeField(null=True, blank=True)
     failed_login_count = models.PositiveIntegerField(default=0)
 

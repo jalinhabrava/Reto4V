@@ -8,7 +8,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import F, Max
 from django.utils import timezone
 
-from learning.models import Assignment, Draft, Enrollment, TestCase
+from learning.models import Assignment, Course, Draft, Enrollment, TestCase
 
 from .evaluator import (
     EVALUATOR_VERSION,
@@ -26,6 +26,7 @@ MAX_TOTAL_BYTES = 1024 * 1024
 
 XP_LEVEL_SIZE = 500
 COMPLETION_SCORE = Decimal("8")
+JAVASCRIPT_LOCK_REASON = "Completa HTML y CSS para acceder a JavaScript."
 
 BADGE_DEFINITIONS = (
     ("first-challenge", "Primer reto", "Has completado tu primer reto."),
@@ -95,11 +96,91 @@ def normalise_workspace_files(payload: dict, *, language: str = "web") -> dict[s
     return files
 
 
+def javascript_access_state(student, *, requirements=None) -> dict:
+    """Return the effective access state for JavaScript in the active Web cohort.
+
+    Completion uses exactly the automatic-score predicate used by gamification:
+    formative test runs, drafts and teacher grades never participate.  A Web
+    cohort with no HTML/CSS requirements remains closed by design, preventing
+    a vacuous unlock while a catalogue is still being populated.
+    """
+
+    cohort = (
+        Enrollment.objects.filter(
+            student=student,
+            active=True,
+            cohort__active=True,
+            cohort__academic_year__active=True,
+            cohort__track="web",
+        )
+        .select_related("cohort")
+        .first()
+    )
+    is_web_student = bool(cohort and student.role == "student")
+    if not is_web_student:
+        return {
+            "unlocked": False,
+            "lock_reason": JAVASCRIPT_LOCK_REASON,
+            "unlock_override": False,
+            "is_web_student": False,
+            "total": 0,
+            "completed": 0,
+        }
+
+    override = bool(student.javascript_enabled)
+    if requirements is None:
+        requirements = list(
+            Assignment.objects.select_related(
+                "activity",
+                "activity__module",
+                "activity__module__course",
+                "activity_version",
+            )
+            .filter(
+                cohort_links__cohort=cohort.cohort,
+                status__in=(Assignment.Status.PUBLISHED, Assignment.Status.CLOSED),
+                activity_version__language="web",
+                activity__module__course__web_stage=Course.WebStage.HTML_CSS,
+            )
+            .distinct()
+        )
+    else:
+        requirements = list(requirements)
+
+    if not requirements:
+        return {
+            "unlocked": override,
+            "lock_reason": "" if override else JAVASCRIPT_LOCK_REASON,
+            "unlock_override": override,
+            "is_web_student": True,
+            "total": 0,
+            "completed": 0,
+        }
+
+    progress = gamification_for_assignments(student, requirements)
+    completed = sum(1 for row in progress["assignments"] if row["completed"])
+    unlocked = override or completed == len(requirements)
+    return {
+        "unlocked": unlocked,
+        "lock_reason": "" if unlocked else JAVASCRIPT_LOCK_REASON,
+        "unlock_override": override,
+        "is_web_student": True,
+        "total": len(requirements),
+        "completed": completed,
+    }
+
+
 def student_assignment_or_404(user, assignment_id: str) -> Assignment:
     if not user.is_authenticated or user.role != "student":
         raise PermissionDenied("Solo los alumnos pueden abrir este espacio de trabajo.")
-    return (
-        Assignment.objects.select_related("activity", "activity_version", "activity_version__activity")
+    assignment = (
+        Assignment.objects.select_related(
+            "activity",
+            "activity__module",
+            "activity__module__course",
+            "activity_version",
+            "activity_version__activity",
+        )
         .filter(
             pk=assignment_id,
             status__in=(Assignment.Status.PUBLISHED, Assignment.Status.CLOSED),
@@ -112,6 +193,14 @@ def student_assignment_or_404(user, assignment_id: str) -> Assignment:
         .distinct()
         .first()
     )
+    if (
+        assignment
+        and assignment.activity_version.language == "web"
+        and assignment.activity.module.course.web_stage == Course.WebStage.JAVASCRIPT
+        and not javascript_access_state(user)["unlocked"]
+    ):
+        return None
+    return assignment
 
 
 def get_or_create_draft(user, assignment: Assignment) -> Draft:

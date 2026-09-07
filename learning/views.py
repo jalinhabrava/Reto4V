@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import F, Prefetch
+from django.db.models import Case, F, IntegerField, Prefetch, Value, When
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -25,12 +25,13 @@ from grading.services import (
     gamification_for_assignment,
     gamification_for_assignments,
     get_or_create_draft,
+    javascript_access_state,
     run_formative_tests,
     save_draft,
     student_assignment_or_404,
 )
 
-from .models import ActivityVersion, Assignment, Cohort, Draft
+from .models import ActivityVersion, Assignment, Cohort, Course, Draft
 
 MAX_JSON_BODY = 2 * 1024 * 1024
 
@@ -142,6 +143,7 @@ def _report_payload(report: EvaluationReport | None, *, visible_results: list[bo
 
 def _activity_public_payload(assignment: Assignment, draft: Draft | None = None, submissions=None, *, student=None):
     version = assignment.activity_version
+    pathway = assignment.activity.module.course.web_stage or version.language
     starter_keys = {
         "javascript" if key == "js" else key
         for key in version.starter_files
@@ -179,6 +181,7 @@ def _activity_public_payload(assignment: Assignment, draft: Draft | None = None,
         "max_attempts": assignment.max_attempts,
         "attempt_policy": assignment.attempt_policy,
         "weight": assignment.weight,
+        "pathway": pathway,
         "activity": {
             "id": str(assignment.activity_id),
             "title": assignment.activity.title,
@@ -189,6 +192,7 @@ def _activity_public_payload(assignment: Assignment, draft: Draft | None = None,
             "id": str(version.id),
             "number": version.version_number,
             "language": version.language,
+            "pathway": pathway,
             "difficulty": version.difficulty,
             "xp_reward": version.xp_reward,
             "hints": version.hints,
@@ -227,7 +231,7 @@ def _activity_public_payload(assignment: Assignment, draft: Draft | None = None,
     return payload
 
 
-def _dashboard_payload(rows, gamification=None):
+def _dashboard_payload(rows, gamification=None, pathways=None):
     return {
         "assignments": [
             {
@@ -238,6 +242,10 @@ def _dashboard_payload(rows, gamification=None):
                 "module": row["assignment"].activity.module.title,
                 "professional_module_code": row["assignment"].activity_version.professional_module_code,
                 "language": row["assignment"].activity_version.language,
+                "pathway": row["assignment"].activity.module.course.web_stage
+                or row["assignment"].activity_version.language,
+                "locked": row.get("locked", False),
+                "lock_reason": row.get("lock_reason", ""),
                 "difficulty": row["assignment"].activity_version.difficulty,
                 "xp_reward": row["assignment"].activity_version.xp_reward,
                 "curriculum_scope": row["assignment"].activity_version.curriculum_scope,
@@ -254,7 +262,55 @@ def _dashboard_payload(rows, gamification=None):
         ],
         "gamification": gamification
         or {"total_xp": 0, "level": 1, "level_progress": 0, "xp_to_next_level": 500, "completed_challenges": 0, "badges": []},
+        "pathways": pathways or [],
     }
+
+
+def _course_stage_order():
+    return Case(
+        When(
+            activity__module__course__web_stage=Course.WebStage.JAVASCRIPT,
+            then=Value(1),
+        ),
+        default=Value(0),
+        output_field=IntegerField(),
+    )
+
+
+def _student_pathways(assignments, gamification, access_state):
+    if not access_state["is_web_student"]:
+        return []
+    progress_by_assignment = {
+        row["assignment_id"]: row
+        for row in gamification["assignments"]
+    }
+    pathways = []
+    for pathway_id, title in (
+        (Course.WebStage.HTML_CSS, "HTML y CSS"),
+        (Course.WebStage.JAVASCRIPT, "JavaScript"),
+    ):
+        matching = [
+            assignment
+            for assignment in assignments
+            if assignment.activity.module.course.web_stage == pathway_id
+        ]
+        completed = sum(
+            1
+            for assignment in matching
+            if progress_by_assignment.get(str(assignment.id), {}).get("completed", False)
+        )
+        javascript = pathway_id == Course.WebStage.JAVASCRIPT
+        pathways.append(
+            {
+                "id": pathway_id,
+                "title": title,
+                "total": len(matching),
+                "completed": completed,
+                "locked": javascript and not access_state["unlocked"],
+                "unlock_override": javascript and access_state["unlock_override"],
+            }
+        )
+    return pathways
 
 
 @login_required
@@ -263,7 +319,7 @@ def student_dashboard(request):
     if request.user.role != User.Role.STUDENT:
         return redirect("teacher_dashboard")
     assignments = list(
-        Assignment.objects.select_related("activity", "activity__module", "activity_version")
+        Assignment.objects.select_related("activity", "activity__module", "activity__module__course", "activity_version")
         .prefetch_related(
             Prefetch(
                 "submissions",
@@ -284,7 +340,7 @@ def student_dashboard(request):
             cohort_links__cohort__academic_year__active=True,
             cohort_links__cohort__track=F("activity_version__language"),
         )
-        .order_by("activity__module__position", "activity__title", "id")
+        .order_by(_course_stage_order(), "activity__module__position", "activity__title", "id")
         .distinct()
     )
     rows = []
@@ -301,6 +357,12 @@ def student_dashboard(request):
             status = "not_started"
         rows.append({"assignment": assignment, "status": status, "draft": draft, "submissions": submissions})
     gamification = gamification_for_assignments(request.user, assignments)
+    html_css_assignments = [
+        assignment
+        for assignment in assignments
+        if assignment.activity.module.course.web_stage == Course.WebStage.HTML_CSS
+    ]
+    javascript_access = javascript_access_state(request.user, requirements=html_css_assignments)
     gamification_by_assignment = {row["assignment_id"]: row for row in gamification["assignments"]}
     for row in rows:
         row["gamification"] = gamification_by_assignment.get(str(row["assignment"].id), {})
@@ -310,10 +372,14 @@ def student_dashboard(request):
             for submission in getattr(row["assignment"], "student_submissions", [])
             if _published_grade(submission)
         )
+        pathway = row["assignment"].activity.module.course.web_stage or row["assignment"].activity_version.language
+        row["locked"] = pathway == Course.WebStage.JAVASCRIPT and not javascript_access["unlocked"]
+        row["lock_reason"] = javascript_access["lock_reason"] if row["locked"] else ""
+    pathways = _student_pathways(assignments, gamification, javascript_access)
     if request.headers.get("Accept") == "application/json":
-        return JsonResponse(_dashboard_payload(rows, gamification))
+        return JsonResponse(_dashboard_payload(rows, gamification, pathways))
     user_payload = _user_payload(request.user)
-    return render(request, "student/dashboard.html", {"assignment_rows": rows, "user_payload": user_payload, "bootstrap": {"user": user_payload, "dashboard": _dashboard_payload(rows, gamification)}})
+    return render(request, "student/dashboard.html", {"assignment_rows": rows, "user_payload": user_payload, "bootstrap": {"user": user_payload, "dashboard": _dashboard_payload(rows, gamification, pathways)}})
 
 
 @login_required
@@ -427,6 +493,8 @@ def workspace_submit_api(request, assignment_id):
 @login_required
 def student_submission(request, submission_id):
     submission = get_object_or_404(Submission.objects.prefetch_related("files", "test_runs__results", "grade_calculations"), pk=submission_id, student=request.user)
+    if student_assignment_or_404(request.user, submission.assignment_id) is None:
+        raise Http404
     if request.headers.get("Accept") == "application/json":
         grade = submission.grade_calculations.filter(status="published").first()
         return JsonResponse({"id": str(submission.id), "attempt_number": submission.attempt_number, "submitted_at": submission.submitted_at.isoformat(), "status": submission.status, "files": {file.path: file.content for file in submission.files.all()}, "grade": {"score": _decimal(grade.final_score), "comment": grade.teacher_comment} if grade else None})
@@ -434,7 +502,7 @@ def student_submission(request, submission_id):
 
 
 def teacher_assignments_for(user, *, include_archived=True):
-    queryset = Assignment.objects.select_related("activity", "activity__module", "activity_version").prefetch_related("cohort_links__cohort").order_by("activity__module__position", "activity__title", "id")
+    queryset = Assignment.objects.select_related("activity", "activity__module", "activity__module__course", "activity_version").prefetch_related("cohort_links__cohort").order_by(_course_stage_order(), "activity__module__position", "activity__title", "id")
     if not include_archived:
         queryset = queryset.exclude(status=Assignment.Status.ARCHIVED)
     if user.is_superuser or user.role == User.Role.ADMIN:
@@ -555,6 +623,8 @@ def teacher_dashboard(request):
             "module": row["assignment"].activity.module.title,
             "professional_module_code": row["assignment"].activity_version.professional_module_code,
             "language": row["assignment"].activity_version.language,
+            "pathway": row["assignment"].activity.module.course.web_stage
+            or row["assignment"].activity_version.language,
             "difficulty": row["assignment"].activity_version.difficulty,
             "xp_reward": row["assignment"].activity_version.xp_reward,
             "curriculum_scope": row["assignment"].activity_version.curriculum_scope,

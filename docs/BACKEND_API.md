@@ -29,13 +29,10 @@ docker compose --env-file .env exec web python manage.py bootstrap_catalogs
 
 `PRELOAD_CATALOGS=0` desactiva el paso automático para una instalación que
 necesite gestionar su catálogo manualmente. Los seeds de cada itinerario
-siguen disponibles para ampliaciones controladas. Los tres catálogos
-incorporados se sirven en revisión v2: si el grupo tiene enlaces a v1, el
-bootstrap crea la versión v2, migra los enlaces del grupo a una asignación v2
-y archiva la asignación v1. Los borradores, entregas, calificaciones y demás
-evidencias v1 se conservan internamente ligadas a su asignación/version para
-mantener la integridad histórica; no se trasladan XP ni progreso a v2.
-Una revisión posterior creada por el centro no se degrada ni se reemplaza.
+siguen disponibles para ampliaciones controladas. Los catálogos incorporados son HTML/CSS v4, JavaScript v1 y Bash/Python v3.
+El bootstrap crea nuevas versiones para actualizar contenido ya asignado,
+archiva las asignaciones anteriores y conserva sus evidencias sin trasladar
+progreso. Una revisión posterior del centro nunca se degrada.
 
 ## Contrato del workspace
 
@@ -78,7 +75,7 @@ Una `ActivityVersion` puede declarar `language: "web"`, `language: "bash"` o
 `language: "python"`. Los puntos de partida son diferentes: Web corresponde
 a 1.º de SMR y parte de cero informático; Bash corresponde a 2.º de ASIR,
 parte de una base de Linux y empieza desde cero en Bash; Python corresponde a
-2.º de DAM y enlaza la base de programación con datos y archivos para preparar
+2.º de DAM y enseña desde cero la sintaxis básica para preparar
 el trabajo posterior con Odoo.
 `difficulty: "beginner" | "intermediate" | "advanced"`, `xp_reward` (0–1000)
 y una lista de `hints`. Las versiones web solo aceptan `html`, `css` y
@@ -93,16 +90,16 @@ pestañas del workspace son **Pasos**, **Editor** y **Resultado**, y los paneles
 inferiores se llaman **Comprobaciones** y **Entregas**.
 
 El comando `python manage.py seed_web --owner PROFESOR --cohort 1SMR`
-crea el itinerario local v2 de doce retos de entrada para `0228 Aplicaciones
-web`. El comando `python manage.py seed_bash --owner PROFESOR --cohort 2ASIR`
-crea el itinerario local v2 de doce retos de apoyo transversal para el módulo
+crea HTML/CSS v4 y JavaScript v1 para el mismo grupo de `0228 Aplicaciones
+web`. JavaScript también puede precargarse con `seed_javascript`. El comando `python manage.py seed_bash --owner PROFESOR --cohort 2ASIR`
+crea el itinerario local v3 de doce retos de apoyo transversal para el módulo
 0378. No crea alumnos y no asigna RA/CE. Véase
 [`docs/BASH_TRACK.md`](BASH_TRACK.md) para el catálogo, la DSL y sus límites.
 
 El comando `python manage.py seed_python --owner PROFESOR --cohort 2DAM`
-crea el itinerario local v2 de doce retos progresivos de preparación para `0491 Sistemas de gestión
-empresarial` de segundo de DAM, desde variables hasta lectura y escritura de
-archivos. Es un alineamiento parcial del currículo navarro y no una cobertura
+crea el itinerario local v3 de doce retos progresivos de preparación para `0491 Sistemas de gestión
+empresarial` de segundo de DAM, desde el primer mensaje hasta las estructuras
+básicas. Archivos y Odoo quedan para una ampliación. Es una preparación parcial y no una cobertura
 completa de RA/CE ni una integración con Odoo. Véase
 [`docs/PYTHON_TRACK.md`](PYTHON_TRACK.md) para el catálogo, la DSL y sus límites.
 
@@ -165,6 +162,12 @@ adicionales de la DSL (`function_declared`, `node_kind`, `call_used`,
 `exception_handled` y `comparison_used`) solo inspeccionan nodos AST y no
 convierten el análisis en una ejecución del programa.
 
+El catálogo JavaScript comprueba instrucciones y expresiones sobre un AST de
+Esprima analizado una sola vez por lote. Sus predicados tienen esquemas
+cerrados; no admiten funciones de evaluación suministradas por el alumno.
+Consulta [JavaScript](JAVASCRIPT_TRACK.md) para la secuencia y los límites de
+estas comprobaciones estructurales.
+
 La evaluación de comportamiento DOM queda fuera de esta fase. Los proyectos
 que la necesiten deben usar rúbrica/manual hasta incorporar un runner aislado
 revisado.
@@ -178,3 +181,39 @@ Web, 0378 para el apoyo Bash o 0491 para la preparación Python),
 `RA1.b`, `RA1.d` y `RA1.g` del marco navarro, porque los archivos iniciales de
 la prueba vertical no evidencian el resto del RA1. La fuente se deja versionada
 para poder distinguir modificaciones futuras del currículo.
+
+## Lecciones desde cero
+
+`version.instructions` incluye explicación, ejemplo de código y ejercicio guiado.
+El cliente conserva los saltos de línea y la sangría de los bloques cercados
+con tres acentos graves; los renderiza como texto seguro, nunca como HTML activo.
+HTML/CSS incorpora `css` solo después de explicarlo. JavaScript es otro curso
+con `language=web`, no un lenguaje nuevo para el corrector; las pestañas siguen
+limitadas por `editor_files`.
+Python y Bash mantienen su análisis estático, sin ejecución ni salida simulada.
+Véase [criterio didáctico](../docs/DIDACTICA.md).
+
+## Acceso progresivo a JavaScript
+
+`Course.web_stage` diferencia `html_css` y `javascript`; el valor vacío se
+reserva para otros cursos. Ambos cursos Web mantienen `language=web` y la
+matrícula del mismo grupo, sin activar un segundo ciclo.
+
+Cada fila del dashboard añade `pathway`, `locked` y `lock_reason`. El resumen
+superior `pathways` expone `{id, title, total, completed, locked, unlock_override}`.
+El detalle del workspace incluye también el recorrido en `version.pathway`.
+La interfaz puede mostrar títulos bloqueados, pero no abrirlos ni recomendarlos
+como siguiente actividad. Revalida el estado al volver al resumen y durante
+su uso; no calcula permisos a partir de puntos locales.
+
+El servidor permite JS solo si todos los retos HTML/CSS publicados o cerrados
+asignados a la matrícula activa tienen una entrega automática válida de al
+menos 8/10, o si `User.javascript_enabled` está activado. Cero requisitos no
+significa completado. Borradores, comprobaciones sin entrega y notas manuales
+no desbloquean el curso. Quitar el permiso restaura la regla normal.
+
+El control se aplica al detalle, página, borrador, tests y entrega, además del
+dashboard. El permiso no evita la comprobación de rol, cohorte, estado o CSRF.
+Un administrador puede cambiarlo mediante el formulario existente de crear o
+editar usuario en `/admin-ui/users/`, con el campo `javascript_enabled`.
+No hay una ruta de alumno para concedérselo.

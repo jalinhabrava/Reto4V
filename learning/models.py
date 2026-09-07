@@ -115,10 +115,22 @@ class TeachingAssignment(models.Model):
 
 
 class Course(models.Model):
+    class WebStage(models.TextChoices):
+        HTML_CSS = "html_css", "HTML y CSS"
+        JAVASCRIPT = "javascript", "JavaScript"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=180)
     slug = models.SlugField(max_length=180, unique=True)
     description = models.TextField(blank=True)
+    web_stage = models.CharField(
+        max_length=20,
+        choices=WebStage.choices,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Etapa del itinerario Web. Déjala vacía para cursos de otros itinerarios o contenido histórico.",
+    )
     active = models.BooleanField(default=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="courses_created")
     created_at = models.DateTimeField(auto_now_add=True)

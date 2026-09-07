@@ -1,166 +1,121 @@
 # Itinerario Bash · Programmy4V
 
-## Propósito
+## Propósito y límites
 
-Este itinerario añade una ruta de aprendizaje de Bash para 2.º de ASIR,
-especialmente útil como apoyo a scripting, automatización, comprobación de
-registros y planificación de copias de seguridad. Está pensado para una
-instalación LAN y no necesita Internet para que el alumnado trabaje.
+Este es un itinerario de iniciación a Bash para 2.º de ASIR. Sirve de apoyo
+transversal a scripting, automatización y revisión de registros dentro del
+módulo `0378` (Seguridad y alta disponibilidad), pero no acredita resultados
+de aprendizaje ni criterios de evaluación. La relación concreta con la
+programación didáctica la decide el equipo docente.
 
-El nivel de entrada previsto es alumnado de 2.º de ASIR que parte de cero en
-Bash, aunque ya tenga una base de informática. La progresión comienza con un
-primer archivo de texto y mensajes sencillos, y añade una sola idea principal
-en cada reto antes de llegar a las rutinas de copias. Las instrucciones son
-directas, incluyen pasos numerados, pistas progresivas y un archivo inicial
-preparado para completar.
+Cada reto usa un patrón didáctico breve: explica una idea, presenta un ejemplo
+distinto y comentado, y propone un ejercicio pequeño que solo utiliza esa idea
+y las anteriores. La plantilla ya contiene el shebang y la mayor parte de la
+estructura: el alumno completa unas pocas líneas, sin crear carpetas ni
+descargar archivos.
 
-El contenido se marca con el código de módulo profesional `0378` (Seguridad y
-alta disponibilidad), pero es **apoyo transversal sin acreditación de RA/CE**:
-no declara una cobertura completa de resultados de aprendizaje ni inventa
-criterios de evaluación. La referencia de base del currículo navarro de grado
-superior es el [Decreto Foral 50/2010](https://www.lexnavarra.navarra.es/detalle.asp?r=9158),
-con la modificación vigente publicada en el [Decreto Foral
-110/2024](https://www.educacion.navarra.es/documents/27590/558252/DF%2B110_2024%2Bmodificacion%2BGS.pdf/a649cf9e-7adf-3c5d-c5ac-eaa602a553a5?version=1.0).
-La relación concreta entre scripting, automatización, seguridad y la
-programación didáctica del centro debe decidirla el equipo docente. Como
-contexto opcional, el scripting puede conectarse con contenidos de
-automatización de ASO0374, sin trasladar aquí una supuesta equivalencia de
-RA/CE.
+Las órdenes que aparecen son texto para practicar. El corrector analiza la
+estructura del archivo con `tree-sitter-bash`; nunca inicia Bash, procesos
+hijos, red, ni lectura o escritura en el sistema de archivos. Por tanto, una
+prueba superada acredita presencia estructural, no que un script haya sido
+ejecutado ni que haya operado sobre un servidor real.
 
-## Crear el itinerario
+## Crear o actualizar el itinerario
 
-En una instalación nueva, el catálogo Bash se precarga automáticamente en el
-grupo base **Bash · ASIR** después de las migraciones (`PRELOAD_CATALOGS=1`).
-Para una instalación con el bootstrap desactivado o para un grupo adicional,
-crea el itinerario después de tener una cuenta de profesor o administrador:
+En instalaciones nuevas el catálogo se precarga en **Bash · ASIR** después de
+las migraciones cuando `PRELOAD_CATALOGS=1`. Para crear un grupo adicional o
+cuando el bootstrap está desactivado:
 
 ```bash
 python manage.py seed_bash --owner profesor --cohort 2ASIR
 ```
 
-Opciones disponibles:
+- `--owner USERNAME` es obligatorio y debe ser profesor o administrador.
+- `--cohort NOMBRE` usa `2ASIR` por defecto.
+- `--academic-year AAAA-AAAA` es opcional; sin él se calcula según la fecha
+  del servidor.
 
-- `--owner USERNAME` (obligatoria): cuenta existente de profesor o administrador.
-- `--cohort NOMBRE`: grupo destinatario; por defecto `2ASIR`.
-- `--academic-year AAAA-AAAA`: curso académico; si se omite se calcula según la fecha del servidor.
+El comando no crea alumnado, contraseñas ni datos personales. Crea o reutiliza
+el curso `Laboratorio Bash para Seguridad · ASIR`, un módulo y doce actividades
+publicadas. El grupo queda marcado como `track=bash`, necesario para que su
+alumnado acceda al itinerario correspondiente.
 
-El comando crea el curso `Laboratorio Bash para Seguridad · ASIR`, el módulo
-`De cero a tus primeras automatizaciones`, doce actividades publicadas y sus asignaciones al
-grupo indicado. El grupo queda marcado con `track=bash`, que permite que el
-panel admin lo muestre como **Bash · ASIR** y que las cuentas de alumno lo
-seleccionen. No crea alumnos, contraseñas ni datos personales. Es idempotente:
-reutiliza actividades y registros compatibles; si encuentra el catálogo v1,
-añade la revisión v2 y una asignación nueva sin mutar ninguna versión ya
-asignada.
+## Revisión 3: progresión y compatibilidad
 
-Al crear o editar un alumno en `/admin-ui/users/`, selecciona su ciclo e
-itinerario. Esa selección activa su única matrícula; no hay que asignar cada
-reto por separado. Si cambias a otro ciclo, la matrícula anterior se conserva
-como historial pero deja de dar acceso.
+La revisión incorporada es la v3. Conserva los doce slugs históricos para que
+una instalación existente identifique cada actividad, aunque algunos nombres
+antiguos ya no describan el contenido. La progresión real es esta:
 
-El catálogo contiene teoría, reto, pistas, una plantilla Bash y una solución
-de referencia para que el docente pueda revisar el diseño. Como el repositorio
-es público, esas soluciones **no deben considerarse respuestas secretas** ni
-usarse como banco de exámenes. Para una evaluación con secreto real, crea una
-nueva versión/actividad y tests privados directamente en la base de datos del
-centro; la API oculta los tests privados al alumno, pero ningún secreto
-commiteado en un repositorio público puede permanecer secreto.
+| Orden | Slug histórico | Reto v3 | Idea nueva |
+|---:|---|---|---|
+| 1 | `01-variables-y-salida` | Terminal, shell y primer script | Qué son terminal, shell y script; mostrar texto con `echo`. |
+| 2 | `02-condiciones-y-rutas` | Guardar un texto en una variable | Asignación sin espacios y lectura con `$NOMBRE`. |
+| 3 | `03-bucle-de-registros` | Proteger texto con comillas | Comillas dobles para texto con espacios y variables. |
+| 4 | `04-funciones-reutilizables` | Nombrar una ruta | Rutas absolutas y una variable de ruta. |
+| 5 | `05-pipelines-de-registros` | Dar formato con `printf` | Plantilla `%s` y salto de línea `\n`. |
+| 6 | `06-parametros-posicionales` | Comprobar un archivo con `if` | `if`, `then`, `fi` y `-f`. |
+| 7 | `07-codigos-de-salida` | Elegir un mensaje con `if` y `else` | Segunda rama y comprobación de directorio `-d`. |
+| 8 | `08-plan-de-copia` | Repetir nombres con `for` | Lista corta, variable de vuelta, `do` y `done`. |
+| 9 | `09-permisos-del-script` | Preguntar a `grep` con `if` | Búsqueda silenciosa `grep -q` como condición. |
+| 10 | `10-pipeline-awk-y-orden` | Conectar órdenes con un pipeline | Pasar `grep` a `sort` mediante `|`. |
+| 11 | `11-case-de-operacion` | Agrupar un paso en una función | Declarar y llamar una función sencilla. |
+| 12 | `12-rutina-integrada` | Repaso: listar rutas preparadas | Reutilizar variables, rutas, `printf` y `for`. |
 
-## Progresión del catálogo Bash v2
+La primera actividad no introduce `printf`. El último reto no intenta ser una
+rutina de copia ni introduce una orden nueva: reúne conceptos ya explicados en
+una lista corta de rutas. Las copias y operaciones complejas son una ampliación
+posterior, no una promesa que deba encajarse en doce pasos.
 
-La revisión incorporada por `seed_bash` es la v2. Conserva los slugs de las
-instalaciones anteriores para que cada actividad siga siendo identificable,
-pero reordena la dificultad y simplifica el lenguaje para acompañar a quien
-está empezando:
+Cada solución de referencia supera sus cuatro comprobaciones estáticas. Cada
+plantilla inicial queda por debajo de 8/10, el umbral de completado: contiene
+la estructura que facilita empezar, pero no todos los elementos evaluados.
 
-| Orden | Reto | Idea principal |
-|---:|---|---|
-| 1 | Mi primer script | Shebang, `echo` y `printf` para mostrar mensajes. |
-| 2 | Guardar un dato en una variable | Crear `NOMBRE` y usar su contenido. |
-| 3 | Guardar una carpeta y un archivo | Preparar `CARPETA` y `ARCHIVO` para formar una ruta. |
-| 4 | Recibir un dato | Leer `$1` y usar `alumno` como valor de reserva. |
-| 5 | Tomar una decisión con `if` | Comprobar si existe un archivo. |
-| 6 | Repetir una tarea con `for` | Recorrer nombres de archivos. |
-| 7 | Repetir hasta terminar con `while` | Avanzar con un contador y detener el bucle. |
-| 8 | Crear una función sencilla | Agrupar y llamar una tarea reutilizable. |
-| 9 | Filtrar información con un pipeline | Pasar resultados de `grep` a `sort` mediante `|`. |
-| 10 | Preparar una carpeta de copias | Comprobar y crear una ruta con `mkdir -p`. |
-| 11 | Preparar una copia con `tar` | Revisar la fuente y expresar una copia comprimida. |
-| 12 | Crear y verificar una copia | Combinar función, condición, `tar` y `sha256sum`. |
+### Actualización segura desde v2
 
-Las doce soluciones de referencia pasan las cuatro comprobaciones estáticas
-de su reto. Esto acredita que la estructura escrita contiene los elementos
-que se practican; no significa que el script se haya ejecutado ni que se haya
-leído, creado o verificado un archivo real.
+Las versiones asignadas son inmutables. Al ejecutar `seed_bash` sobre v2, el
+comando publica una v3 nueva, crea su asignación y archiva las asignaciones
+anteriores del mismo itinerario. Borradores, entregas, calificaciones y demás
+evidencias siguen vinculados a sus versiones y asignaciones originales.
 
-### Actualización segura desde v1
+Al migrar el título de una asignación, el título incorporado v2 conocido se
+sustituye por el título v3. Un título distinto que haya escrito el docente se
+conserva como personalización. Repetir el comando es idempotente: no duplica
+el catálogo y no modifica una revisión posterior creada por el centro.
 
-Al arrancar una instalación existente con el catálogo precargado, o al volver
-a ejecutar `seed_bash`, la actividad conserva su slug y recibe una versión v2
-inmutable. La asignación nueva se vincula al grupo y las asignaciones
-anteriores se archivan solo para ese mismo itinerario. Las entregas,
-borradores, cálculos de nota y demás evidencias siguen ligados a su asignación
-y a su versión originales; no se borran ni se recalculan por la actualización.
+## DSL de pruebas Bash
 
-El proceso es idempotente: repetirlo no crea un segundo conjunto de doce
-retos ni sustituye una solución personalizada por el centro. Si una actividad
-ya tiene una versión posterior creada por el centro, el catálogo incorporado
-no la degrada ni la reemplaza. Los slugs históricos se mantienen precisamente
-para que esta actualización sea reconocible en instalaciones ya utilizadas.
+Las pruebas son declarativas y se validan antes de publicar una actividad. No
+aceptan campos desconocidos, expresiones Python, `eval`, regex de corrección ni
+órdenes arbitrarias.
 
-## DSL de tests Bash
-
-Las definiciones son declarativas y se validan antes de guardar/publicar una
-actividad. Los tests no aceptan campos desconocidos ni expresiones Python,
-regex de corrección, `eval` ni órdenes arbitrarias:
-
-| Tipo | Definición | Comportamiento |
+| Tipo | Definición | Qué comprueba |
 |---|---|---|
-| `bash.syntax_valid` | `{}` | El árbol Bash no contiene errores sintácticos. |
-| `bash.shebang` | `{}` o `{"expected": "/usr/bin/env bash"}` | Comprueba el shebang inicial; también admite `{"interpreter": "bash"}`. |
-| `bash.command_used` | `{"command": "tar"}`; opcional `args: ["-czf", "$ARCHIVE"]` | Busca un nodo `command` con nombre y argumentos literales. No expande variables ni ejecuta la orden. |
-| `bash.variable_assigned` | `{"name": "BACKUP_DIR"}` | Comprueba una asignación de variable, incluida la variable de control de un `for`. |
-| `bash.node_kind` | `{"kind": "if_statement"}` | Busca un tipo de nodo de la gramática Bash. Alias pedagógicos: `if`, `for`, `while`, `function`, `case`, `pipeline`. |
+| `bash.syntax_valid` | `{}` | Que el árbol Bash no contenga un error sintáctico. |
+| `bash.shebang` | `{}`; `{"expected": "/usr/bin/env bash"}` | El shebang inicial; también admite `{"interpreter": "bash"}`. |
+| `bash.command_used` | `{"command": "tar"}`; `args` opcional | Presencia de un comando y, opcionalmente, argumentos literales. |
+| `bash.variable_assigned` | `{"name": "BACKUP_DIR"}` | Una asignación de variable, incluida una variable de `for`. |
+| `bash.node_kind` | `{"kind": "if"}` | Un tipo de nodo. Alias: `if`, `for`, `while`, `function`, `case`, `pipeline`. |
 
-El parser es `tree-sitter-bash`. Cada evaluación analiza el fichero una sola
-vez y reutiliza el árbol para todos los tests. Se limita el fichero a 256 KiB,
-el conjunto de archivos a 1 MiB, el lote a 200 tests, el árbol Bash a 5.000
-nodos y la profundidad a 80 niveles. Un árbol con error sintáctico produce
-feedback de fallo; superar un límite rechaza la evaluación como entrada no
-válida. En ningún caso se inicia `/bin/bash`, un proceso hijo, una red o una
-lectura/escritura del sistema de archivos.
+El evaluador analiza cada archivo una vez y reutiliza el árbol. Limita cada
+fichero a 256 KiB, el conjunto a 1 MiB, el lote a 200 pruebas, el árbol Bash a
+5.000 nodos y la profundidad a 80. Superar un límite o tener sintaxis inválida
+produce feedback del corrector; no provoca ejecución de código.
 
-La cobertura está orientada a fundamentos y estructuras frecuentes: comandos,
-variables, asignaciones, `if`, `for`, `while`, funciones, pipelines,
-redirecciones y `case`. No se promete semántica de ejecución, expansión de
-globs, permisos efectivos, estado del sistema, contenido de archivos ni
-resultado real de una copia. Construcciones que el árbol marque con error no
-pueden obtener puntuación de sintaxis hasta que se escriban de una forma
-compatible con el reto.
+No se comprueba semántica de ejecución, expansión de variables o globs,
+permisos efectivos, existencia o contenido real de archivos, ni el resultado
+de una copia. El catálogo no presenta estas comprobaciones estructurales como
+pruebas de que la operación haya ocurrido.
 
-## XP, niveles y calificación
+## XP y calificación
 
-La experiencia se calcula en el servidor a partir del mejor resultado
-automático válido de cada asignación:
+La experiencia se calcula a partir del mejor resultado automático válido de
+cada asignación:
 
 ```text
 earned_xp = floor(xp_reward * best_automatic_score / 10)
 ```
 
-El valor máximo de `xp_reward` es 1.000. La puntuación automática está entre 0
-y 10; un resultado de al menos 8 completa el reto. Cada 500 XP comienza un
-nivel nuevo. Los intentos repetidos no generan XP adicional: solo el máximo
-automático por asignación cuenta, y los resultados con error del corrector o
-sin calificación automática se ignoran.
-
-XP y calificación son conceptos separados. La nota oficial sigue siendo el
-cálculo publicado por el profesor y las políticas de intentos de la
-asignación; XP no se exporta como nota, no modifica rúbricas y no crea una
-clasificación pública. Las insignias se derivan de forma determinista de los
-retos completados y del XP de ese alumno, sin ranking entre compañeros.
-
-El dashboard del alumno expone por asignación `language`, `difficulty`,
-`xp_reward`, `earned_xp`, `completed` y `progress` (porcentaje basado en la
-mejor puntuación automática). En `gamification` expone `total_xp`, `level`,
-`level_progress` (porcentaje dentro del nivel), `xp_to_next_level`,
-`completed_challenges` y las insignias `{id, title, description}`.
+Una puntuación de al menos 8 completa el reto. XP es feedback formativo y no
+una calificación oficial: la nota depende de las políticas publicadas por el
+profesor y de la asignación. Reintentos posteriores no añaden XP si no mejoran
+el resultado automático.

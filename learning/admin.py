@@ -47,6 +47,13 @@ class ActivityVersionAdmin(admin.ModelAdmin):
     search_fields = ("activity__title", "instructions")
 
 
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
+    list_display = ("title", "slug", "web_stage", "active")
+    list_filter = ("active", "web_stage")
+    search_fields = ("title", "slug")
+
+
 class ReadOnlyAcademicAdmin(admin.ModelAdmin):
     """Expose academic links for inspection without bypassing domain services."""
 
@@ -82,7 +89,6 @@ admin.site.register(
         AcademicYear,
         Cohort,
         TeachingAssignment,
-        Course,
         Module,
         Activity,
         Rubric,

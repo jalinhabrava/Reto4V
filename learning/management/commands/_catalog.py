@@ -94,7 +94,9 @@ def get_or_create_catalog_assignment(*, activity, version, defaults):
             return existing, False
 
 
-def get_or_create_catalog_revision_assignment(*, activity, version, cohort, defaults):
+def get_or_create_catalog_revision_assignment(
+    *, activity, version, cohort, defaults, previous_catalog_titles=(),
+):
     """Create the active assignment for a newer built-in catalogue revision.
 
     A revision is a new immutable ``ActivityVersion`` and therefore needs a
@@ -124,7 +126,7 @@ def get_or_create_catalog_revision_assignment(*, activity, version, cohort, defa
         # Keep a title explicitly customised by a teacher.  A blank legacy
         # override must not erase the clearer title supplied by the new
         # catalogue revision.
-        if previous.title_override:
+        if previous.title_override and previous.title_override not in previous_catalog_titles:
             create_defaults["title_override"] = previous.title_override
         for field in (
             "opens_at",

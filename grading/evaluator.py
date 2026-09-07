@@ -12,8 +12,10 @@ only this static evaluator can contribute to an official MVP score.
 from __future__ import annotations
 
 import ast
+import re
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from math import isfinite
 from typing import Any, Iterable
 
 import esprima
@@ -27,6 +29,8 @@ MAX_TOTAL_BYTES = 1024 * 1024
 MAX_SELECTOR_LENGTH = 500
 MAX_TESTS = 200
 MAX_NODES = 20_000
+MAX_JS_NODES = 5_000
+MAX_JS_DEPTH = 80
 MAX_BASH_NODES = 5_000
 MAX_BASH_DEPTH = 80
 MAX_PYTHON_NODES = 5_000
@@ -49,6 +53,10 @@ SUPPORTED_TYPES = {
     "css.forbidden_declaration_absent",
     "js.function_declared",
     "js.variable_declared",
+    "js.call_used",
+    "js.node_kind",
+    "js.return_expression",
+    "js.assignment_equals",
     "js.event_listener_registered",
     "js.syntax_valid",
     "js.forbidden_api_absent",
@@ -88,6 +96,10 @@ _REQUIRED = {
     "css.forbidden_declaration_absent": {"property"},
     "js.function_declared": {"name"},
     "js.variable_declared": {"name"},
+    "js.call_used": {"name"},
+    "js.node_kind": {"kind"},
+    "js.return_expression": {"operator", "left", "right"},
+    "js.assignment_equals": {"target", "expected"},
     "js.event_listener_registered": {"event"},
     "js.syntax_valid": set(),
     "js.forbidden_api_absent": {"api"},
@@ -118,6 +130,12 @@ _OPTIONAL_BY_TYPE = {
     "bash.command_used": {"command", "args"},
     "bash.variable_assigned": {"name"},
     "bash.node_kind": {"kind"},
+    "js.function_declared": {"name"},
+    "js.variable_declared": {"name", "expected", "operator", "left", "right"},
+    "js.call_used": {"name", "args", "arg_names"},
+    "js.node_kind": {"kind"},
+    "js.return_expression": {"operator", "left", "right"},
+    "js.assignment_equals": {"target", "expected"},
     "python.syntax_valid": set(),
     "python.assignment": {"name"},
     "python.variable_assigned": {"name"},
@@ -151,6 +169,47 @@ BASH_NODE_KIND_ALIASES = {
     "variable_assignment": "variable_assignment",
     "redirected_statement": "redirected_statement",
 }
+
+# This is deliberately a small teaching-oriented allow-list.  A catalogue may
+# only ask about syntax introduced in its own lesson; it cannot turn the
+# generic AST into an unchecked teacher-defined query language.
+JS_NODE_KIND_ALIASES = {
+    "array": "ArrayExpression",
+    "array_expression": "ArrayExpression",
+    "assignment": "AssignmentExpression",
+    "call": "CallExpression",
+    "for_of": "ForOfStatement",
+    "for_of_statement": "ForOfStatement",
+    "function": "FunctionDeclaration",
+    "function_declaration": "FunctionDeclaration",
+    "if": "IfStatement",
+    "if_statement": "IfStatement",
+    "return": "ReturnStatement",
+    "return_statement": "ReturnStatement",
+    "variable_declaration": "VariableDeclaration",
+}
+JS_IDENTIFIER_RE = re.compile(r"[A-Za-z_$][A-Za-z0-9_$]*")
+_JS_NOT_LITERAL = object()
+
+
+def _valid_js_name(value: Any) -> bool:
+    return isinstance(value, str) and bool(value) and all(
+        JS_IDENTIFIER_RE.fullmatch(part) for part in value.split(".")
+    )
+
+
+def _valid_js_literal(value: Any) -> bool:
+    """Accept only JSON-sized scalar literals; never expressions or objects."""
+
+    if isinstance(value, list):
+        return len(value) <= 16 and all(_valid_js_literal(item) and not isinstance(item, list) for item in value)
+    if value is None or isinstance(value, bool):
+        return True
+    if isinstance(value, str):
+        return len(value) <= MAX_SELECTOR_LENGTH
+    if isinstance(value, int):
+        return len(str(value)) <= 128
+    return isinstance(value, float) and isfinite(value)
 
 PYTHON_FILE_KEYS = ("python",)
 PYTHON_FILE_ALIASES = {"python": "python", "main.py": "python"}
@@ -359,7 +418,9 @@ def _definition_for(test_case: Any) -> tuple[str, str, dict[str, Any], Decimal, 
         }:
             if not isinstance(value, str) or not value or len(value) > MAX_SELECTOR_LENGTH:
                 raise EvaluatorValidationError(f"El campo {key} de {name!r} no es válido.")
-    if "expected" in definition and not isinstance(definition["expected"], (str, int, float, bool)):
+    if "expected" in definition and not isinstance(definition["expected"], (str, int, float, bool)) and not (
+        test_type == "js.variable_declared" and _valid_js_literal(definition["expected"])
+    ):
         raise EvaluatorValidationError(f"El campo expected de {name!r} no es válido.")
     if test_type == "bash.shebang" and "expected" in definition and not isinstance(definition["expected"], str):
         raise EvaluatorValidationError(f"El campo expected de {name!r} debe ser texto.")
@@ -374,6 +435,59 @@ def _definition_for(test_case: Any) -> tuple[str, str, dict[str, Any], Decimal, 
     if test_type == "bash.node_kind":
         if definition["kind"].lower() not in BASH_NODE_KIND_ALIASES:
             raise EvaluatorValidationError(f"El tipo de nodo Bash de {name!r} no está permitido.")
+    if test_type in {"js.function_declared", "js.variable_declared", "js.call_used"}:
+        candidate = definition["name"]
+        if not _valid_js_name(candidate):
+            raise EvaluatorValidationError(f"El nombre JavaScript de {name!r} no es válido.")
+    if test_type == "js.variable_declared" and "expected" in definition:
+        if not _valid_js_literal(definition["expected"]):
+            raise EvaluatorValidationError(
+                f"El literal esperado de {name!r} no es válido."
+            )
+    if test_type == "js.variable_declared":
+        binary_fields = {"operator", "left", "right"}
+        present = binary_fields & set(definition)
+        if present and present != binary_fields:
+            raise EvaluatorValidationError(
+                f"El inicializador de {name!r} debe indicar operator, left y right."
+            )
+        if present:
+            if "expected" in definition or definition["operator"] not in {"+", "-", "*", "/"}:
+                raise EvaluatorValidationError(f"El inicializador de {name!r} no es válido.")
+            if not _valid_js_name(definition["left"]) or not (
+                _valid_js_name(definition["right"]) or _valid_js_literal(definition["right"])
+            ):
+                raise EvaluatorValidationError(f"Los operandos de {name!r} no son válidos.")
+    if test_type == "js.call_used":
+        if "args" in definition:
+            args = definition["args"]
+            if not isinstance(args, list) or len(args) > 16 or any(
+                not _valid_js_literal(argument) for argument in args
+            ):
+                raise EvaluatorValidationError(f"Los argumentos de {name!r} no son válidos.")
+        if "arg_names" in definition:
+            arg_names = definition["arg_names"]
+            if not isinstance(arg_names, list) or len(arg_names) > 16 or any(
+                not _valid_js_name(argument) for argument in arg_names
+            ):
+                raise EvaluatorValidationError(
+                    f"Los nombres de argumento de {name!r} no son válidos."
+                )
+    if test_type == "js.node_kind":
+        if definition["kind"].lower() not in JS_NODE_KIND_ALIASES:
+            raise EvaluatorValidationError(
+                f"El tipo de nodo JavaScript de {name!r} no está permitido."
+            )
+    if test_type == "js.return_expression":
+        if definition["operator"] not in {"+", "-", "*", "/"}:
+            raise EvaluatorValidationError(f"El operador de retorno de {name!r} no es válido.")
+        if not _valid_js_name(definition["left"]) or not (
+            _valid_js_name(definition["right"]) or _valid_js_literal(definition["right"])
+        ):
+            raise EvaluatorValidationError(f"Los operandos de retorno de {name!r} no son válidos.")
+    if test_type == "js.assignment_equals":
+        if not _valid_js_name(definition["target"]) or not _valid_js_literal(definition["expected"]):
+            raise EvaluatorValidationError(f"La asignación esperada de {name!r} no es válida.")
     if test_type in {"python.assignment", "python.variable_assigned", "python.function_declared"}:
         candidate = definition["name"]
         if not candidate.isidentifier():
@@ -512,31 +626,56 @@ def _css_rules(rules: Iterable[Any]):
             yield selector, declarations
 
 
-def _parse_js(javascript: str):
-    try:
-        return esprima.parseScript(javascript, tolerant=False), None
-    except Exception as exc:  # esprima raises several parser-specific classes
-        return None, str(exc)
+@dataclass(frozen=True)
+class JavaScriptAnalysis:
+    """One bounded Esprima AST, treated only as static student data."""
+
+    root: Any | None
+    nodes: tuple[Any, ...]
+    syntax_error: str | None = None
 
 
-def _walk(node: Any):
-    if node is None:
+def _walk_js(root: Any):
+    """Iteratively traverse Esprima nodes so deeply nested input cannot recurse."""
+
+    if root is None:
         return
-    if isinstance(node, list):
-        for item in node:
-            yield from _walk(item)
-        return
-    if not hasattr(node, "type"):
-        return
-    yield node
-    for key, value in vars(node).items():
-        if key.startswith("_"):
+    stack: list[tuple[Any, int]] = [(root, 0)]
+    visited = 0
+    while stack:
+        node, depth = stack.pop()
+        if isinstance(node, (list, tuple)):
+            stack.extend((item, depth) for item in reversed(node))
             continue
-        if isinstance(value, (list, tuple)):
-            for item in value:
-                yield from _walk(item)
-        elif hasattr(value, "type"):
-            yield from _walk(value)
+        if not hasattr(node, "type"):
+            continue
+        visited += 1
+        if visited > MAX_JS_NODES:
+            raise EvaluatorValidationError("El JavaScript contiene demasiados nodos.")
+        if depth > MAX_JS_DEPTH:
+            raise EvaluatorValidationError("El JavaScript tiene una anidación excesiva.")
+        yield node
+        children: list[Any] = []
+        for key, value in vars(node).items():
+            if key.startswith("_"):
+                continue
+            if isinstance(value, (list, tuple)):
+                children.extend(value)
+            elif hasattr(value, "type"):
+                children.append(value)
+        stack.extend((child, depth + 1) for child in reversed(children))
+
+
+def _parse_js(javascript: str) -> JavaScriptAnalysis:
+    """Parse once without evaluating, importing, or otherwise running source."""
+
+    try:
+        root = esprima.parseScript(javascript, tolerant=False)
+        return JavaScriptAnalysis(root, tuple(_walk_js(root)))
+    except (MemoryError, RecursionError) as exc:
+        raise EvaluatorValidationError("El JavaScript es demasiado complejo para analizarlo.") from exc
+    except Exception as exc:  # esprima raises several parser-specific classes
+        return JavaScriptAnalysis(None, (), str(exc))
 
 
 def _identifier_name(node: Any) -> str | None:
@@ -556,6 +695,49 @@ def _member_chain(node: Any) -> str | None:
     if left and isinstance(prop, str):
         return f"{left}.{prop}"
     return None
+
+
+def _js_literal_value(node: Any):
+    if getattr(node, "type", None) == "Literal" and _valid_js_literal(getattr(node, "value", None)):
+        return getattr(node, "value", None)
+    if getattr(node, "type", None) == "ArrayExpression":
+        values = [_js_literal_value(element) for element in getattr(node, "elements", [])]
+        if _valid_js_literal(values) and all(value is not _JS_NOT_LITERAL for value in values):
+            return values
+    return _JS_NOT_LITERAL
+
+
+def _js_call_literal_args(node: Any) -> list[Any] | None:
+    values: list[Any] = []
+    for argument in getattr(node, "arguments", []):
+        value = _js_literal_value(argument)
+        if value is _JS_NOT_LITERAL:
+            return None
+        values.append(value)
+    return values
+
+
+def _js_call_argument_names(node: Any) -> list[str] | None:
+    values: list[str] = []
+    for argument in getattr(node, "arguments", []):
+        name = _member_chain(argument)
+        if name is None:
+            return None
+        values.append(name)
+    return values
+
+
+def _js_binary_matches(node: Any, operator: str, left: str, right: Any) -> bool:
+    return (
+        getattr(node, "type", None) == "BinaryExpression"
+        and getattr(node, "operator", None) == operator
+        and _member_chain(getattr(node, "left", None)) == left
+        and (
+            _member_chain(getattr(node, "right", None)) == right
+            if isinstance(right, str) and _valid_js_name(right)
+            else _js_literal_value(getattr(node, "right", None)) == right
+        )
+    )
 
 
 @dataclass(frozen=True)
@@ -1266,6 +1448,7 @@ def _run_test(
     *,
     bash_analysis: BashAnalysis | None = None,
     python_analysis: PythonAnalysis | None = None,
+    javascript_analysis: JavaScriptAnalysis | None = None,
 ) -> tuple[bool, dict[str, Any]]:
     if test_type.startswith("bash."):
         if bash_analysis is None:
@@ -1323,22 +1506,81 @@ def _run_test(
         found = any(getattr(decl, "type", None) == "declaration" and decl.name.lower() == property_name for _, declarations in _css_rules(rules) for decl in declarations)
         return (not found) and not malformed, {"property": property_name, "found": found}
 
-    tree, syntax_error = _parse_js(files["javascript"])
+    if javascript_analysis is None:
+        javascript_analysis = _parse_js(files["javascript"])
+    syntax_error = javascript_analysis.syntax_error
     if test_type == "js.syntax_valid":
         return syntax_error is None, {"error": syntax_error or ""}
     if syntax_error is not None:
         return False, {"error": "El JavaScript no tiene una sintaxis válida."}
-    nodes = list(_walk(tree))
-    if len(nodes) > MAX_NODES:
-        raise EvaluatorValidationError("El JavaScript contiene demasiados nodos.")
+    nodes = javascript_analysis.nodes
     if test_type == "js.function_declared":
         name = definition["name"]
         found = any(getattr(node, "type", None) == "FunctionDeclaration" and _identifier_name(getattr(node, "id", None)) == name for node in nodes)
         return found, {"name": name}
     if test_type == "js.variable_declared":
         name = definition["name"]
-        found = any(getattr(node, "type", None) == "VariableDeclarator" and _identifier_name(getattr(node, "id", None)) == name for node in nodes)
+        expected = definition.get("expected", _JS_NOT_LITERAL)
+        found = any(
+            getattr(node, "type", None) == "VariableDeclarator"
+            and _identifier_name(getattr(node, "id", None)) == name
+            and (
+                expected is _JS_NOT_LITERAL
+                or _js_literal_value(getattr(node, "init", None)) == expected
+            )
+            and (
+                "operator" not in definition
+                or _js_binary_matches(
+                    getattr(node, "init", None),
+                    definition["operator"],
+                    definition["left"],
+                    definition["right"],
+                )
+            )
+            for node in nodes
+        )
         return found, {"name": name}
+    if test_type == "js.call_used":
+        name = definition["name"]
+        expected_args = definition.get("args")
+        expected_arg_names = definition.get("arg_names")
+        matches = []
+        for node in nodes:
+            if getattr(node, "type", None) != "CallExpression":
+                continue
+            if _member_chain(getattr(node, "callee", None)) != name:
+                continue
+            if expected_args is not None and _js_call_literal_args(node) != expected_args:
+                continue
+            if expected_arg_names is not None and _js_call_argument_names(node) != expected_arg_names:
+                continue
+            matches.append(node)
+        return bool(matches), {"name": name, "matches": len(matches)}
+    if test_type == "js.node_kind":
+        expected_kind = JS_NODE_KIND_ALIASES[definition["kind"].lower()]
+        count = sum(getattr(node, "type", None) == expected_kind for node in nodes)
+        return count > 0, {"kind": expected_kind, "count": count}
+    if test_type == "js.return_expression":
+        matches = sum(
+            _js_binary_matches(
+                getattr(node, "argument", None),
+                definition["operator"],
+                definition["left"],
+                definition["right"],
+            )
+            for node in nodes
+            if getattr(node, "type", None) == "ReturnStatement"
+        )
+        return matches > 0, {"matches": matches}
+    if test_type == "js.assignment_equals":
+        matches = sum(
+            getattr(node, "operator", None) == "="
+            and _member_chain(getattr(node, "left", None)) == definition["target"]
+            and _js_literal_value(getattr(node, "right", None)) == definition["expected"]
+            for node in nodes
+            if getattr(node, "type", None) == "AssignmentExpression"
+        )
+        return matches > 0, {"matches": matches, "target": definition["target"]}
     if test_type == "js.event_listener_registered":
         event = definition["event"]
         target = definition.get("target")
@@ -1391,6 +1633,7 @@ def evaluate_tests(
         raise EvaluatorValidationError("Una versión no puede tener más de 200 tests.")
     bash_analysis = _parse_bash(normalised_files["bash"]) if language == "bash" else None
     python_analysis = _parse_python(normalised_files["python"]) if language == "python" else None
+    javascript_analysis = _parse_js(normalised_files["javascript"]) if language == "web" else None
     results: list[EvaluationResult] = []
     try:
         for _index, case in enumerate(cases):
@@ -1414,6 +1657,7 @@ def evaluate_tests(
                     normalised_files,
                     bash_analysis=bash_analysis,
                     python_analysis=python_analysis,
+                    javascript_analysis=javascript_analysis,
                 )
                 status = "passed" if passed else "failed"
             except (EvaluatorValidationError, Exception) as exc:

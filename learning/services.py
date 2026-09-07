@@ -68,6 +68,13 @@ def set_student_cohort(student, cohort) -> Enrollment:
             "El grupo seleccionado todavía no tiene un primer reto publicado para su itinerario."
         )
 
+    # The JavaScript bypass is meaningful only while the student is enrolled
+    # in Web.  Clearing it here keeps direct callers of this service aligned
+    # with the account administration workflow.
+    if locked_cohort.track != Cohort.Track.WEB and locked_student.javascript_enabled:
+        locked_student.javascript_enabled = False
+        locked_student.save(update_fields=["javascript_enabled"])
+
     enrollment = (
         Enrollment.objects.select_for_update()
         .filter(student=locked_student, cohort=locked_cohort)

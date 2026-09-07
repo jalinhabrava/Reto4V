@@ -93,12 +93,14 @@ class UserCreateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("username", "display_name", "role", "is_active", "password")
+        fields = ("username", "display_name", "role", "javascript_enabled", "is_active", "password")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["cohort"].queryset = available_cohorts()
-        self.order_fields(("username", "display_name", "role", "cohort", "is_active", "password"))
+        self.fields["javascript_enabled"].label = "Permitir JavaScript sin completar HTML y CSS"
+        self.fields["javascript_enabled"].help_text = "Solo se aplica al alumnado del itinerario Web."
+        self.order_fields(("username", "display_name", "role", "cohort", "javascript_enabled", "is_active", "password"))
 
     def clean_username(self):
         username = self.cleaned_data["username"].strip()
@@ -117,6 +119,9 @@ class UserCreateForm(forms.ModelForm):
             # value submitted by a stale form makes role changes predictable
             # and lets the transaction service clear any old enrollment.
             cleaned_data["cohort"] = None
+            cleaned_data["javascript_enabled"] = False
+        elif not cohort or cohort.track != Cohort.Track.WEB:
+            cleaned_data["javascript_enabled"] = False
         return cleaned_data
 
     def clean_password(self):
@@ -152,12 +157,14 @@ class UserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("display_name", "role", "is_active", "must_change_password")
+        fields = ("display_name", "role", "javascript_enabled", "is_active", "must_change_password")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["cohort"].queryset = available_cohorts()
-        self.order_fields(("display_name", "role", "cohort", "is_active", "must_change_password"))
+        self.fields["javascript_enabled"].label = "Permitir JavaScript sin completar HTML y CSS"
+        self.fields["javascript_enabled"].help_text = "Solo se aplica al alumnado del itinerario Web."
+        self.order_fields(("display_name", "role", "cohort", "javascript_enabled", "is_active", "must_change_password"))
         if self.instance and self.instance.pk and self.instance.is_superuser:
             self.initial["role"] = User.Role.ADMIN
         if self.instance and self.instance.pk:
@@ -178,8 +185,11 @@ class UserUpdateForm(forms.ModelForm):
             cleaned_data["role"] = role
         if role != User.Role.STUDENT:
             cleaned_data["cohort"] = None
+            cleaned_data["javascript_enabled"] = False
         elif cleaned_data.get("cohort") is None:
             self.add_error("cohort", "Selecciona un ciclo e itinerario para una cuenta de alumno.")
+        elif cleaned_data["cohort"].track != Cohort.Track.WEB:
+            cleaned_data["javascript_enabled"] = False
         return cleaned_data
 
     def save(self, commit=True):

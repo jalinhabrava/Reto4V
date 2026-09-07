@@ -7,6 +7,8 @@ from django.utils import timezone
 
 from accounts.models import User
 from grading.services import DraftConflict, create_submission, get_or_create_draft, save_draft
+from learning.management.commands.seed_javascript import CHALLENGES as JAVASCRIPT_CHALLENGES
+from learning.management.commands.seed_python import CHALLENGES as PYTHON_CHALLENGES
 from learning.management.commands.seed_web import CHALLENGES as WEB_CHALLENGES
 from learning.management.commands.seed_web import CURRICULUM_SOURCE as WEB_CURRICULUM_SOURCE
 from learning.management.commands.seed_web import WEB_CATALOG_VERSION
@@ -60,10 +62,10 @@ class DraftTests(LearningFactoryMixin, TestCase):
             .prefetch_related("test_cases")
             .order_by("activity__title")
         )
-        self.assertEqual(len(versions), 12)
+        self.assertEqual(len(versions), len(WEB_CHALLENGES))
         self.assertTrue(all(version.language == ActivityVersion.Language.WEB for version in versions))
         self.assertTrue(all(version.version_number == WEB_CATALOG_VERSION for version in versions))
-        self.assertEqual(Assignment.objects.filter(activity_version__in=versions).count(), 12)
+        self.assertEqual(Assignment.objects.filter(activity_version__in=versions).count(), len(WEB_CHALLENGES))
         self.assertEqual(
             [version.activity.title for version in versions],
             [item["title"] for item in WEB_CHALLENGES],
@@ -72,8 +74,9 @@ class DraftTests(LearningFactoryMixin, TestCase):
             sum(version.test_cases.count() for version in versions),
             sum(len(item["tests"]) for item in WEB_CHALLENGES),
         )
-        expected_file_sets = [{"html"}] * 5 + [{"html", "css"}] * 4 + [{"html", "css", "javascript"}] * 3
-        self.assertEqual([set(item["starter"]) for item in WEB_CHALLENGES], expected_file_sets)
+        self.assertEqual([set(item["starter"]) for item in WEB_CHALLENGES[:3]], [{"html"}] * 3)
+        self.assertTrue(any("css" in item["starter"] for item in WEB_CHALLENGES))
+        self.assertTrue(all(set(item["starter"]) <= {"html", "css"} for item in WEB_CHALLENGES))
         for version in versions:
             item = next(item for item in WEB_CHALLENGES if item["slug"] == version.activity.slug)
             self.assertNotEqual(version.starter_files, version.reference_solution)
@@ -81,6 +84,11 @@ class DraftTests(LearningFactoryMixin, TestCase):
             self.assertEqual(set(version.reference_solution), set(item["starter"]))
             self.assertEqual(version.hints, item["hints"])
             self.assertEqual(version.objectives, item["objectives"])
+            self.assertIn("## Ejemplo explicado", version.instructions)
+            self.assertIn(item["example"], version.instructions)
+            self.assertIn(item["example_explanation"], version.instructions)
+            starter_report = evaluate_tests(version.starter_files, list(version.test_cases.all()), language="web")
+            self.assertLess(starter_report.score, 8, item["title"])
             self.assertEqual(version.professional_module_code, "0228")
             self.assertEqual(version.curriculum_source, WEB_CURRICULUM_SOURCE)
             self.assertEqual(version.activity.current_version_id, version.id)
@@ -92,7 +100,7 @@ class DraftTests(LearningFactoryMixin, TestCase):
         call_command("seed_web", owner=self.teacher.username, cohort="1SMR", academic_year="2025-2026", stdout=None)
         self.assertEqual(
             ActivityVersion.objects.filter(activity__module__course=course).count(),
-            12,
+            len(WEB_CHALLENGES),
         )
 
     def test_seed_web_publishes_v2_without_overwriting_an_assigned_v1(self):
@@ -143,7 +151,7 @@ class DraftTests(LearningFactoryMixin, TestCase):
         activity.refresh_from_db()
         legacy.refresh_from_db()
         refreshed = ActivityVersion.objects.get(activity=activity, version_number=WEB_CATALOG_VERSION)
-        self.assertEqual(Activity.objects.filter(module=module).count(), 12)
+        self.assertEqual(Activity.objects.filter(module=module).count(), len(WEB_CHALLENGES))
         self.assertEqual(activity.current_version_id, refreshed.id)
         self.assertEqual(activity.title, "01 · Estructura semántica")
         self.assertEqual(legacy.starter_files, legacy_files)
@@ -158,28 +166,29 @@ class DraftTests(LearningFactoryMixin, TestCase):
         before_students = User.objects.filter(role=User.Role.STUDENT).count()
         call_command("bootstrap_catalogs")
         expected_courses = {
-            "fundamentos-web-smr": ActivityVersion.Language.WEB,
-            "laboratorio-bash-seguridad-asir": ActivityVersion.Language.BASH,
-            "introduccion-python-sge-dam": ActivityVersion.Language.PYTHON,
+            "fundamentos-web-smr": (ActivityVersion.Language.WEB, len(WEB_CHALLENGES)),
+            "fundamentos-javascript-smr": (ActivityVersion.Language.WEB, len(JAVASCRIPT_CHALLENGES)),
+            "laboratorio-bash-seguridad-asir": (ActivityVersion.Language.BASH, 12),
+            "introduccion-python-sge-dam": (ActivityVersion.Language.PYTHON, len(PYTHON_CHALLENGES)),
         }
-        for slug, language in expected_courses.items():
+        for slug, (language, count) in expected_courses.items():
             course = Course.objects.get(slug=slug)
             versions = ActivityVersion.objects.filter(activity__module__course=course)
-            self.assertEqual(versions.count(), 12)
+            self.assertEqual(versions.count(), count)
             self.assertEqual(versions.values_list("language", flat=True).distinct().get(), language)
             self.assertEqual(
                 Assignment.objects.filter(activity_version__in=versions).count(),
-                12,
+                count,
             )
         self.assertEqual(User.objects.filter(role=User.Role.STUDENT).count(), before_students)
         service_owner = User.objects.get(username=CATALOG_SERVICE_USERNAME)
         self.assertFalse(service_owner.is_active)
         self.assertFalse(service_owner.has_usable_password())
         call_command("bootstrap_catalogs", stdout=None)
-        self.assertEqual(Course.objects.filter(slug__in=expected_courses).count(), 3)
+        self.assertEqual(Course.objects.filter(slug__in=expected_courses).count(), 4)
         self.assertEqual(
             ActivityVersion.objects.filter(activity__module__course__slug__in=expected_courses).count(),
-            36,
+            sum(count for _, count in expected_courses.values()),
         )
 
     def test_bootstrap_uses_an_active_fallback_without_reactivating_closed_year(self):
@@ -235,8 +244,8 @@ class DraftTests(LearningFactoryMixin, TestCase):
         self.client.force_login(self.student)
         dashboard = self.client.get(reverse("student_dashboard"), HTTP_ACCEPT="application/json")
         self.assertEqual(dashboard.status_code, 200)
-        self.assertEqual(len(dashboard.json()["assignments"]), 12)
-        self.assertEqual(dashboard.json()["assignments"][0]["title"], "01 · Mi primera página")
+        self.assertEqual(len(dashboard.json()["assignments"]), len(WEB_CHALLENGES) + len(JAVASCRIPT_CHALLENGES))
+        self.assertEqual(dashboard.json()["assignments"][0]["title"], WEB_CHALLENGES[0]["title"])
 
         foreign_cohort = Cohort.objects.create(
             name="2ASIR-C",
@@ -343,7 +352,10 @@ class DraftTests(LearningFactoryMixin, TestCase):
             .prefetch_related("test_cases")
         )
         self.assertEqual(len(versions), 12)
-        self.assertEqual(sum(version.test_cases.count() for version in versions), 67)
+        self.assertEqual(
+            sum(version.test_cases.count() for version in versions),
+            sum(len(item["tests"]) for item in PYTHON_CHALLENGES),
+        )
         self.assertEqual(Assignment.objects.filter(activity_version__in=versions).count(), 12)
         self.assertTrue(all(not version.learning_outcomes and not version.assessment_criteria for version in versions))
         reports = [

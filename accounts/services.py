@@ -26,6 +26,17 @@ def save_user_with_cohort(user, cohort=None):
     if not user.is_superuser and user.role == User.Role.STUDENT and cohort is None:
         raise ValidationError({"cohort": "Selecciona un ciclo e itinerario para el alumno."})
 
+    # This is an individual, Web-only override.  Ignore stale form values for
+    # staff accounts and non-Web cohorts so a later role or itinerary change
+    # cannot silently retain privileged access.
+    if (
+        user.is_superuser
+        or user.role != User.Role.STUDENT
+        or cohort is None
+        or cohort.track != "web"
+    ):
+        user.javascript_enabled = False
+
     user.save()
 
     # Import lazily to keep the accounts app importable while Django builds

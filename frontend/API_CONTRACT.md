@@ -13,7 +13,7 @@ Cada actividad publicada pertenece a un itinerario:
   experiencia previa con Bash; el navegador no ejecuta este archivo.
 - `language: "python"`: editor de un único archivo `python` (`main.py`) para
   la introducción a Python de 2.º DAM, Sistemas de Gestión Empresarial (0491).
-  Enlaza la base de programación con datos y archivos para preparar el trabajo
+  Introduce paso a paso la sintaxis básica como preparación para el trabajo
   posterior con Odoo; el navegador no ejecuta este archivo.
 
 La versión puede incluir `difficulty` (`beginner`, `intermediate`, `advanced`), `xp_reward` (entero no negativo) y `hints` (lista de textos u objetos). El cliente no inventa puntos, insignias ni progreso en producción: si un dato no llega, muestra un estado vacío o cero.
@@ -41,17 +41,15 @@ ejecuta `python manage.py bootstrap_catalogs` cuando `PRELOAD_CATALOGS=1` (el
 valor predeterminado). El comando es idempotente, crea o actualiza solo el
 contenido de catálogo y no crea alumnos, contraseñas de demostración ni
 entregas. Los grupos base son **Web · SMR**, **Bash · ASIR** y **Python · DAM**;
-la versión actual precarga doce retos publicados por itinerario (36 en total).
+Web contiene los cursos HTML/CSS y JavaScript. Bash y Python conservan doce
+retos cada uno; los conteos de los cursos Web se obtienen de sus catálogos.
 El propietario interno del catálogo no puede iniciar sesión y no se muestra
 en la lista de usuarios.
 
-Los tres catálogos incorporados son la revisión **v2**. Si el bootstrap
-encuentra enlaces a una revisión v1, crea las versiones y asignaciones v2,
-mueve los enlaces del grupo y archiva las asignaciones v1. Los borradores,
-entregas, calificaciones y cálculos v1 siguen guardados internamente junto a
-su asignación/version para conservar la evidencia y la integridad histórica;
-el cliente no recibe ni traslada XP o progreso de v1 a v2. Las revisiones
-posteriores creadas por el centro no se reemplazan.
+Los catálogos incorporados son HTML/CSS v4, JavaScript v1 y Bash/Python v3.
+El bootstrap crea nuevas versiones para actualizar contenido ya asignado,
+archiva las asignaciones anteriores y conserva sus evidencias sin trasladar
+progreso. Una revisión posterior del centro nunca se degrada.
 
 Para repetir el bootstrap tras una actualización:
 
@@ -196,3 +194,39 @@ Todas las mutaciones incluyen la cookie CSRF mediante `X-CSRFToken`. El cliente 
 Solo las actividades web se escriben en `iframe[srcDoc]` con `sandbox="allow-scripts"`, sin `allow-same-origin`, y con CSP interna sin red (`connect-src 'none'`). El puente de consola envía mensajes `postMessage` con canal `aulaweb-preview`; la aplicación acepta únicamente mensajes cuya ventana emisora sea el iframe actual, limita el tamaño y trata todos los valores como texto no fiable.
 
 Las actividades Bash muestran una revisión estática local (líneas, variables y patrones orientativos) y las actividades Python muestran métricas de estructura (líneas, funciones, imports y operaciones de archivo), siempre claramente marcadas como no ejecución. La validación oficial y la calificación proceden del servidor.
+
+## Lecciones desde cero
+
+`version.instructions` incluye explicación, ejemplo de código y ejercicio guiado.
+El cliente conserva los saltos de línea y la sangría de los bloques cercados
+con tres acentos graves; los renderiza como texto seguro, nunca como HTML activo.
+HTML/CSS incorpora `css` solo después de explicarlo. JavaScript es otro curso
+con `language=web`, no un lenguaje nuevo para el corrector; las pestañas siguen
+limitadas por `editor_files`.
+Python y Bash mantienen su análisis estático, sin ejecución ni salida simulada.
+Véase [criterio didáctico](../docs/DIDACTICA.md).
+
+## Acceso progresivo a JavaScript
+
+`Course.web_stage` diferencia `html_css` y `javascript`; el valor vacío se
+reserva para otros cursos. Ambos cursos Web mantienen `language=web` y la
+matrícula del mismo grupo, sin activar un segundo ciclo.
+
+Cada fila del dashboard añade `pathway`, `locked` y `lock_reason`. El resumen
+superior `pathways` expone `{id, title, total, completed, locked, unlock_override}`.
+El detalle del workspace incluye también el recorrido en `version.pathway`.
+La interfaz puede mostrar títulos bloqueados, pero no abrirlos ni recomendarlos
+como siguiente actividad. Revalida el estado al volver al resumen y durante
+su uso; no calcula permisos a partir de puntos locales.
+
+El servidor permite JS solo si todos los retos HTML/CSS publicados o cerrados
+asignados a la matrícula activa tienen una entrega automática válida de al
+menos 8/10, o si `User.javascript_enabled` está activado. Cero requisitos no
+significa completado. Borradores, comprobaciones sin entrega y notas manuales
+no desbloquean el curso. Quitar el permiso restaura la regla normal.
+
+El control se aplica al detalle, página, borrador, tests y entrega, además del
+dashboard. El permiso no evita la comprobación de rol, cohorte, estado o CSRF.
+Un administrador puede cambiarlo mediante el formulario existente de crear o
+editar usuario en `/admin-ui/users/`, con el campo `javascript_enabled`.
+No hay una ruta de alumno para concedérselo.

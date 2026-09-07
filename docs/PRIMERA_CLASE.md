@@ -4,12 +4,12 @@
 
 1. Completa la instalación y accede con la primera cuenta administrativa. El
    arranque de `web` aplica las migraciones y precarga automáticamente los
-   catálogos v2 Web · SMR, Bash · ASIR y Python · DAM cuando
+   HTML/CSS v4 y JavaScript v1 en Web · SMR, más Bash/Python v3 cuando
    `PRELOAD_CATALOGS=1` (valor predeterminado).
 2. Abre **Aulas e itinerarios** (`/admin-ui/classrooms/`) y comprueba que los
    ciclos activos muestran sus retos publicados. Si la instalación se ha
    actualizado desde una versión anterior, puedes repetir el bootstrap para
-   pasar los tres itinerarios a v2:
+   cargar las revisiones actuales:
 
    ```bash
    docker compose --env-file .env exec web python manage.py bootstrap_catalogs
@@ -57,11 +57,11 @@
    Sustituye `admin` por una cuenta administrativa o docente existente. Estos
    comandos cargan actividades, no crean alumnos ni sus contraseñas, y pueden
    repetirse sin reescribir versiones que ya estén asignadas. Si existe una
-   revisión v1 de cualquiera de los tres itinerarios, se publica la v2 como
+   revisión anterior de un itinerario, se publica la revisión actual como
    una versión nueva, se trasladan los enlaces del grupo y se archiva la
-   asignación v1. Los borradores, entregas, calificaciones y demás evidencias
+   asignación anterior. Los borradores, entregas, calificaciones y demás evidencias
    v1 se conservan internamente para integridad, pero no se trasladan XP ni
-   progreso a v2.
+   progreso entre revisiones.
 6. Comprueba desde un ordenador del aula una cuenta ficticia de estudiante y
    una cuenta de profesor. Usa TLS antes de introducir datos reales.
 
@@ -74,12 +74,23 @@ ofrece directamente **Empezar primer reto** y muestra el primer reto publicado
 de ese itinerario; no es necesario abrir una asignación manualmente.
 
 En Web, el recorrido de 1.º de SMR no presupone que el alumno sepa crear
-carpetas o guardar archivos. Solo tiene que abrir `index.html`, localizar dos
-textos ya escritos, cambiarlos siguiendo el ejemplo y pulsar **Ver mi página**
+carpetas o guardar archivos. Primero lee qué es una página y cómo funcionan
+las etiquetas. Después abre `index.html`, cambia el texto de un párrafo
+siguiendo el ejemplo y pulsa **Ver mi página**
 y **Comprobar mi trabajo**. Programmy4V guarda cada cambio automáticamente.
-Presenta las pestañas de `styles.css` y `script.js` únicamente en los retos que
-ya las necesitan; es preferible completar los retos en orden y explicar una
-sola novedad cada vez.
+Los primeros pasos trabajan solo HTML. Después aparece `styles.css`, con una
+explicación previa, y se intercalan tareas de HTML y CSS. Completa los retos
+en orden y explica una sola novedad cada vez.
+
+JavaScript figura como un recorrido separado, inicialmente bloqueado. Para
+abrirlo de forma automática el alumno debe completar todos los retos de
+HTML/CSS asignados, con al menos 8/10 en sus entregas automáticas válidas.
+Comprobar un borrador sin entregar no cuenta como completado.
+
+Para anticipar el acceso de un alumno: **Usuarios → Editar cuenta → Permitir
+JavaScript sin completar HTML y CSS → Guardar**. Si desmarcas la opción se
+aplica de nuevo el requisito, sin eliminar progreso. La excepción solo sirve
+para JavaScript del grupo Web donde está matriculado; no cambia su ciclo.
 
 En el workspace Web las pestañas se llaman **Pasos**, **Editor** y
 **Resultado**. Debajo aparecen **Comprobaciones** y **Entregas**; esos nombres
@@ -96,12 +107,12 @@ pista si hace falta, comprobar y entregar. La comprobación es estática: no
 abre una terminal ni ejecuta comandos reales. Las prácticas sobre archivos se
 verifican después en la VM de laboratorio indicada por el profesor.
 
-En Python, la dinámica de 2.º de DAM parte de la base de programación y la
-lleva paso a paso hacia datos y archivos: leer la explicación, editar
+En Python, la dinámica de 2.º de DAM parte de cero en el lenguaje:
+leer la explicación, observar el ejemplo explicado y editar
 `main.py`, consultar una pista si hace falta, comprobar y entregar. El servidor analiza únicamente el
 AST en memoria: no ejecuta el programa, no importa módulos y no lee ni escribe
-archivos. Los retos de archivos comprueban construcciones como `with open(...)`
-solo de forma estructural; la práctica real con datos ficticios se hace en la
+archivos. Los archivos y Odoo quedan para una ampliación posterior;
+la práctica real con datos ficticios se hace en la
 VM o entorno de laboratorio que determine el profesor. La ruta prepara
 conceptos útiles para Odoo, pero no prueba el ORM ni una integración con Odoo.
 

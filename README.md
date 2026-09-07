@@ -5,26 +5,28 @@ pensada para funcionar en la red local de un centro educativo. Ofrece retos,
 puntuación, progreso y revisión docente sin depender de servicios externos en
 tiempo de uso.
 
-Incluye tres itinerarios que pueden convivir en la misma instalación:
+Incluye cuatro recorridos, agrupados en tres ciclos:
 
-- **Web · 1.º SMR**: una entrada desde cero informático a HTML, CSS y
-  JavaScript para el módulo navarro `0228 · Aplicaciones web`. Los primeros
+- **HTML y CSS · 1.º SMR**: 20 retos desde cero informático sobre páginas y estilos
+  para el módulo navarro `0228 · Aplicaciones web`. Los primeros
   ejercicios parten de una página ya preparada y piden cambios de una sola
-  línea.
+  línea. CSS se intercala después de aprender las primeras etiquetas.
+- **JavaScript · 1.º SMR**: 13 retos en un recorrido separado con explicación, ejemplo y
+  práctica pequeña. Se desbloquea al completar HTML/CSS, salvo habilitación
+  individual del administrador.
 - **Bash · 2.º ASIR**: scripting de Linux para la asignatura de Seguridad.
   Se presupone base de Linux, pero no experiencia previa con Bash; la ruta
-  avanza por sintaxis, variables, condiciones, bucles, funciones, filtros y
-  copias de seguridad.
-- **Python · 2.º DAM**: transición desde la base de programación del alumnado
-  hacia datos y lectura/escritura de archivos, orientada al módulo `0491 ·
+  introduce mensajes, variables y estructuras sencillas antes de abordar
+  automatizaciones más complejas en una ampliación.
+- **Python · 2.º DAM**: introducción desde la primera instrucción hasta
+  las estructuras básicas del lenguaje, orientada al módulo `0491 ·
   Sistemas de gestión empresarial` y como preparación para trabajar
   posteriormente con Odoo.
 
 La evaluación de Bash es estática: analiza el código con un parser y nunca
 ejecuta comandos del alumnado ni abre una shell dentro del servidor. Python se
 analiza con el módulo `ast`: tampoco se ejecuta, importa módulos ni abre
-archivos; los retos de lectura y escritura solo comprueban la estructura del
-código. La puntuación de juego (XP, niveles e insignias) es motivacional y no
+archivos. La puntuación de juego (XP, niveles e insignias) es motivacional y no
 sustituye a la calificación académica que decida el profesorado.
 
 ![Panel del alumno de Programmy4V](docs/images/dashboard.png)
@@ -69,17 +71,17 @@ puede repetirse al actualizar la instalación. La opción está controlada por
 `PRELOAD_CATALOGS=1` (valor predeterminado); para una instalación que deba
 arrancar sin tocar el catálogo, establece `PRELOAD_CATALOGS=0` en `.env`.
 
-Los tres catálogos incorporados se sirven en revisión **v2**. Si una instalación
-ya tiene una revisión v1, el bootstrap crea la v2, mueve a ella los enlaces del
-grupo y archiva las asignaciones v1. Los borradores, entregas, calificaciones y
+Los catálogos son **HTML/CSS v4, JavaScript v1 y Bash/Python v3**. Si una instalación
+ya tiene una revisión anterior, el bootstrap crea la nueva, mueve a ella los enlaces del
+grupo y archiva las asignaciones anteriores. Los borradores, entregas, calificaciones y
 demás evidencias antiguas se conservan internamente ligadas a su versión para
-mantener la integridad; no se trasladan XP ni progreso de v1 a v2.
+mantener la integridad; no se trasladan XP ni progreso entre revisiones.
 
 El itinerario Web está secuenciado para alumnado que llega de ESO sin
 experiencia informática: primero solo aparece `index.html` y se cambia texto
 entre etiquetas ya escritas; después se introducen enlaces, imágenes y listas;
-CSS aparece cuando esas bases están asentadas y JavaScript queda para los
-últimos retos. El editor guarda automáticamente, por lo que no hace falta
+CSS se introduce gradualmente y JavaScript tiene su propio recorrido posterior.
+El editor guarda automáticamente, por lo que no hace falta
 crear carpetas ni manejar archivos del equipo para comenzar.
 
 Después de iniciar sesión como administrador, crea cada alumno desde
@@ -107,8 +109,8 @@ bash scripts/install.sh --skip-admin
 ```
 
 El último paso conserva `.env` y los volúmenes, reconstruye la aplicación,
-aplica las migraciones y precarga de forma idempotente los 36 retos de la
-revisión v2. Si existía v1, el proceso deja sus asignaciones archivadas y sus
+aplica las migraciones y precarga de forma idempotente los cuatro recorridos.
+Si existía una revisión anterior, deja sus asignaciones archivadas y sus
 evidencias internas intactas, sin trasladar XP ni progreso a la nueva revisión.
 No uses
 `docker compose down -v`: ese modificador sí elimina los datos persistentes.
@@ -166,11 +168,19 @@ modo mirrored, funcionamiento sin Internet y copias de seguridad:
 
 ## Estado curricular
 
-El catálogo inicial v2 trae doce retos por itinerario (36 en total): Web para
+El catálogo incorpora HTML/CSS y JavaScript como dos recorridos de Web para
 1.º SMR, empezando por reconocer texto y etiquetas sin experiencia informática;
 Bash para 2.º ASIR, con base Linux pero comenzando desde cero en Bash; y Python
-para 2.º DAM, enlazando su base de programación con datos y archivos antes de
-dar el salto posterior a Odoo. El banco completo de actividades y la cobertura
+para 2.º DAM, desde la primera instrucción hasta las estructuras básicas.
+Los archivos y Odoo quedan para una ampliación posterior. Cada lección explica
+el concepto, muestra un ejemplo resuelto y pide una modificación pequeña.
+Los primeros pasos Web son solo HTML; después se intercalan tareas CSS.
+JavaScript se mantiene cerrado hasta completar todos los retos HTML/CSS con
+al menos 8/10 automáticos por reto. Para habilitarlo antes, entra como admin en
+**Usuarios → Editar cuenta** y marca **Permitir JavaScript sin completar HTML y CSS**.
+Desmarcarlo vuelve a aplicar el requisito normal, sin borrar el progreso.
+Consulta [HTML/CSS](docs/HTML_CSS_TRACK.md) y [JavaScript](docs/JAVASCRIPT_TRACK.md).
+Consulta el [criterio didáctico y las referencias](docs/DIDACTICA.md). El banco completo de actividades y la cobertura
 de todos los resultados de aprendizaje se ampliarán por fases.
 
 La ruta Python es una preparación parcial, no una implementación de Odoo ni

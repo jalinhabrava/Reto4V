@@ -24,6 +24,35 @@ from learning.views import _activity_public_payload, teacher_assignments_for
 
 
 class CatalogAssignmentUpgradeTests(TestCase):
+    def test_revision_replaces_only_recognised_builtin_titles(self):
+        self.new_assignment.delete()
+        self.old_assignment.title_override = "Título incorporado v2"
+        self.old_assignment.save(update_fields=["title_override"])
+        assignment, created, _ = get_or_create_catalog_revision_assignment(
+            activity=self.activity,
+            version=self.new_version,
+            cohort=self.cohort_a,
+            defaults={"created_by": self.owner, "title_override": "Nuevo tema"},
+            previous_catalog_titles=("Título incorporado v2",),
+        )
+        self.assertTrue(created)
+        self.assertEqual(assignment.title_override, "Nuevo tema")
+        self.old_assignment.refresh_from_db()
+        self.assertEqual(self.old_assignment.title_override, "Título incorporado v2")
+
+    def test_revision_preserves_teacher_title(self):
+        self.new_assignment.delete()
+        self.old_assignment.title_override = "Título del docente"
+        self.old_assignment.save(update_fields=["title_override"])
+        assignment, _, _ = get_or_create_catalog_revision_assignment(
+            activity=self.activity,
+            version=self.new_version,
+            cohort=self.cohort_a,
+            defaults={"created_by": self.owner, "title_override": "Nuevo tema"},
+            previous_catalog_titles=("Título incorporado v2",),
+        )
+        self.assertEqual(assignment.title_override, "Título del docente")
+
     def setUp(self):
         self.owner = User.objects.create_user(
             username="catalog-owner",

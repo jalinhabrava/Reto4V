@@ -11,6 +11,19 @@ import { autocompletion } from '@codemirror/autocomplete'
 import { bracketMatching } from '@codemirror/language'
 import { lineNumbers, EditorView, drawSelection, highlightActiveLine, keymap } from '@codemirror/view'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { parseInstructionBlocks } from './instruction-parser.js'
+import {
+  PATHWAY_LABELS,
+  canOpenActivity,
+  filterActivities,
+  isActivityLocked,
+  lockReasonForActivity,
+  normalizePathway,
+  normalizePathways,
+  pathwayForActivity,
+  pathwayProgress,
+  selectCurrentActivity,
+} from './pathways.js'
 import {
   IconAlertTriangle,
   IconArrowLeft,
@@ -118,6 +131,7 @@ const DEMO_ACTIVITIES = [
     attempts: 2,
     revision: 3,
     language: 'web',
+    pathway: 'html_css',
     difficulty: 'beginner',
     xp_reward: 70,
     earned_xp: 48,
@@ -138,6 +152,7 @@ const DEMO_ACTIVITIES = [
     attempts: 1,
     revision: 2,
     language: 'web',
+    pathway: 'html_css',
     difficulty: 'beginner',
     xp_reward: 60,
     earned_xp: 60,
@@ -157,6 +172,7 @@ const DEMO_ACTIVITIES = [
     attempts: 3,
     revision: 1,
     language: 'web',
+    pathway: 'javascript',
     difficulty: 'beginner',
     xp_reward: 60,
     earned_xp: 36,
@@ -443,6 +459,7 @@ function assignmentWithDefaults(assignment) {
   return {
     ...assignment,
     language,
+    pathway: normalizePathway(assignment?.pathway ?? assignment?.version?.pathway, language),
     module: assignment?.module || (language === 'bash' ? 'Seguridad · Linux' : language === 'python' ? 'SGE · 2DAM' : 'Aplicaciones web · SMR'),
     summary: assignment?.summary || (language === 'bash' ? 'Practica scripting de Linux y comprueba tus decisiones.' : language === 'python' ? 'Practica Python con datos de gestión y prepara tu base para Odoo.' : 'Practica y entrega esta actividad desde el editor.'),
     difficulty: assignment?.difficulty || 'beginner',
@@ -489,6 +506,9 @@ function workspaceActivityFromPayload(payload, assignmentId) {
     objectives: version.objectives,
     hints: version.hints,
     language: version.language,
+    pathway: version.pathway || payload?.pathway,
+    locked: payload?.locked === true || version.locked === true,
+    lock_reason: payload?.lock_reason || version.lock_reason || '',
     difficulty: version.difficulty,
     xp_reward: version.xp_reward,
     status: payload?.status,
@@ -632,16 +652,17 @@ function IconShieldIcon(props) {
 function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', initialDashboard = null }) {
   const isTeacher = user.role === 'teacher' || user.role === 'admin'
   const initialRoute = useMemo(() => readClientRoute(), [])
-  const initialRouteActivity = initialRoute.view === 'workspace' && initialRoute.assignmentId
-    ? { id: initialRoute.assignmentId, title: 'Cargando reto…', language: 'web', difficulty: 'beginner' }
-    : null
-  const [view, setView] = useState(() => initialRoute.view === 'workspace' ? 'workspace' : initialView === 'workspace' ? 'workspace' : initialRoute.view)
+  // En producción el detalle se vuelve a autorizar antes de montar el editor,
+  // incluso cuando Django dejó un bootstrap de workspace en la página.
+  const initialActivityAllowed = initialActivity && !isActivityLocked(initialActivity, initialDashboard?.pathways) && (isTeacher || DEMO_MODE)
+  const [view, setView] = useState(() => initialRoute.view === 'workspace' ? 'workspace' : initialView === 'workspace' && initialActivityAllowed ? 'workspace' : initialRoute.view)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [selectedActivity, setSelectedActivity] = useState(initialActivity || initialRouteActivity || (DEMO_MODE ? DEMO_ACTIVITIES[0] : null))
+  const [selectedActivity, setSelectedActivity] = useState(initialActivityAllowed ? initialActivity : (initialRoute.view === 'workspace' ? null : (DEMO_MODE ? DEMO_ACTIVITIES[0] : null)))
   const [dashboardData, setDashboardData] = useState(initialDashboard)
   const [dashboardRefreshToken, setDashboardRefreshToken] = useState(0)
   const [routeError, setRouteError] = useState('')
   const routeRequestRef = useRef(0)
+  const routeInitRef = useRef(false)
   const activityCount = dashboardData?.assignments?.length ?? (DEMO_MODE ? DEMO_ACTIVITIES.length : 0)
   const contextGroup = user.group || (isTeacher ? 'Grupos asignados' : 'Mi grupo')
   const contextMark = contextGroup.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AW'
@@ -649,9 +670,17 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
   useEffect(() => {
     if (DEMO_MODE || view !== 'dashboard') return undefined
     let active = true
+    let refreshing = false
     const path = isTeacher ? '/teacher/dashboard/' : `${API_PREFIX}/student/dashboard/`
-    apiFetch(path).then((data) => { if (active) setDashboardData(data) }).catch(() => { if (active) setDashboardData({ assignments: [], gamification: normalizeGamification({}) }) })
-    return () => { active = false }
+    const refresh = () => {
+      if (refreshing) return
+      refreshing = true
+      apiFetch(path).then((data) => { if (active) setDashboardData(data) }).catch(() => { if (active) setDashboardData({ assignments: [], pathways: [], gamification: normalizeGamification({}) }) }).finally(() => { refreshing = false })
+    }
+    const interval = window.setInterval(refresh, 30000)
+    window.addEventListener('focus', refresh)
+    refresh()
+    return () => { active = false; window.clearInterval(interval); window.removeEventListener('focus', refresh) }
   }, [isTeacher, view, dashboardRefreshToken])
 
   useEffect(() => {
@@ -669,31 +698,57 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
 
       const assignmentId = String(nextRoute.assignmentId)
       const knownAssignment = (dashboardData?.assignments || []).find((assignment) => String(assignment.id) === assignmentId)
-      if (knownAssignment) {
-        setSelectedActivity(assignmentWithDefaults(knownAssignment))
+      if (knownAssignment && isTeacher) {
+        const normalized = assignmentWithDefaults(knownAssignment)
+        if (!isTeacher && !canOpenActivity(normalized, dashboardData?.pathways)) {
+          setRouteError(lockReasonForActivity(normalized, dashboardData?.pathways))
+          setView('dashboard')
+          setSelectedActivity(null)
+          window.history.replaceState({ reto4vRoute: 'dashboard' }, '', dashboardPathFor(isTeacher))
+          setDashboardRefreshToken((current) => current + 1)
+          return
+        }
+        setSelectedActivity(normalized)
         return
       }
-      if (initialActivity && String(initialActivity.id) === assignmentId) {
+      if (initialActivity && String(initialActivity.id) === assignmentId && (isTeacher || DEMO_MODE)) {
+        if (!isTeacher && !canOpenActivity(initialActivity, initialDashboard?.pathways)) {
+          setRouteError(lockReasonForActivity(initialActivity, initialDashboard?.pathways))
+          setView('dashboard')
+          setSelectedActivity(null)
+          window.history.replaceState({ reto4vRoute: 'dashboard' }, '', dashboardPathFor(isTeacher))
+          setDashboardRefreshToken((current) => current + 1)
+          return
+        }
         setSelectedActivity(initialActivity)
         return
       }
 
       const requestId = ++routeRequestRef.current
-      setSelectedActivity({ id: assignmentId, title: 'Cargando reto…', language: 'web', difficulty: 'beginner' })
+      setSelectedActivity(null)
       apiFetch(`${API_PREFIX}/assignments/${encodeURIComponent(assignmentId)}/`).then((data) => {
         if (requestId !== routeRequestRef.current || readClientRoute().assignmentId !== assignmentId) return
-        setSelectedActivity(workspaceActivityFromPayload(data, assignmentId))
-      }).catch(() => {
+        const normalized = workspaceActivityFromPayload(data, assignmentId)
+        if (!isTeacher && (data?.locked === true || data?.version?.locked === true || isActivityLocked(normalized, data?.pathways))) {
+          throw Object.assign(new Error(lockReasonForActivity(normalized, data?.pathways)), { status: 403 })
+        }
+        setSelectedActivity(normalized)
+      }).catch((error) => {
         if (requestId !== routeRequestRef.current) return
-        setRouteError('No se pudo cargar ese reto. Hemos vuelto al resumen.')
+        setRouteError(error.status === 403 ? (error.message || 'Este reto está bloqueado para tu recorrido.') : 'No se pudo cargar ese reto. Hemos vuelto al resumen.')
         setView('dashboard')
+        setSelectedActivity(null)
         window.history.replaceState({ reto4vRoute: 'dashboard' }, '', dashboardPathFor(isTeacher))
         setDashboardRefreshToken((current) => current + 1)
       })
     }
     window.addEventListener('popstate', handlePopState)
+    if (!routeInitRef.current) {
+      routeInitRef.current = true
+      if (initialRoute.view === 'workspace') handlePopState()
+    }
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [dashboardData, initialActivity, isTeacher])
+  }, [dashboardData, initialActivity, initialDashboard, initialRoute, isTeacher])
 
   const navigate = (nextView) => {
     const nextPath = nextView === 'dashboard' ? dashboardPathFor(isTeacher) : `${dashboardPathFor(isTeacher)}#${nextView}`
@@ -707,12 +762,17 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
 
   const openActivity = (activity = null) => {
     if (!activity) return
+    if (!isTeacher && !canOpenActivity(activity, dashboardData?.pathways)) {
+      setRouteError(lockReasonForActivity(activity, dashboardData?.pathways))
+      return
+    }
     const assignmentId = String(activity.id)
     window.history.pushState({ reto4vRoute: 'workspace', assignmentId, fromPath: `${window.location.pathname}${window.location.hash}` }, '', assignmentPathFor(assignmentId))
-    setSelectedActivity(activity)
+    setSelectedActivity(isTeacher || DEMO_MODE ? activity : null)
     setView('workspace')
     setSidebarOpen(false)
     setRouteError('')
+    if (!isTeacher && !DEMO_MODE) window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   const workspaceOpen = view === 'workspace' && selectedActivity
@@ -759,7 +819,7 @@ function AppShell({ user, onLogout, initialActivity, initialView = 'dashboard', 
           <button type="button" className="avatar avatar-small" onClick={onLogout} aria-label="Cerrar sesión">{getInitials(user.display_name)}</button>
         </header>}
         {routeError && !workspaceOpen && <div className="route-error" role="alert"><Icon icon={IconAlertTriangle} size={15} />{routeError}</div>}
-        {workspaceOpen ? <WorkspaceShell key={String(selectedActivity.id)} user={user} activity={selectedActivity} onBack={() => navigate('dashboard')} onLogout={onLogout} /> : view === 'dashboard' ? (isTeacher ? <TeacherDashboard user={user} data={dashboardData} onOpenActivity={openActivity} /> : <StudentDashboard user={user} data={dashboardData} onOpenActivity={openActivity} />) : <SecondaryView view={view} isTeacher={isTeacher} data={dashboardData} onOpenActivity={openActivity} />}
+        {workspaceOpen ? <WorkspaceShell key={String(selectedActivity.id)} user={user} activity={selectedActivity} onBack={() => navigate('dashboard')} onLogout={onLogout} /> : view === 'workspace' ? <div className="route-loading" role="status"><span className="mini-spinner" />Cargando tu actividad…</div> : view === 'dashboard' ? (isTeacher ? <TeacherDashboard user={user} data={dashboardData} onOpenActivity={openActivity} /> : <StudentDashboard user={user} data={dashboardData} onOpenActivity={openActivity} />) : <SecondaryView view={view} isTeacher={isTeacher} data={dashboardData} onOpenActivity={openActivity} />}
       </main>
     </div>
   )
@@ -791,28 +851,43 @@ function StudentDashboard({ user, data, onOpenActivity }) {
   const sourceAssignments = Array.isArray(data?.assignments) ? data.assignments : (DEMO_MODE ? DEMO_ACTIVITIES : [])
   const activities = sourceAssignments.map(assignmentWithDefaults)
   const gamification = normalizeGamification(data || (DEMO_MODE ? { gamification: DEMO_GAMIFICATION } : null))
+  const pathways = normalizePathways(data?.pathways, activities)
+  const webPathways = pathways.filter((pathway) => pathway.id === 'html_css' || pathway.id === 'javascript')
   const [activeTrack, setActiveTrack] = useState('all')
+  const [activePathway, setActivePathway] = useState('all')
   const [tipIndex, setTipIndex] = useState(0)
   const availableTrackEntries = Object.entries(TRACKS).filter(([key]) => key === 'all' || activities.some((activity) => trackForActivity(activity) === key))
   const availableTrackKeys = availableTrackEntries.map(([key]) => key).join('|')
   useEffect(() => {
     if (!availableTrackKeys.split('|').includes(activeTrack)) setActiveTrack('all')
   }, [activeTrack, availableTrackKeys])
-  const filteredActivities = activeTrack === 'all' ? activities : activities.filter((activity) => trackForActivity(activity) === activeTrack)
-  const currentActivity = filteredActivities[0] || {}
+  useEffect(() => {
+    if (activeTrack !== 'web' || !webPathways.some((pathway) => pathway.id === activePathway)) setActivePathway('all')
+  }, [activeTrack, activePathway, webPathways.map((pathway) => pathway.id).join('|')])
+  const filteredActivities = filterActivities(activities, activeTrack, activeTrack === 'web' ? activePathway : 'all')
+  const currentActivity = selectCurrentActivity(activities, activeTrack, activeTrack === 'web' ? activePathway : 'all', pathways) || {}
+  const currentPathway = activeTrack === 'web' && activePathway !== 'all' ? pathwayProgress(pathways, activePathway) : null
+  const htmlCssProgress = pathwayProgress(pathways, 'html_css')
   const currentStatus = getStudentStatus(currentActivity.status)
   const measuredProgress = currentActivity.progress != null && Number.isFinite(Number(currentActivity.progress)) ? Number(currentActivity.progress) : null
-  const isFirstChallenge = Boolean(filteredActivities.length && currentActivity.status === 'not_started' && (measuredProgress == null || measuredProgress === 0) && !currentActivity.completed)
+  const isFirstChallenge = Boolean(currentActivity.id && currentActivity.status === 'not_started' && (measuredProgress == null || measuredProgress === 0) && !currentActivity.completed)
   const primaryActionLabel = isFirstChallenge ? 'Empezar primer reto' : 'Continuar reto'
   const noAssignmentMessage = 'El administrador debe asignarte un ciclo e itinerario. En cuanto lo haga, aquí aparecerá tu primer reto.'
   return (
     <div className="dashboard-page student-page">
-      <DashboardHeader eyebrow={`Mi espacio · ${user.group || 'Programmy4V'}`} title={`Hola, ${firstName}.`} subtitle={activities.length ? 'Elige un reto y convierte la práctica en progreso.' : 'El administrador debe asignarte un itinerario para empezar.'} action={filteredActivities.length ? { label: primaryActionLabel, icon: IconArrowRight } : null} onAction={() => onOpenActivity(currentActivity)} />
+      <DashboardHeader eyebrow={`Mi espacio · ${user.group || 'Programmy4V'}`} title={`Hola, ${firstName}.`} subtitle={activities.length ? 'Elige un reto y convierte la práctica en progreso.' : 'El administrador debe asignarte un itinerario para empezar.'} action={currentActivity.id ? { label: primaryActionLabel, icon: IconArrowRight } : null} onAction={() => onOpenActivity(currentActivity)} />
       <section className="track-switcher" aria-label="Filtrar itinerario">
         <div className="track-switcher-copy"><span className="card-overline">Tus itinerarios</span><strong>Practica por módulo</strong><small>Elige el contexto que quieres trabajar hoy.</small></div>
         <div className="track-options" role="group" aria-label="Itinerarios disponibles">
           {availableTrackEntries.map(([key, track]) => <button key={key} className={`track-option ${activeTrack === key ? 'is-active' : ''}`} type="button" aria-pressed={activeTrack === key} onClick={() => setActiveTrack(key)}><span className={`track-option-mark track-mark-${key}`}><Icon icon={getTrackIcon(key)} size={16} /></span><span><strong>{track.label}</strong><small>{track.description}</small></span><span className="track-option-count">{key === 'all' ? activities.length : activities.filter((activity) => trackForActivity(activity) === key).length}</span></button>)}
         </div>
+        {webPathways.length > 0 && <div className="pathway-options" role="group" aria-label="Filtrar etapas Web">
+          <button className={`pathway-option ${activeTrack === 'web' && activePathway === 'all' ? 'is-active' : ''}`} type="button" aria-pressed={activeTrack === 'web' && activePathway === 'all'} onClick={() => { setActiveTrack('web'); setActivePathway('all') }}>Web completo</button>
+          {webPathways.map((pathway) => {
+            const progress = pathwayProgress(webPathways, pathway.id)
+            return <button key={pathway.id} className={`pathway-option ${activeTrack === 'web' && activePathway === pathway.id ? 'is-active' : ''} ${progress.locked ? 'is-locked' : ''}`} type="button" aria-pressed={activeTrack === 'web' && activePathway === pathway.id} onClick={() => { setActiveTrack('web'); setActivePathway(pathway.id) }}><span>{PATHWAY_LABELS[pathway.id] || pathway.title}</span><small>{progress.locked ? 'Bloqueado' : `${progress.completed}/${progress.total} completados`}{progress.unlock_override ? ' · Desbloqueado por admin' : ''}</small></button>
+          })}
+        </div>}
       </section>
       <section className="student-overview-grid" aria-label="Resumen de aprendizaje">
         <div className="continue-card">
@@ -823,14 +898,14 @@ function StudentDashboard({ user, data, onOpenActivity }) {
           <div className="continue-copy">
             <p className="card-overline">{currentActivity.module || 'Reto disponible'}</p>
             <h2>{currentActivity.title || 'Sin actividad'}<br /><em>{currentActivity.status ? currentStatus.label.toLowerCase() : 'pendiente'}</em></h2>
-            <p>{currentActivity.summary || noAssignmentMessage}</p>
+            <p>{currentPathway?.locked ? `${currentPathway.lock_reason || 'Completa HTML y CSS para desbloquear JavaScript.'} (${htmlCssProgress.completed}/${htmlCssProgress.total} completados).` : currentActivity.summary || noAssignmentMessage}</p>
           </div>
           <div className="continue-progress">
             <div className="progress-meta"><span>Progreso registrado</span><strong>{measuredProgress == null ? '—' : `${measuredProgress}%`}</strong></div>
             <div className="progress-track"><span style={{ width: `${measuredProgress || 0}%` }} /></div>
           </div>
           <div className="continue-meta"><span><Icon icon={IconRocket} size={14} />+{currentActivity.xp_reward || 0} XP</span><span>{getDifficultyLabel(currentActivity.difficulty)}</span></div>
-          <button className="button button-light" onClick={() => onOpenActivity(currentActivity)} disabled={!filteredActivities.length}>{filteredActivities.length ? primaryActionLabel : 'Esperando itinerario'} <Icon icon={IconArrowRight} size={17} /></button>
+          <button className="button button-light" onClick={() => onOpenActivity(currentActivity)} disabled={!currentActivity.id}>{currentActivity.id ? primaryActionLabel : currentPathway?.locked ? 'Completa el recorrido anterior' : 'Esperando itinerario'} <Icon icon={IconArrowRight} size={17} /></button>
           <div className="continue-decoration decoration-bracket" aria-hidden="true">&lt;/&gt;</div>
         </div>
         <GamificationCard gamification={gamification} />
@@ -847,7 +922,7 @@ function StudentDashboard({ user, data, onOpenActivity }) {
       <section className="section-block activities-section">
         <div className="section-heading"><div><p className="kicker">{TRACKS[activeTrack].shortLabel}</p><h2>Retos disponibles</h2></div>{filteredActivities.length > 0 && <span className="section-count">{filteredActivities.length} {filteredActivities.length === 1 ? 'reto' : 'retos'}</span>}</div>
         <div className="activity-list">
-          {filteredActivities.length ? filteredActivities.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activeTrack === 'all' ? noAssignmentMessage : activities.length ? `Todavía no hay retos de ${TRACKS[activeTrack].label} en tu itinerario.` : noAssignmentMessage}</span></div>}
+          {filteredActivities.length ? filteredActivities.map((activity) => <StudentActivityRow key={activity.id} activity={activity} pathways={pathways} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{currentPathway?.locked ? `${currentPathway.lock_reason || 'Completa HTML y CSS para desbloquear JavaScript.'} (${htmlCssProgress.completed}/${htmlCssProgress.total} completados).` : activeTrack === 'all' ? noAssignmentMessage : activities.length ? `Todavía no hay retos de ${TRACKS[activeTrack].label} en tu itinerario.` : noAssignmentMessage}</span></div>}
         </div>
       </section>
       <section className="student-lower-grid">
@@ -868,16 +943,17 @@ function GamificationCard({ gamification }) {
   </div>
 }
 
-function StudentActivityRow({ activity, onOpen }) {
-  const status = getStudentStatus(activity.status)
+function StudentActivityRow({ activity, onOpen, pathways = [] }) {
+  const locked = isActivityLocked(activity, pathways)
+  const status = locked ? { label: 'Bloqueado', tone: 'locked' } : getStudentStatus(activity.status)
   const language = trackForActivity(activity)
   const completed = activity.completed
   return (
-    <button className="activity-row" onClick={onOpen} type="button">
+    <button className={`activity-row ${locked ? 'is-locked' : ''}`} onClick={onOpen} type="button" disabled={locked} aria-disabled={locked} title={locked ? lockReasonForActivity(activity, pathways) : undefined}>
       <span className={`activity-icon activity-icon-${language}`}><Icon icon={language === 'bash' ? IconTerminal2 : language === 'python' ? IconBrandPython : activity.id === 'semantic-html' ? IconBrandHtml5 : activity.id === 'dom-events' ? IconBrandJavascript : IconBrandCss3} size={22} /></span>
       <span className="activity-row-main"><span className="activity-row-title">{activity.title}</span><span className="activity-row-meta">{activity.module} <span className="meta-dot">·</span> {activity.summary}</span></span>
       <span className={`status-label status-${status.tone}`}><span className="status-dot" />{status.label}</span>
-      <span className="activity-row-score">{activity.xp_reward ? <><strong>{formatXp(activity.earned_xp)} / {formatXp(activity.xp_reward)} XP</strong><small>{completed ? 'Reto completado' : 'XP logrados'}</small></> : activity.score != null ? `${Number(activity.score).toLocaleString('es-ES')}/10` : activity.progress != null ? `${activity.progress}%` : '—'}</span>
+      <span className="activity-row-score">{locked ? <><strong>Bloqueado</strong><small>{lockReasonForActivity(activity, pathways)}</small></> : activity.xp_reward ? <><strong>{formatXp(activity.earned_xp)} / {formatXp(activity.xp_reward)} XP</strong><small>{completed ? 'Reto completado' : 'XP logrados'}</small></> : activity.score != null ? `${Number(activity.score).toLocaleString('es-ES')}/10` : activity.progress != null ? `${activity.progress}%` : '—'}</span>
       <Icon icon={IconChevronRight} size={18} className="row-chevron" />
     </button>
   )
@@ -954,14 +1030,17 @@ function SecondaryView({ view, isTeacher, data, onOpenActivity }) {
 function ActivityCatalog({ data, onOpenActivity }) {
   const source = Array.isArray(data?.assignments) ? data.assignments : (DEMO_MODE ? DEMO_ACTIVITIES : [])
   const activities = source.map(assignmentWithDefaults)
+  const pathways = normalizePathways(data?.pathways, activities)
+  const webPathways = pathways.filter((pathway) => pathway.id === 'html_css' || pathway.id === 'javascript')
   const [activeTrack, setActiveTrack] = useState('all')
+  const [activePathway, setActivePathway] = useState('all')
   const availableTrackEntries = Object.entries(TRACKS).filter(([key]) => key === 'all' || activities.some((activity) => trackForActivity(activity) === key))
   const availableTrackKeys = availableTrackEntries.map(([key]) => key).join('|')
   useEffect(() => {
     if (!availableTrackKeys.split('|').includes(activeTrack)) setActiveTrack('all')
   }, [activeTrack, availableTrackKeys])
-  const visible = activeTrack === 'all' ? activities : activities.filter((activity) => trackForActivity(activity) === activeTrack)
-  return <section className="catalog-section" aria-label="Catálogo de retos"><div className="catalog-toolbar"><div><span className="card-overline">Filtrar por recorrido</span><p>{visible.length} {visible.length === 1 ? 'reto disponible' : 'retos disponibles'}</p></div><div className="catalog-filters" role="group" aria-label="Filtrar retos">{availableTrackEntries.map(([key, track]) => <button key={key} className={activeTrack === key ? 'is-active' : ''} type="button" aria-pressed={activeTrack === key} onClick={() => setActiveTrack(key)}>{track.label}</button>)}</div></div><div className="catalog-list">{visible.length ? visible.map((activity) => <StudentActivityRow key={activity.id} activity={activity} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activities.length ? `Todavía no hay retos de ${TRACKS[activeTrack].label} en tu itinerario.` : 'El administrador debe asignarte un ciclo e itinerario. En cuanto lo haga, aquí aparecerá tu primer reto.'}</span></div>}</div></section>
+  const visible = filterActivities(activities, activeTrack, activeTrack === 'web' ? activePathway : 'all')
+  return <section className="catalog-section" aria-label="Catálogo de retos"><div className="catalog-toolbar"><div><span className="card-overline">Filtrar por recorrido</span><p>{visible.length} {visible.length === 1 ? 'reto disponible' : 'retos disponibles'}</p></div><div className="catalog-filters" role="group" aria-label="Filtrar retos">{availableTrackEntries.map(([key, track]) => <button key={key} className={activeTrack === key ? 'is-active' : ''} type="button" aria-pressed={activeTrack === key} onClick={() => { setActiveTrack(key); if (key !== 'web') setActivePathway('all') }}>{track.label}</button>)}{webPathways.length > 0 && <><button className={activeTrack === 'web' && activePathway === 'all' ? 'is-active' : ''} type="button" aria-pressed={activeTrack === 'web' && activePathway === 'all'} onClick={() => { setActiveTrack('web'); setActivePathway('all') }}>Web completo</button>{webPathways.map((pathway) => { const progress = pathwayProgress(webPathways, pathway.id); return <button key={pathway.id} className={`${activeTrack === 'web' && activePathway === pathway.id ? 'is-active' : ''} ${progress.locked ? 'is-locked' : ''}`} type="button" aria-pressed={activeTrack === 'web' && activePathway === pathway.id} onClick={() => { setActiveTrack('web'); setActivePathway(pathway.id) }}>{PATHWAY_LABELS[pathway.id] || pathway.title}{progress.locked ? ' · Bloqueado' : ''}</button> })}</>}</div></div><div className="catalog-list">{visible.length ? visible.map((activity) => <StudentActivityRow key={activity.id} activity={activity} pathways={pathways} onOpen={() => onOpenActivity(activity)} />) : <div className="empty-dashboard"><Icon icon={getTrackIcon(activeTrack)} size={19} /><span>{activities.length ? `Todavía no hay retos de ${activeTrack === 'web' && activePathway !== 'all' ? PATHWAY_LABELS[activePathway] : TRACKS[activeTrack].label} en tu itinerario.` : 'El administrador debe asignarte un ciclo e itinerario. En cuanto lo haga, aquí aparecerá tu primer reto.'}</span></div>}</div></section>
 }
 
 function WorkspaceShell({ user, activity, onBack, onLogout }) {
@@ -975,33 +1054,9 @@ function InstructionText({ value, className = 'instruction-rich-text', compact =
     if (block.type === 'heading') return <h3 key={`${block.type}-${index}`}>{renderInlineText(block.text)}</h3>
     if (block.type === 'quote') return <blockquote key={`${block.type}-${index}`}>{renderInlineText(block.text)}</blockquote>
     if (block.type === 'list') return <ul key={`${block.type}-${index}`}>{block.items.map((item, itemIndex) => <li key={`${index}-${itemIndex}`}>{renderInlineText(item)}</li>)}</ul>
+    if (block.type === 'code') return <pre className="instruction-code-block" key={`${block.type}-${index}`}><code>{block.text}</code></pre>
     return <p key={`${block.type}-${index}`}>{renderInlineText(block.text)}</p>
   }) : <p className="instruction-empty">No hay instrucciones publicadas para este reto.</p>}</div>
-}
-
-function parseInstructionBlocks(value) {
-  const lines = String(value || '').split(/\r?\n/)
-  const blocks = []
-  let paragraph = []
-  let quote = []
-  let list = null
-  const flushParagraph = () => { if (paragraph.length) blocks.push({ type: 'paragraph', text: paragraph.join(' ') }); paragraph = [] }
-  const flushQuote = () => { if (quote.length) blocks.push({ type: 'quote', text: quote.join(' ') }); quote = [] }
-  const flushList = () => { if (list?.length) blocks.push({ type: 'list', items: list }); list = null }
-  const flushText = () => { flushParagraph(); flushQuote(); flushList() }
-  for (const rawLine of lines) {
-    const line = rawLine.trim()
-    if (!line) { flushText(); continue }
-    const heading = line.match(/^(#{1,4})\s+(.+)$/)
-    if (heading) { flushText(); blocks.push({ type: 'heading', level: Math.min(3, heading[1].length), text: heading[2].trim() }); continue }
-    const quoteLine = line.match(/^>\s*(.*)$/)
-    if (quoteLine) { flushParagraph(); flushList(); quote.push(quoteLine[1]); continue }
-    const listItem = line.match(/^(?:[-*]|\d+[.)])\s+(.+)$/)
-    if (listItem) { flushParagraph(); flushQuote(); if (!list) list = []; list.push(listItem[1].trim()); continue }
-    flushQuote(); flushList(); paragraph.push(line)
-  }
-  flushText()
-  return blocks
 }
 
 function renderInlineText(value) {
@@ -1156,7 +1211,7 @@ function getWorkspaceCopy(language) {
       : 'Lee el objetivo y localiza qué debe hacer el programa.',
     stepTwo: isBash
       ? 'Añade una cosa cada vez: una orden, una variable o una comprobación. Aquí no se ejecuta el script.'
-      : 'Añade una cosa cada vez: una variable, una función o una operación con archivos. Aquí no se ejecuta Python.',
+      : 'Completa la parte que pide el ejercicio; el resto ya está preparado.',
     stepThree: `Pulsa «${actionLabel}» y lee los mensajes para ver qué puedes mejorar.`,
     beforeSubmit: [
       'Lee el objetivo y comprueba que has cubierto cada parte.',
@@ -1177,8 +1232,10 @@ function getWorkspaceCopy(language) {
 
 function Workspace({ activity, user }) {
   const initialLanguage = normalizeLanguage(activity.language || activity.track || activity.version?.language)
+  const initialPathway = pathwayForActivity(activity)
   const initialFiles = starterFilesFor(initialLanguage)
   const [language, setLanguage] = useState(initialLanguage)
+  const [pathway, setPathway] = useState(initialPathway)
   const [files, setFiles] = useState(initialFiles)
   const [starterFiles, setStarterFiles] = useState(initialFiles)
   const [activeFile, setActiveFile] = useState(primaryFileFor(initialLanguage))
@@ -1190,7 +1247,7 @@ function Workspace({ activity, user }) {
   const [serverDraft, setServerDraft] = useState(null)
   const [workspaceData, setWorkspaceData] = useState(null)
   const [conflict, setConflict] = useState(false)
-  const [previewHtml, setPreviewHtml] = useState(() => initialLanguage === 'web' ? buildPreview(initialFiles) : '')
+  const [previewHtml, setPreviewHtml] = useState(() => initialLanguage === 'web' ? buildPreview(initialFiles, initialPathway) : '')
   const [consoleEntries, setConsoleEntries] = useState([])
   const [tests, setTests] = useState([])
   const [testsState, setTestsState] = useState('idle')
@@ -1211,15 +1268,17 @@ function Workspace({ activity, user }) {
       loaded = true
       setWorkspaceData(data)
       const nextLanguage = normalizeLanguage(data.version?.language || data.language || activity.language)
+      const nextPathway = normalizePathway(data.version?.pathway || data.pathway || activity.pathway, nextLanguage)
       const nextStarterFiles = normalizeFiles(data.version?.files || data.activity?.files || {}, nextLanguage)
       const nextFiles = data.draft?.files ? normalizeFiles(data.draft.files, nextLanguage) : nextStarterFiles
       setLanguage(nextLanguage)
-      setActiveFile(primaryFileFor(nextLanguage))
+      setPathway(nextPathway)
+      setActiveFile(primaryFileFor(nextLanguage, nextPathway, data.version?.editor_files))
       setStarterFiles(nextStarterFiles)
       setFiles(nextFiles)
       setRevision(Number(data.draft?.revision ?? data.revision ?? 0))
       revisionRef.current = Number(data.draft?.revision ?? data.revision ?? 0)
-      if (nextLanguage === 'web') setPreviewHtml(buildPreview(nextFiles))
+      if (nextLanguage === 'web') setPreviewHtml(buildPreview(nextFiles, nextPathway))
     }).catch(() => {
       // La vista de demostración usa el borrador inicial solo durante `vite dev`.
       if (!DEMO_MODE) {
@@ -1289,7 +1348,7 @@ function Workspace({ activity, user }) {
   const runPreview = () => {
     if (language !== 'web') return
     setConsoleEntries([])
-    setPreviewHtml(buildPreview(files))
+    setPreviewHtml(buildPreview(files, pathway))
     setNotice('Página actualizada')
   }
 
@@ -1350,7 +1409,11 @@ function Workspace({ activity, user }) {
 
   const activityVersion = workspaceData?.version || {}
   const effectiveLanguage = normalizeLanguage(activityVersion.language || language)
-  const workspaceCopy = getWorkspaceCopy(effectiveLanguage)
+  const effectivePathway = normalizePathway(activityVersion.pathway || workspaceData?.pathway || pathway || activity.pathway, effectiveLanguage)
+  const workspaceCopyBase = getWorkspaceCopy(effectiveLanguage)
+  const workspaceCopy = effectiveLanguage === 'web' && effectivePathway === 'javascript'
+    ? { ...workspaceCopyBase, consoleHeading: 'Consola', consoleClear: 'Borrar consola', consoleEmpty: 'Aquí aparecerán los mensajes de tu JavaScript.' }
+    : workspaceCopyBase
   const isWeb = effectiveLanguage === 'web'
   const effectiveIsBash = effectiveLanguage === 'bash'
   const effectiveIsPython = effectiveLanguage === 'python'
@@ -1374,14 +1437,18 @@ function Workspace({ activity, user }) {
     : []
   const editorKeys = effectiveIsBash
     ? ['bash']
-    : effectiveIsPython
+      : effectiveIsPython
       ? ['python']
       : configuredEditorFiles.length
         ? configuredEditorFiles
-        : ['html']
+        : effectivePathway === 'javascript' ? ['javascript'] : ['html']
+  useEffect(() => {
+    if (!editorKeys.includes(activeFile)) setActiveFile(editorKeys[0] || primaryFileFor(effectiveLanguage, effectivePathway))
+  }, [activeFile, editorKeys.join('|'), effectiveLanguage, effectivePathway])
   const safeFiles = effectiveIsBash ? { bash: files.bash || '' } : effectiveIsPython ? { python: files.python || '' } : files
   const trackLabel = getTrackLabel(effectiveLanguage)
   const beforeSubmitItems = workspaceCopy.beforeSubmit
+  const showConsole = isWeb && effectivePathway === 'javascript'
 
   return (
     <main className="workspace-main">
@@ -1404,11 +1471,11 @@ function Workspace({ activity, user }) {
           <div className="instruction-footer"><span><Icon icon={IconClock} size={14} />{activity.duration || activity.estimated_minutes ? `${activity.duration || activity.estimated_minutes} min` : 'A tu ritmo'}</span><span><Icon icon={IconTestPipe} size={14} />{activeTestCount} {workspaceCopy.testCountLabel}</span></div>
         </aside>
         <section className={`editor-panel workspace-panel ${mobilePanel === 'editor' ? 'mobile-panel-visible' : ''}`}>
-          <div className="editor-toolbar"><div className="file-tabs" role="tablist" aria-label={isWeb ? 'Archivos de tu página' : 'Archivo del reto'}>{editorKeys.map((key) => { const meta = effectiveIsBash ? BASH_FILE_META : effectiveIsPython ? PYTHON_FILE_META : FILE_META; const item = meta[key]; return <button key={key} className={`file-tab ${activeFile === key ? 'is-active' : ''} ${item.className}`} type="button" role="tab" aria-selected={activeFile === key} onClick={() => setActiveFile(key)}><Icon icon={item.icon} size={16} /><span>{item.label}</span></button> })}</div><button className="icon-button" type="button" title={workspaceCopy.editorRestore} aria-label={workspaceCopy.editorRestore} onClick={() => { setFiles(starterFiles); if (effectiveLanguage === 'web') setPreviewHtml(buildPreview(starterFiles)); setNotice(workspaceCopy.editorRestoreNotice) }}><Icon icon={IconRefresh} size={17} /></button></div>
+          <div className="editor-toolbar"><div className="file-tabs" role="tablist" aria-label={isWeb ? 'Archivos de tu página' : 'Archivo del reto'}>{editorKeys.map((key) => { const meta = effectiveIsBash ? BASH_FILE_META : effectiveIsPython ? PYTHON_FILE_META : FILE_META; const item = meta[key]; return <button key={key} className={`file-tab ${activeFile === key ? 'is-active' : ''} ${item.className}`} type="button" role="tab" aria-selected={activeFile === key} onClick={() => setActiveFile(key)}><Icon icon={item.icon} size={16} /><span>{item.label}</span></button> })}</div><button className="icon-button" type="button" title={workspaceCopy.editorRestore} aria-label={workspaceCopy.editorRestore} onClick={() => { setFiles(starterFiles); if (effectiveLanguage === 'web') setPreviewHtml(buildPreview(starterFiles, effectivePathway)); setNotice(workspaceCopy.editorRestoreNotice) }}><Icon icon={IconRefresh} size={17} /></button></div>
           <div className="editor-stage"><CodeEditor file={activeFile} value={safeFiles[activeFile] || ''} language={effectiveLanguage} onChange={(value) => changeFile(activeFile, value)} /></div>
           <div className="editor-footer"><span><Icon icon={IconInfoCircle} size={14} />{workspaceCopy.editorSaved}</span><span className="editor-shortcuts">{effectiveLanguage !== 'web' ? <><Icon icon={effectiveIsPython ? IconBrandPython : IconTerminal2} size={13} />Nunca se ejecuta desde la plataforma</> : workspaceCopy.editorHint}</span></div>
         </section>
-        {effectiveIsBash ? <BashValidationPanel source={safeFiles.bash || ''} mobileVisible={mobilePanel === 'preview'} /> : effectiveIsPython ? <PythonAnalysisPanel source={safeFiles.python || ''} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">{WEB_WORKSPACE_COPY.previewPanelLabel}</span><h2>{WEB_WORKSPACE_COPY.previewHeading}</h2></div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />{WEB_WORKSPACE_COPY.previewIsolation}</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />{WEB_WORKSPACE_COPY.previewButton}</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa de tu página" sandbox="allow-scripts" srcDoc={previewHtml} /></div><div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />{WEB_WORKSPACE_COPY.consoleHeading}</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>{WEB_WORKSPACE_COPY.consoleClear}</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">{WEB_WORKSPACE_COPY.consoleEmpty}</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div></aside>}
+        {effectiveIsBash ? <BashValidationPanel source={safeFiles.bash || ''} mobileVisible={mobilePanel === 'preview'} /> : effectiveIsPython ? <PythonAnalysisPanel source={safeFiles.python || ''} mobileVisible={mobilePanel === 'preview'} /> : <aside className={`preview-panel workspace-panel ${mobilePanel === 'preview' ? 'mobile-panel-visible' : ''}`}><div className="preview-heading"><div><span className="panel-label">{WEB_WORKSPACE_COPY.previewPanelLabel}</span><h2>{WEB_WORKSPACE_COPY.previewHeading}</h2>{showConsole && <p className="preview-explanation">Lo que ves es el resultado en el navegador; las comprobaciones oficiales revisan tu código por separado.</p>}</div><div className="preview-heading-actions"><span className="preview-isolation"><span className="pulse-dot pulse-dot-dark" />{WEB_WORKSPACE_COPY.previewIsolation}</span><button className="button button-outline button-small" type="button" onClick={runPreview}><Icon icon={IconPlayerPlay} size={14} />{WEB_WORKSPACE_COPY.previewButton}</button></div></div><div className="preview-frame-wrap"><iframe ref={iframeRef} title="Vista previa de tu página" sandbox="allow-scripts" srcDoc={previewHtml} /></div>{showConsole && <div className="console-section"><div className="console-heading"><span><Icon icon={IconTerminal2} size={15} />{workspaceCopy.consoleHeading}</span><button className="text-button text-button-muted" type="button" onClick={() => setConsoleEntries([])}>{workspaceCopy.consoleClear}</button></div><div className="console-output" aria-live="polite">{consoleEntries.length === 0 ? <span className="console-empty">{workspaceCopy.consoleEmpty}</span> : consoleEntries.map((entry) => <div className={`console-line console-${entry.level}`} key={entry.id}><span className="console-prefix">{entry.level === 'error' ? '×' : entry.level === 'warn' ? '!' : '›'}</span><span>{entry.value}</span></div>)}</div></div>}</aside>}
       </section>
       <section className="workspace-bottom">
         <div className="test-dock">
@@ -1594,9 +1661,11 @@ function starterFilesFor(language) {
   return { html: '', css: '', javascript: '' }
 }
 
-function primaryFileFor(language) {
+function primaryFileFor(language, pathway = '', editorFiles = []) {
   const normalizedLanguage = normalizeLanguage(language)
-  return normalizedLanguage === 'bash' ? 'bash' : normalizedLanguage === 'python' ? 'python' : 'html'
+  if (normalizedLanguage === 'bash') return 'bash'
+  if (normalizedLanguage === 'python') return 'python'
+  return normalizePathway(pathway, normalizedLanguage) === 'javascript' && (!editorFiles.length || editorFiles.includes('javascript')) ? 'javascript' : 'html'
 }
 
 function filesPayload(files, languageOrIsBash = 'web') {
@@ -1622,10 +1691,10 @@ function formatXp(value) {
   return Number.isFinite(number) ? Math.round(number).toLocaleString('es-ES') : '0'
 }
 
-function buildPreview(files) {
+function buildPreview(files, pathway = 'javascript') {
   const htmlContent = typeof files?.html === 'string' ? files.html : ''
   const cssContent = typeof files?.css === 'string' ? files.css : ''
-  const safeJavascript = (typeof files?.javascript === 'string' ? files.javascript : '').replace(/<\/script/gi, '<\\/script')
+  const safeJavascript = pathway === 'html_css' ? '' : (typeof files?.javascript === 'string' ? files.javascript : '').replace(/<\/script/gi, '<\\/script')
   const nonceAttribute = PREVIEW_NONCE ? ` nonce="${PREVIEW_NONCE}"` : ''
   const scriptPolicy = PREVIEW_NONCE ? `'nonce-${PREVIEW_NONCE}'` : "'unsafe-inline'"
   const bridge = `\n<script${nonceAttribute}>\n(() => {\n  const send = (type, level, value) => {\n    try { window.parent.postMessage({ channel: 'aulaweb-preview', type, level, value: String(value).slice(0, 500) }, '*') } catch (_) {}\n  };\n  ['log', 'info', 'warn', 'error'].forEach((level) => {\n    const original = console[level];\n    console[level] = (...values) => {\n      send('console', level, values.map((value) => typeof value === 'object' ? JSON.stringify(value) : value).join(' '));\n      original.apply(console, values);\n    };\n  });\n  window.addEventListener('error', (event) => send('runtime-error', 'error', event.message || 'Error de ejecución'));\n  window.addEventListener('unhandledrejection', (event) => send('runtime-error', 'error', event.reason || 'Promesa rechazada'));\n})();\n</script>`

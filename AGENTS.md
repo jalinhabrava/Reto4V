@@ -30,13 +30,28 @@ se conservan para mantener la compatibilidad de despliegues existentes.
   cero en Bash y avanzar gradualmente hacia scripting, seguridad y copias. Es
   apoyo transversal a 0378; no inventes equivalencias con RA/CE ni presentes
   los tests estructurales como pruebas de ejecución.
-- Python es para 2.º de DAM: parte de la base de programación y progresa hacia
-  datos y archivos como preparación para Odoo. Es una preparación parcial para
+- Python es para 2.º de DAM: parte de cero en la sintaxis de Python y progresa hacia
+  estructuras básicas como preparación posterior para datos, archivos y Odoo. Es una preparación parcial para
   0491; lee `docs/PYTHON_TRACK.md` antes de modificar el corrector o los retos
   Python. No inventes equivalencias con RA/CE ni presentes el análisis
   estructural como ejecución, acceso a Odoo o prueba de lectura/escritura real.
-- Los tres catálogos incorporados se mantienen en revisión v2. El bootstrap
-  crea v2, migra los enlaces de grupo y archiva las asignaciones v1; conserva
+- Web · SMR contiene dos cursos: HTML/CSS (`Course.web_stage=html_css`) y
+  JavaScript (`javascript`), ambos con `language=web` y una misma matrícula.
+  HTML/CSS alterna etiquetas y estilos tras los primeros pasos solo HTML.
+  JavaScript requiere completar todos los retos HTML/CSS asignados (mejor
+  puntuación automática válida de al menos 8/10 por reto), o que un admin
+  active `User.javascript_enabled` en «Editar cuenta». El permiso nunca
+  sustituye la matrícula ni habilita actividades de otro grupo.
+- El bloqueo se decide en servicios Django y se aplica también al acceso
+  directo, borradores, comprobaciones y entregas. `pathway`, `locked` y
+  `lock_reason` son estado de servidor; el cliente no infiere autorización
+  a partir de XP. El dashboard expone el resumen `pathways` y refresca su estado.
+- `seed_web --owner ... --cohort ...` carga HTML/CSS y también JavaScript
+  para ese grupo. `seed_javascript` puede ejecutarse por separado sin
+  saltarse la política de desbloqueo. Las mismas operaciones académicas
+  siguen pasando por los servicios existentes; no hay otro framework de acciones.
+- Los catálogos son HTML/CSS v4, JavaScript v1 y Bash/Python v3. El bootstrap
+  crea la revisión correspondiente, migra los enlaces de grupo y archiva las anteriores; conserva
   borradores, entregas, calificaciones y demás evidencias antiguas ligadas a
   su asignación/version por integridad, pero no traslada XP ni progreso entre
   revisiones. Una revisión posterior del centro nunca se degrada.

@@ -19,7 +19,7 @@ from learning.models import AcademicYear
 
 
 class Command(BaseCommand):
-    help = "Precarga los itinerarios Web · SMR, Bash · ASIR y Python · DAM sin crear alumnos."
+    help = "Precarga HTML/CSS, JavaScript, Bash y Python sin crear alumnos."
 
     @staticmethod
     def academic_year_name():
@@ -105,16 +105,22 @@ class Command(BaseCommand):
         year = self._catalog_academic_year()
 
         owner = self._catalog_owner()
-        # Keep these calls explicit so an operator can see the three routes in
-        # logs and so each existing seed remains independently reusable.
+        # seed_web includes the separate JavaScript course for the same cohort.
         call_command("seed_web", owner=owner.username, cohort="1SMR", academic_year=year.name)
         call_command("seed_bash", owner=owner.username, cohort="2ASIR", academic_year=year.name)
         call_command("seed_python", owner=owner.username, cohort="2DAM", academic_year=year.name)
 
+        from .seed_bash import CHALLENGES as bash_challenges
+        from .seed_javascript import CHALLENGES as javascript_challenges
+        from .seed_python import CHALLENGES as python_challenges
+        from .seed_web import CHALLENGES as web_challenges
+
         self.stdout.write(
             self.style.SUCCESS(
-                f"Catálogos precargados en {year.name}: 12 retos Web · SMR, "
-                "12 Bash · ASIR y 12 Python · DAM."
+                f"Catálogos precargados en {year.name}: {len(web_challenges)} retos HTML/CSS, "
+                f"{len(javascript_challenges)} JavaScript, {len(bash_challenges)} Bash "
+                f"y {len(python_challenges)} Python. JavaScript requiere completar HTML/CSS "
+                "o una habilitación individual desde administración."
             )
         )
         self.stdout.write("No se han creado alumnos ni contraseñas de demostración.")

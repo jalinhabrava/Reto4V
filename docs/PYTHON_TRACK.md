@@ -1,150 +1,126 @@
 # Itinerario Python · Programmy4V
 
-## Propósito
+## Propósito y límite
 
-Este itinerario ofrece una transición guiada a Python para 2.º de DAM y el
-módulo `0491 Sistemas de gestión empresarial`. Parte de un primer programa y
-avanza, paso a paso, por variables, decisiones, listas, registros,
-funciones, errores, módulos, rutas y lectura/escritura de archivos. Los
-ejemplos usan catálogos y exportaciones para preparar el trabajo posterior con
-Odoo, sin conectarse a un servidor Odoo ni simular su ORM.
+Este itinerario introduce Python para 2.º de DAM antes de trabajar en un
+entorno de Sistemas de gestión empresarial. Usa ejemplos pequeños de productos
+porque resultan reconocibles, pero prioriza los fundamentos del lenguaje sobre
+Odoo. No instala Odoo, no simula su ORM, no usa sus APIs ni acredita por sí
+solo el módulo `0491`.
 
-Es una **preparación didáctica y un alineamiento parcial**, no una acreditación
-completa del módulo ni una equivalencia automática con RA/CE. La referencia
-curricular principal para Navarra es el [Decreto Foral 110/2024 de
-modificación del currículo de grado superior](https://www.educacion.navarra.es/documents/27590/558252/DF%2B110_2024%2Bmodificacion%2BGS.pdf/a649cf9e-7adf-3c5d-c5ac-eaa602a553a5?version=1.0), que modifica el [Decreto Foral
-203/2011](https://www.educacion.navarra.es/documents/27590/558256/DF_203_2011_Desarrollo%2Bde%2BAplicaciones%2BMultiplataforma.pdf/29947bf5-4235-4ade-9fac-832fd006df8a?version=1.0). En la ordenación vigente, `0491` figura en segundo curso con 160 horas y 5 horas semanales. El catálogo no pretende cubrir por sí solo el RA5 ni sus criterios: deja `learning_outcomes` y `assessment_criteria` vacíos para que el centro decida su programación y evaluación.
+Es una preparación didáctica parcial. La programación oficial decide los
+resultados de aprendizaje, criterios y evaluación; por eso
+`learning_outcomes` y `assessment_criteria` permanecen vacíos. Como referencia
+curricular se conserva el [Decreto Foral 110/2024](https://www.educacion.navarra.es/documents/27590/558252/DF%2B110_2024%2Bmodificacion%2BGS.pdf/a649cf9e-7adf-3c5d-c5ac-eaa602a553a5?version=1.0),
+que modifica el [Decreto Foral 203/2011](https://www.educacion.navarra.es/documents/27590/558256/DF_203_2011_Desarrollo%2Bde%2BAplicaciones%2BMultiplataforma.pdf/29947bf5-4235-4ade-9fac-832fd006df8a?version=1.0).
 
-Como contexto técnico, la documentación oficial de [Odoo Server
-framework 101](https://www.odoo.com/documentation/19.0/developer/tutorials/server_framework_101.html)
-presenta objetos y modelos desarrollados con Python. Programmy4V solo trabaja los
-fundamentos previos; las APIs, módulos, seguridad y ORM de Odoo requieren un
-entorno Odoo de prácticas separado.
+La documentación de [Odoo Server framework 101](https://www.odoo.com/documentation/19.0/developer/tutorials/server_framework_101.html)
+puede usarse después como contexto de Python profesional. Sus modelos, APIs,
+seguridad y entorno de ejecución requieren prácticas separadas y aisladas.
 
-## Crear el itinerario
+## Forma de cada reto
 
-En una instalación nueva, el catálogo Python se precarga automáticamente en el
-grupo base **Python · DAM** después de las migraciones (`PRELOAD_CATALOGS=1`).
-Para una instalación con el bootstrap desactivado o para un grupo adicional,
-crea el itinerario después de tener una cuenta de profesor o administrador:
+El catálogo sigue un patrón de aprendizaje corto inspirado en tutoriales
+interactivos de iniciación, como [Hello, World!](https://www.learnpython.org/en/Hello%2C_World%21)
+y [Variables and Types](https://www.learnpython.org/en/Variables_and_Types),
+sin reproducir su texto:
+
+1. Explica una sola idea nueva en lenguaje directo.
+2. Presenta un ejemplo comentado, distinto del ejercicio.
+3. Propone un ejercicio diminuto que solo usa esa idea y las anteriores.
+4. Deja el editor casi preparado y ofrece comprobaciones estructurales acordes.
+
+En particular, el reto 02 no usa f-strings: primero fija variables y textos;
+los números, la unión de textos, las listas, las decisiones y los bucles se
+introducen de forma independiente. Un `for` no aparece hasta que ya existe una
+lista. El cierre repasa funciones, no introduce archivos, rutas, JSON ni APIs.
+
+## Catálogo v3
+
+Los doce slugs son identificadores históricos y no describen necesariamente el
+tema actual. No se deben cambiar.
+
+| # | Slug histórico | Idea nueva | Ejercicio mínimo |
+|---:|---|---|---|
+| 01 | `01-salida-y-variables` | `print()` | Cambiar un mensaje preparado. |
+| 02 | `02-tipos-y-cadenas` | Variable con texto | Guardar y mostrar `producto`. |
+| 03 | `03-condicionales-de-stock` | Números y multiplicación | Calcular un total. |
+| 04 | `04-listas-y-bucles` | Unión de textos | Crear una etiqueta. |
+| 05 | `05-diccionarios-de-registro` | Lista e índice | Mostrar el primer producto. |
+| 06 | `06-funciones-reutilizables` | `if` / `else` | Mostrar disponibilidad. |
+| 07 | `07-excepciones-de-datos` | Bucle `for` | Mostrar cada elemento de una lista. |
+| 08 | `08-imports-y-fechas` | Diccionario | Consultar el nombre de un registro. |
+| 09 | `09-rutas-con-pathlib` | `def` y llamada | Mostrar un saludo sin parámetros. |
+| 10 | `10-lectura-de-texto` | Parámetro | Mostrar el dato recibido. |
+| 11 | `11-escritura-json` | `return` | Devolver y mostrar un resultado. |
+| 12 | `12-integracion-archivos` | Repaso de lista, función y `for` | Mostrar todos los productos. |
+
+Los archivos, JSON y las APIs de Odoo quedan deliberadamente fuera de esta
+revisión: requieren una ampliación posterior cuando el grupo ya domine estos
+fundamentos. Los ejemplos y soluciones son material de referencia, no
+respuestas secretas de un examen.
+
+## Crear y actualizar el itinerario
+
+En una instalación nueva se precarga al arrancar `web` con
+`PRELOAD_CATALOGS=1`. También puede crearse para un grupo existente:
 
 ```bash
 python manage.py seed_python --owner profesor --cohort 2DAM
 ```
 
-Opciones disponibles:
+`--owner` es obligatorio y debe ser profesor o administrador. `--cohort`
+predetermina `2DAM`; `--academic-year AAAA-AAAA` permite fijar el curso. El
+comando crea el curso **Introducción a Python para SGE · DAM**, su módulo y las
+asignaciones publicadas. No crea alumnado, contraseñas ni datos personales.
 
-- `--owner USERNAME` (obligatoria): cuenta existente de profesor o administrador.
-- `--cohort NOMBRE`: grupo destinatario; por defecto `2DAM`.
-- `--academic-year AAAA-AAAA`: curso académico; si se omite se calcula según la fecha del servidor.
+La versión incorporada actual es **v3**. Las versiones y asignaciones ya
+publicadas son evidencias inmutables: al ejecutar el comando sobre v2 crea v3,
+migra los vínculos del grupo y archiva la asignación anterior sin modificar sus
+ficheros, entregas ni calificaciones. Si una actividad tiene una versión
+posterior del centro, el comando no la rebaja.
 
-El comando crea el curso `Introducción a Python para SGE · DAM`, un módulo de
-apoyo y doce actividades publicadas con sus asignaciones al grupo. El grupo
-queda marcado con `track=python`, que permite mostrarlo como **Python · DAM**
-en el panel local. No crea alumnos, contraseñas ni datos personales.
+Durante la migración, un título de asignación que coincide exactamente con el
+título incorporado de v2 se actualiza al título v3. Un título docente distinto
+se conserva. Así se corrigen los títulos del catálogo sin perder una
+personalización local. Repetir el comando es idempotente.
 
-El catálogo actual es la revisión **v2**. En una instalación que todavía usa
-la revisión v1, el comando crea v2, mueve a ella los grupos del itinerario y
-archiva la asignación anterior sin borrar borradores, entregas ni
-calificaciones. La versión asignada queda bloqueada; si una instalación ya
-tiene una revisión posterior creada por el centro, el arranque conserva esa
-versión y no rebaja `activity.current_version`. Repetir el comando es seguro:
-reutiliza lo que ya existe y no modifica evidencias.
+## Corrección estática
 
-Al crear o editar un alumno en `/admin-ui/users/`, selecciona su ciclo e
-itinerario. Esa selección activa su única matrícula y habilita el primer reto
-al iniciar sesión; no hay que asignar actividades una por una. Si cambias a
-otro ciclo, la matrícula anterior se conserva como historial pero deja de dar
-acceso.
+Cada prueba es declarativa y se valida antes de publicar. El evaluador analiza
+el texto con [`ast`](https://docs.python.org/3/library/ast.html), una vez por
+archivo, y reutiliza ese árbol; nunca evalúa ni ejecuta el código entregado.
 
-El catálogo incluye una solución de referencia para revisar el diseño. Como el
-repositorio es público, las soluciones **no son respuestas secretas** ni deben
-usarse como banco de exámenes. Para una evaluación con secreto real, crea una
-nueva versión y tests privados directamente en la instalación del centro.
+| Tipo de prueba | Qué comprueba |
+|---|---|
+| `python.syntax_valid` | Que el texto se puede analizar como Python. |
+| `python.assignment` | Que existe una asignación con un nombre dado. |
+| `python.node_kind` | Una construcción AST, por ejemplo `if`, `for`, `list`, `dict`, `function`, `with` o `call`. |
+| `python.call_used` | Una llamada por su nombre y, si procede, sus argumentos estructurales. |
+| `python.loop_target` | El nombre de elemento y la lista de un `for`. |
+| `python.function_declared` | Una función, sus argumentos declarados y un `return`. |
+| `python.subscript_used` | Un acceso como `producto["name"]`. |
+| `python.dict_keys` | Claves literales de un diccionario asignado. |
+| `python.comparison_used` | Una comparación como `stock > 0`. |
 
-## Catálogo progresivo
+El alias histórico `python.variable_assigned` sigue siendo compatible con
+`python.assignment`. No se permiten expresiones arbitrarias, regex ni
+llamadas de corrección. Hay límites de tamaño y complejidad del árbol para
+mantener el análisis acotado.
 
-| # | Tema | Contexto de SGE/Odoo | Dificultad |
-|---:|---|---|---|
-| 01 | Primer programa y sintaxis | Mensaje de bienvenida | Inicial |
-| 02 | Variables y tipos | Etiqueta de producto | Inicial |
-| 03 | Decisiones `if/else` | Disponibilidad de stock | Inicial |
-| 04 | Listas y bucles | Recorrido de productos | Inicial |
-| 05 | Diccionarios | Registro de producto en memoria | Inicial |
-| 06 | Funciones | Limpiar nombres de productos | Intermedia |
-| 07 | Errores `try/except` | Conversión de datos importados | Intermedia |
-| 08 | Módulos y fechas | Preparar datos de intercambio | Intermedia |
-| 09 | `pathlib` | Preparar rutas portables | Intermedia |
-| 10 | Lectura de texto | Leer líneas con `with open` | Intermedia |
-| 11 | Escritura JSON | Guardar un catálogo | Intermedia |
-| 12 | Flujo completo | Leer, transformar y escribir | Intermedia |
+La revisión v3 no incluye comprobaciones de importación o archivos. El
+evaluador no llama a `exec`, `eval`, procesos, red, importación dinámica ni al
+sistema de archivos a partir del trabajo del alumno.
 
-## DSL de tests Python
+## XP y evaluación
 
-Las definiciones son declarativas y se validan antes de guardar/publicar una
-actividad. No aceptan campos desconocidos, expresiones Python, regex de
-corrección ni llamadas arbitrarias:
-
-| Tipo | Definición | Comportamiento |
-|---|---|---|
-| `python.syntax_valid` | `{}` | El texto se puede analizar con el parser AST de Python. |
-| `python.assignment` | `{"name": "productos"}` | Busca una asignación, destino de bucle, anotación o expresión asignada con ese nombre. |
-| `python.function_declared` | `{"name": "transformar", "args": ["linea"], "returns": true}` | Busca una función `def` o `async def`; `args` exige sus argumentos declarados y `returns` comprueba que su cuerpo contiene un `return`. |
-| `python.node_kind` | `{"kind": "for", "non_empty": true}` | Busca un nodo AST permitido. Alias: `if`, `if_else`, `for`, `while`, `try`, `with`, `function`, `dict`, `list`, `f_string`, `return`, `except_handler`, `comparison`, `call`, `import`. `non_empty` evita aceptar bloques cuyo único cuerpo es `pass`. |
-| `python.call_used` | `{"name": "json.dump", "arg_names": ["productos", "archivo"]}` | Busca una llamada cuyo nombre cualificado coincide; admite `args` de literales o `arg_names` de expresiones de nombre, sin evaluarlas. |
-| `python.import_used` | `{"module": "pathlib"}` | Busca `import modulo` o `from modulo import ...`. |
-| `python.file_opened` | `{"mode": "r", "context_manager": true, "body_non_empty": true, "encoding": "utf-8"}` | Inspecciona el `open` incorporado o `.open()` sobre una instancia estructuralmente reconocible de `pathlib.Path`/`PurePath`, junto con su modo, codificación y uso dentro de `with`; `body_non_empty` exige contenido real en el bloque. |
-| `python.attribute_used` | `{"name": "fichero.name"}` | Busca un acceso de atributo cualificado sin resolver ni ejecutar el objeto. |
-| `python.subscript_used` | `{"name": "producto", "key": "name"}` | Busca un acceso con clave literal, como `producto["name"]`. |
-| `python.dict_keys` | `{"name": "producto", "keys": ["name", "price"]}` | Comprueba que una asignación de diccionario declara las claves literales indicadas. |
-| `python.loop_target` | `{"name": "producto", "iterable": "productos"}` | Comprueba que un `for` usa el destino e iterable indicados. |
-| `python.exception_handled` | `{"name": "ValueError"}` | Comprueba que existe un `except` tipado para esa excepción. |
-| `python.comparison_used` | `{"operator": "gt", "left": "stock", "right": 0}` | Busca una comparación AST con operador y operandos literales/nombres indicados. |
-
-`python.variable_assigned` se conserva como alias compatible de
-`python.assignment` para catálogos anteriores. Los nombres y módulos deben ser identificadores Python;
-los modos de archivo están limitados a las variantes habituales de lectura,
-escritura y anexado (`r`, `w`, `a`, `x` y sus variantes `+`/binarias).
-
-El [módulo `ast` de la biblioteca estándar](https://docs.python.org/3/library/ast.html)
-solo convierte el texto en un árbol de datos. Cada evaluación analiza el
-archivo una sola vez y reutiliza ese árbol para todos los tests. Se limita cada
-archivo a 256 KiB, el conjunto a 1 MiB, una versión a 200 tests, el árbol
-Python a 5.000 nodos y la profundidad a 80 niveles. `SyntaxError`, entradas
-malformadas y los límites de recursos producen feedback controlado; no
-provocan la ejecución del código.
-
-En ningún caso se evalúa o ejecuta el árbol, se genera bytecode o se llama a
-`exec`, `eval`, `importlib`, un proceso, una red o el sistema de archivos a
-partir del texto entregado. Los tests de
-`file_opened` reconocen la estructura de lectura/escritura, pero no abren la
-ruta, no leen contenido y no demuestran que una integración, una copia o un
-modelo Odoo funcione. Las prácticas de ejecución real deben hacerse en una VM
-separada con datos ficticios.
-
-## XP, niveles y calificación
-
-La experiencia se calcula en el servidor a partir del mejor resultado
-automático válido de cada asignación:
+La experiencia es feedback formativo y no una calificación oficial:
 
 ```text
 earned_xp = floor(xp_reward * best_automatic_score / 10)
 ```
 
-El valor máximo de `xp_reward` es 1.000. La puntuación automática está entre 0
-y 10; un resultado de al menos 8 completa el reto. Los intentos repetidos no
-generan XP adicional: solo el máximo automático por asignación cuenta. XP,
-niveles e insignias son feedback formativo y no calificaciones oficiales.
-
-Al completar un reto Python se obtiene la insignia `python-path`. La insignia
-`cross-path` se activa al completar retos de al menos dos itinerarios y
-`triple-path` al completar retos web, Bash y Python. No existe clasificación
-pública entre alumnos.
-
-## Límites didácticos
-
-El itinerario usa Python como lenguaje de preparación para SGE. No incluye
-instalación de Odoo, conexión XML-RPC/JSON-RPC, acceso a una base de datos,
-creación de módulos, permisos del ERP ni ejecución de scripts del alumnado.
-Esas prácticas deben planificarse y evaluarse aparte por el equipo docente,
-con un Odoo de laboratorio aislado y cuentas ficticias.
+El máximo de `xp_reward` es 1.000 y un resultado automático de al menos 8
+completa el reto. Varios intentos no suman XP: solo cuenta el mejor resultado
+por asignación. La docencia debe usar instrumentos separados para evaluar
+prácticas reales de archivos u Odoo, con una VM y datos ficticios.
